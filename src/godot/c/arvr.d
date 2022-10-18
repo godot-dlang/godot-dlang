@@ -2,10 +2,11 @@ module godot.c.arvr;
 
 import godot.c.core;
 
+version(none):
 @nogc nothrow:
 extern(C):
 
-struct godot_arvr_interface_gdnative
+struct godot_xr_interface_gdnative
 {
 	void* function(godot_object) constructor;
 	void function(void*) destructor;
@@ -17,11 +18,14 @@ struct godot_arvr_interface_gdnative
 	godot_bool function(const void*) is_initialized;
 	godot_bool function(void*) initialize;
 	void function(void*) uninitialize;
-	godot_vector2 function(const void*) get_recommended_render_target_size;
+	godot_vector2 function(const void*) get_render_targetsize;
 	godot_transform function(void*, godot_int, godot_transform*) get_transform_for_eye;
-	void function(void*, godot_real*, godot_int, godot_real, godot_real, godot_real) fill_projection_for_eye;
+	void function(void*, godot_float*, godot_int, godot_float, godot_float, godot_float) fill_projection_for_eye;
 	void function(void*, godot_int, godot_rid*, godot_rect2*) commit_for_eye;
 	void function(void*) process;
+	godot_int function(void *, godot_int) get_external_texture_for_eye;
+	void function(void *, godot_int) notification;
+	godot_int function(void *) get_camera_feed_id;
 }
 
 

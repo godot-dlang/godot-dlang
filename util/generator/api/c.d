@@ -8,15 +8,13 @@ import std.algorithm.iteration, std.algorithm.comparison;
 
 import asdf;
 
-version(none):
-
 struct Function
 {
 	string name;
 	string return_type;
 	string[2][] arguments; // type, name
 	
-	@serializationIgnore:
+	@serdeIgnore:
 	
 }
 
@@ -29,7 +27,7 @@ struct ApiVersion
 		return cmp([major, minor], [other.major, other.minor]);
 	}
 	
-	@serializationIgnore:
+	@serdeIgnore:
 	
 	string str() { return format!"_%d_%d"(major, minor); }
 }
@@ -39,7 +37,7 @@ struct Api
 	ApiPart core;
 	ApiPart[] extensions;
 	
-	@serializationIgnore:
+	@serdeIgnore:
 
 	string source()
 	{
@@ -168,9 +166,10 @@ struct Api
 
 class ApiPart
 {
+	@serdeOptional
 	string name;
 	string type;
-	@serializationKeys("version") ApiVersion ver;
+	@serdeKeys("version") ApiVersion ver;
 	Function[] api;
 	
 	void finalizeDeserialization(Asdf asdf)
@@ -179,7 +178,7 @@ class ApiPart
 		if(next) next.topLevel = false;
 	}
 	
-	@serializationIgnore:
+	@serdeIgnore:
 	bool topLevel = true; /// is the "main" struct for an extension
 	ApiPart next;
 	
@@ -255,7 +254,7 @@ class ApiPart
 		ret ~= "public extern(C) struct "~name.structName(ver)~"\n{\n";
 		ret ~= "@nogc nothrow:\n";
 		
-		if(core && ver == ApiVersion(1,0)) ret ~= q{
+		if(core && ver == ApiVersion(4,0)) ret ~= q{
 			mixin ApiStructHeader;
 			uint num_extensions;
 			const godot_gdnative_api_struct **extensions;
@@ -294,7 +293,7 @@ class ApiPart
 string structName(string name, ApiVersion ver)
 {
 	return (name=="core")?( "godot_gdnative_core_api_struct" ~
-		(ver==ApiVersion(1,0) ? "" : ver.str) ) :
+		(ver==ApiVersion(4,0) ? "" : ver.str) ) :
 		("godot_gdnative_ext_"~name~"_api_struct"~ver.str);
 }
 string globalVarName(string name, ApiVersion ver = ApiVersion(-1,-1))

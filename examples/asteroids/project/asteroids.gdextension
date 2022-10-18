@@ -1,0 +1,8 @@
+[configuration]
+
+entry_symbol = "asteroids_gdextension_entry"
+
+[libraries]
+
+linux.64 = "libgodot-d_asteroids.so"
+windows.64 = "godot-d_asteroids.dll"

@@ -18,13 +18,13 @@ struct godot_pluginscript_instance_desc
 	godot_bool function(godot_pluginscript_instance_data *p_data, const godot_string *p_name, godot_variant *r_ret) get_prop;
 
 	godot_variant function(godot_pluginscript_instance_data *p_data,
-			const godot_string_name *p_method, const godot_variant **p_args,
+			const godot_string *p_method, const godot_variant **p_args,
 			int p_argcount, godot_variant_call_error *r_error) call_method;
 
 	void function(godot_pluginscript_instance_data *p_data, int p_notification) notification;
 	// TODO: could this rpc mode stuff be moved to the godot_pluginscript_script_manifest ?
-	godot_method_rpc_mode function(godot_pluginscript_instance_data *p_data, const godot_string *p_method) get_rpc_mode;
-	godot_method_rpc_mode function(godot_pluginscript_instance_data *p_data, const godot_string *p_variable) get_rset_mode;
+	godot_nativescript_method_rpc_mode function(godot_pluginscript_instance_data *p_data, const godot_string *p_method) get_rpc_mode;
+	godot_nativescript_method_rpc_mode function(godot_pluginscript_instance_data *p_data, const godot_string *p_variable) get_rset_mode;
 
 	//this is used by script languages that keep a reference counter of their own
 	//you can make make Ref<> not die when it reaches zero, so deleting the reference
@@ -37,9 +37,9 @@ struct godot_pluginscript_instance_desc
 struct godot_pluginscript_script_manifest
 {
 	godot_pluginscript_script_data *data;
-	godot_string_name name;
+	godot_string name;
 	godot_bool is_tool;
-	godot_string_name base;
+	godot_string base;
 
 	// Member lines format: {<string>: <int>}
 	godot_dictionary member_lines;
@@ -79,7 +79,7 @@ struct godot_pluginscript_script_desc
 
 struct godot_pluginscript_profiling_data
 {
-	godot_string_name signature;
+	godot_string signature;
 	godot_int call_count;
 	godot_int total_time; // In microseconds
 	godot_int self_time; // In microseconds
@@ -100,9 +100,9 @@ struct godot_pluginscript_language_desc
 	godot_bool supports_builtin_mode;
 
 	godot_string function(godot_pluginscript_language_data *p_data, const godot_string *p_class_name, const godot_string *p_base_class_name) get_template_source_code;
-	godot_bool function(godot_pluginscript_language_data *p_data, const godot_string *p_script, int *r_line_error, int *r_col_error, godot_string *r_test_error, const godot_string *p_path, godot_pool_string_array *r_functions) validate;
+	godot_bool function(godot_pluginscript_language_data *p_data, const godot_string *p_script, int *r_line_error, int *r_col_error, godot_string *r_test_error, const godot_string *p_path, godot_packed_string_array *r_functions) validate;
 	int function(godot_pluginscript_language_data *p_data, const godot_string *p_function, const godot_string *p_code) find_function; // Can be NULL
-	godot_string function(godot_pluginscript_language_data *p_data, const godot_string *p_class, const godot_string *p_name, const godot_pool_string_array *p_args) make_function;
+	godot_string function(godot_pluginscript_language_data *p_data, const godot_string *p_class, const godot_string *p_name, const godot_packed_string_array *p_args) make_function;
 	godot_error function(godot_pluginscript_language_data *p_data, const godot_string *p_code, const godot_string *p_base_path, godot_object p_owner, godot_array *r_options, godot_bool *r_force, godot_string *r_call_hint) complete_code;
 	void function(godot_pluginscript_language_data *p_data, godot_string *p_code, int p_from_line, int p_to_line) auto_indent_code;
 
@@ -112,9 +112,9 @@ struct godot_pluginscript_language_desc
 	int function(godot_pluginscript_language_data *p_data, int p_level) debug_get_stack_level_line;
 	godot_string function(godot_pluginscript_language_data *p_data, int p_level) debug_get_stack_level_function;
 	godot_string function(godot_pluginscript_language_data *p_data, int p_level) debug_get_stack_level_source;
-	void function(godot_pluginscript_language_data *p_data, int p_level, godot_pool_string_array *p_locals, godot_array *p_values, int p_max_subitems, int p_max_depth) debug_get_stack_level_locals;
-	void function(godot_pluginscript_language_data *p_data, int p_level, godot_pool_string_array *p_members, godot_array *p_values, int p_max_subitems, int p_max_depth) debug_get_stack_level_members;
-	void function(godot_pluginscript_language_data *p_data, godot_pool_string_array *p_locals, godot_array *p_values, int p_max_subitems, int p_max_depth) debug_get_globals;
+	void function(godot_pluginscript_language_data *p_data, int p_level, godot_packed_string_array *p_locals, godot_array *p_values, int p_max_subitems, int p_max_depth) debug_get_stack_level_locals;
+	void function(godot_pluginscript_language_data *p_data, int p_level, godot_packed_string_array *p_members, godot_array *p_values, int p_max_subitems, int p_max_depth) debug_get_stack_level_members;
+	void function(godot_pluginscript_language_data *p_data, godot_packed_string_array *p_locals, godot_array *p_values, int p_max_subitems, int p_max_depth) debug_get_globals;
 	godot_string function(godot_pluginscript_language_data *p_data, int p_level, const godot_string *p_expression, int p_max_subitems, int p_max_depth) debug_parse_stack_level_expression;
 
 	// TODO: could this stuff be moved to the godot_pluginscript_language_desc ?

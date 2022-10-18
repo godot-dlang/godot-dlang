@@ -72,10 +72,13 @@ T camelToSnake(T)(in T inputStr) if(isSomeString!T)
 			inUppercaseWord = false;
 		}
 	}
+	// fix endings for Transform2D and 3D
+	ret = ret.replace("2_d", "2d").replace("3_d", "3d");
 	return ret;
 }
 
 static assert("camelCase".camelToSnake == "camel_case");
 static assert("_physicsProcess".camelToSnake == "_physics_process");
 static assert("toUTF32".camelToSnake == "to_utf32");
-
+static assert("Transform3D".camelToSnake == "transform3d");
+static assert("Vector2i".camelToSnake == "vector2i");

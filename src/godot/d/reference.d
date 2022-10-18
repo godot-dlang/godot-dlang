@@ -1,18 +1,18 @@
 module godot.d.reference;
 
-import std.meta, std.traits, std.typecons;
+import std.meta, std.traits; // std.typecons;
 import std.algorithm : swap;
 
 import godot.core, godot.c;
-import godot.reference, godot.object;
+import godot.refcounted, godot.object;
 import godot.d.traits, godot.d.script;
 
 /// Ref-counted container for Reference types
 struct Ref(T)
 {
-	static assert(extends!(T, Reference), "Ref may only be used with Reference-derived classes. Other Godot classes are not reference-counted.");
+	static assert(extends!(T, RefCounted), "Ref may only be used with Reference-derived classes. Other Godot classes are not reference-counted.");
 	static assert(!is(T == const), "Ref cannot contain a const Reference");
-	@nogc nothrow:
+	//@nogc nothrow:
 	
 	static if(isGodotBaseClass!T)
 	{
@@ -63,7 +63,7 @@ struct Ref(T)
 	{
 		if(_self && _reference.unreference())
 		{
-			_godot_api.godot_object_destroy(_reference._godot_object);
+			_godot_api.object_destroy(&_reference._godot_object);
 		}
 		_self = T.init;
 	}
@@ -126,7 +126,7 @@ struct Ref(T)
 	
 	~this()
 	{
-		unref();
+		//unref();
 	}
 }
 
@@ -135,7 +135,7 @@ Create a Ref from a pointer without incrementing refcount.
 +/
 package(godot) RefOrT!T refOrT(T)(T instance)
 {
-	static if(extends!(T, Reference))
+	static if(extends!(T, RefCounted))
 	{
 		Ref!T ret = void;
 		ret._self = instance;
@@ -149,7 +149,7 @@ Create a Ref from a pointer and increment refcount.
 +/
 package(godot) RefOrT!T refOrTInc(T)(T instance)
 {
-	static if(extends!(T, Reference))
+	static if(extends!(T, RefCounted))
 	{
 		Ref!T ret = void;
 		ret._self = instance;

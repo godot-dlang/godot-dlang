@@ -34,6 +34,7 @@ struct Basis
 		Vector3(0.0,1.0,0.0),
 		Vector3(0.0,0.0,1.0),
 	];
+	alias rows = elements;
 	
 	this(in Vector3 row0, in Vector3 row1, in Vector3 row2)
 	{
@@ -184,7 +185,7 @@ struct Basis
 		// We are assuming M = R.S, and performing a polar decomposition to extract R and S.
 		// FIXME: We eventually need a proper polar decomposition.
 		// As a cheap workaround until then, to ensure that R is a proper rotation matrix with determinant +1
-		// (such that it can be represented by a Quat or Euler angles), we absorb the sign flip into the scaling matrix.
+		// (such that it can be represented by a Quaternion or Euler angles), we absorb the sign flip into the scaling matrix.
 		// As such, it works in conjuction with get_rotation().
 		real_t det_sign = determinant() > 0 ? 1 : -1;
 		return det_sign*Vector3(
@@ -594,7 +595,7 @@ struct Basis
 		setEuler( p_euler );
 	}
 	
-	this(in Quat p_quat)
+	this(in Quaternion p_quat)
 	{
 	
 		real_t d = p_quat.lengthSquared();
@@ -632,9 +633,9 @@ struct Basis
 	
 	}
 	
-	Quat quat() const
+	Quaternion quat() const
 	{
-		///ERR_FAIL_COND_V(is_rotation() == false, Quat());
+		///ERR_FAIL_COND_V(is_rotation() == false, Quaternion());
 		
 		real_t trace = elements[0][0] + elements[1][1] + elements[2][2];
 		real_t[4] temp;
@@ -665,7 +666,7 @@ struct Basis
 			temp[j] = (elements[j][i] + elements[i][j]) * s;
 			temp[k] = (elements[k][i] + elements[i][k]) * s;
 		}
-		return Quat(temp[0],temp[1],temp[2],temp[3]);
+		return Quaternion(temp[0],temp[1],temp[2],temp[3]);
 	}
 }
 

@@ -12,6 +12,14 @@ import std.meta, std.traits;
 import godot.core, godot.c;
 import godot.object;
 
+/// https://p0nce.github.io/d-idioms/#Bypassing-@nogc
+/// Casts @nogc out of a function or delegate type.
+auto assumeNoGC(T) (T t) if (isFunctionPointer!T || isDelegate!T)
+{
+    enum attrs = functionAttributes!T | FunctionAttribute.nogc;
+    return cast(SetFunctionAttributes!(T, functionLinkage!T, attrs)) t;
+}
+
 @nogc nothrow:
 
 template from(string moduleName)
@@ -24,8 +32,8 @@ Adds the Ref wrapper to T, if T is a Reference type
 +/
 template RefOrT(T)
 {
-	import godot.reference;
-	static if(isGodotClass!T && extends!(T, Reference)) alias RefOrT = Ref!T;
+	import godot.refcounted;
+	static if(isGodotClass!T && extends!(T, RefCounted)) alias RefOrT = Ref!T;
 	else alias RefOrT = T;
 }
 
@@ -187,8 +195,18 @@ package(godot) template godotName(alias a)
 	alias udas = getUDAs!(a, Rename);
 	static if(udas.length == 0)
 	{
-		version(GodotNoAutomaticNamingConvention) enum string godotName = __traits(identifier, a);
-		else enum string godotName = __traits(identifier, a).camelToSnake;
+		static if (is(a == class) || is(a == struct))
+		{
+			import std.string;
+
+			// for classes keep using upper-case type name to match godot style
+			enum string godotName = __traits(identifier, a).capitalize;
+		}
+		else
+		{
+			version(GodotNoAutomaticNamingConvention) enum string godotName = __traits(identifier, a);
+			else enum string godotName = __traits(identifier, a).camelToSnake;
+		}
 	}
 	else
 	{

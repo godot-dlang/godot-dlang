@@ -10,6 +10,7 @@ import std.meta, std.traits;
 import std.conv : text;
 
 import godot.core, godot.c;
+public import godot.refcounted;
 import godot.d.traits;
 
 /// Type to mark varargs GodotMethod.
@@ -18,6 +19,8 @@ struct GodotVarArgs
 	
 }
 
+package(godot) struct MethodHash { uint hash; }
+
 package(godot) struct GodotName { string name; }
 
 /++
@@ -25,21 +28,61 @@ Definition of a method from API JSON.
 +/
 struct GodotMethod(Return, Args...)
 {
-	godot_method_bind* mb; /// MethodBind for ptrcalls
+	GDNativeMethodBindPtr mb; /// MethodBind for ptrcalls
 	String name; /// String name from Godot (snake_case, not always valid D)
 	
 	static if(Args.length) enum bool hasVarArgs = is(Args[$-1] : GodotVarArgs);
 	else enum bool hasVarArgs = false;
 	
-	/+package(godot)+/ void bind(in char* className, in char* methodName)
+	/+package(godot)+/ void bind(in char* className, in char* methodName, in GDNativeInt hash = 0)
 	{
 		if(mb) return;
-		mb = _godot_api.godot_method_bind_get_method(className, methodName);
+		mb = _godot_api.classdb_get_method_bind(className, methodName, hash);
+		name = String(methodName);
+	}
+
+	/+package(godot)+/ void bind(in GDNativeVariantType type, in char* methodName, in GDNativeInt hash = 0)
+	{
+		if(mb) return;
+		mb = _godot_api.variant_get_ptr_builtin_method(type, methodName, hash);
 		name = String(methodName);
 	}
 }
 
-@nogc nothrow pragma(inline, true)
+struct GodotConstructor(Return, Args...)
+{
+	GDNativePtrConstructor mb; /// MethodBind for ptrcalls
+	
+	/+package(godot)+/ void bind(in GDNativeVariantType type, in int index)
+	{
+		if(mb) return;
+		mb = _godot_api.variant_get_ptr_constructor(type, index);
+	}
+}
+
+/++
+Raw Method call helper
++/
+Return callBuiltinMethod(Return, Args...)(in GDNativePtrBuiltInMethod method, GDNativeTypePtr obj, Args args)
+{
+	static if (!is(Return == void))
+		Return ret = void;
+	else
+		typeof(null) ret = null;
+
+	GDNativeTypePtr[Args.length+1] _args;
+	foreach(i, a; args)
+	{
+		_args[i] = &a;
+	}
+
+	method(obj, _args.ptr, &ret, _args.length);
+	static if (!is(Return == void))
+		return ret;
+}
+
+//@nogc nothrow 
+pragma(inline, true)
 package(godot) void checkClassBinding(C)()
 {
 	if(!C._classBindingInitialized)
@@ -48,23 +91,69 @@ package(godot) void checkClassBinding(C)()
 	}
 }
 
-@nogc nothrow pragma(inline, false)
+// these have same order as in GDNativeVariantType
+private immutable enum coreTypes = [
+	"Nil", "Bool", "Int", "Float", "String", 
+
+	"Vector2", "Vector2i", "Rect2", "Rect2i", "Vector3", 
+	"Vector3i", "Transform2D", "Vector4", "Vector4i", 
+	"Plane", "Quaternion", "AABB", "Basis", "Transform3D", "Projection",
+	
+	"Color", "StringName", "NodePath", "RID", "Object", 
+	"Callable", "Signal", "Dictionary", "Array",
+
+	"PackedByteArray", "PackedInt32Array", "PackedInt64Array", "PackedFloat32Array",
+	"PackedFloat64Array", "PackedStringArray", "PackedVector2Array", "PackedVector3Array",
+	"PackedColorArray", 
+];
+
+//@nogc nothrow 
+pragma(inline, false)
 package(godot) void initializeClassBinding(C)()
 {
+	import std.algorithm;
+	import std.string : indexOf;
 	synchronized
 	{
 		if(!C._classBindingInitialized)
 		{
 			static foreach(n; __traits(allMembers, C.GDNativeClassBinding))
 			{
-				static if(n == "_singleton") C.GDNativeClassBinding._singleton = _godot_api
-					.godot_global_get_singleton(cast(char*)C.GDNativeClassBinding._singletonName);
+				static if(n == "_singleton") C.GDNativeClassBinding._singleton = godot_object(
+						_godot_api.global_get_singleton(cast(char*)C.GDNativeClassBinding._singletonName));
 				else static if(n == "_singletonName"){}
 				else
 				{
-					//enum immutable(char*) cn = C._GODOT_internal_name;
-					mixin("C.GDNativeClassBinding."~n).bind(C._GODOT_internal_name,
-						getUDAs!(mixin("C.GDNativeClassBinding."~n), GodotName)[0].name);
+					// core types require special registration for built-in types
+					static if (coreTypes.canFind(C._GODOT_internal_name))
+					{
+						static if (isInstanceOf!(GodotConstructor, __traits(getMember, C.GDNativeClassBinding, n)))
+						{
+							// binds constructor using GDNativeVariantType and index
+							__traits(getMember, C.GDNativeClassBinding, n).bind(
+								cast(int) coreTypes.countUntil(C._GODOT_internal_name),
+								to!int(getUDAs!(mixin("C.GDNativeClassBinding."~n), GodotName)[0].name[$-2..$-1]), // get last number from name in form of "_new_2"
+							);
+						}
+						else
+						{
+							// binds native built-in method
+							__traits(getMember, C.GDNativeClassBinding, n).bind(
+								cast(int) coreTypes.countUntil(C._GODOT_internal_name),
+								getUDAs!(mixin("C.GDNativeClassBinding."~n), GodotName)[0].name,
+								getUDAs!(mixin("C.GDNativeClassBinding."~n), MethodHash)[0].hash,
+							);
+						}
+					}
+					else
+					{
+						//enum immutable(char*) cn = C._GODOT_internal_name;
+						__traits(getMember, C.GDNativeClassBinding, n).bind(
+							C._GODOT_internal_name,
+							getUDAs!(__traits(getMember, C.GDNativeClassBinding, n), GodotName)[0].name,
+							0 //getUDAs!(__traits(getMember, C.GDNativeClassBinding, n), MethodHash)[0].hash,
+						);
+					}
 				}
 			}
 			C._classBindingInitialized = true;
@@ -87,12 +176,11 @@ Direct pointer call through MethodBind.
 RefOrT!Return ptrcall(Return, MB, Args...)(MB method, in godot_object self, Args args)
 in
 {
-	import std.experimental.allocator, std.experimental.allocator.mallocator;
 	debug if(self.ptr is null)
 	{
-		CharString utf8 = (String("Method ")~method.name~String(" called on null reference")).utf8;
-		auto msg = utf8.data;
-		assert(0, msg); // leak msg; Error is unrecoverable
+		auto utf8 = (String("Method ")~method.name ~String(" called on null reference")).utf8;
+		auto msg = cast(char[]) utf8.data[0..utf8.length];
+		assert(0, msg);
 	}
 }
 do
@@ -144,7 +232,7 @@ do
 	static if(Args.length == 0) alias aptr = Alias!null;
 	else const(void)** aptr = aarr.ptr;
 	
-	_godot_api.godot_method_bind_ptrcall(method.mb, cast(godot_object)self, aptr, rptr);
+    _godot_api.object_method_bind_ptrcall(method.mb, cast(GDNativeObjectPtr)self.ptr, aptr, rptr);
 	static if(!is(Return : void)) return r;
 }
 
@@ -214,27 +302,7 @@ mixin template baseCasts()
 			~ typeof(this).stringof);
 	}
 	
-	inout(To) as(To)() inout if(extendsGodotBaseClass!To)
-	{
-		import godot.d.script : NativeScriptTag;
-		static assert(extends!(To, typeof(this)), "D class " ~ To.stringof
-			~ " does not extend " ~ typeof(this).stringof);
-		if(_godot_object.ptr is null) return typeof(return).init;
-		if(GDNativeVersion.hasNativescript!(1, 1))
-		{
-			if(NativeScriptTag!To.matches(_godot_nativescript_api.godot_nativescript_get_type_tag(cast()_godot_object)))
-			{
-				return cast(inout(To))(_godot_nativescript_api.godot_nativescript_get_userdata(cast()_godot_object));
-			}
-		}
-		else if(hasMethod(String(`_GDNATIVE_D_typeid`)))
-		{
-			return cast(inout(To))(cast(Object)(_godot_nativescript_api.godot_nativescript_get_userdata(cast()_godot_object)));
-		}
-		return typeof(return).init;
-	}
-	
-	inout(ToRef) as(ToRef)() inout if(is(ToRef : Ref!To, To) && extends!(To, Reference))
+	inout(ToRef) as(ToRef)() inout if(is(ToRef : Ref!To, To) && extends!(To, RefCounted))
 	{
 		import std.traits : TemplateArgsOf, Unqual;
 		ToRef ret = cast()as!(Unqual!(TemplateArgsOf!ToRef[0]));
@@ -249,7 +317,7 @@ mixin template baseCasts()
 	{
 		alias opCast = as!To;
 	}
-	template opCast(ToRef) if(is(ToRef : Ref!To, To) && extends!(To, Reference))
+	template opCast(ToRef) if(is(ToRef : Ref!To, To) && extends!(To, RefCounted))
 	{
 		alias opCast = as!ToRef;
 	}

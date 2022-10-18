@@ -1,7 +1,6 @@
-[gd_resource type="PlaneMesh" load_steps=3 format=2]
+[gd_resource type="PlaneMesh" load_steps=3 format=3 uid="uid://b2jcxg2ha0cvt"]
 
-[sub_resource type="Shader" id=1]
-
+[sub_resource type="Shader" id="1"]
 code = "shader_type spatial;
 
 varying vec3 pos;
@@ -27,15 +26,10 @@ void fragment()
 }
 "
 
-[sub_resource type="ShaderMaterial" id=2]
-
+[sub_resource type="ShaderMaterial" id="2"]
 render_priority = 0
-shader = SubResource( 1 )
+shader = SubResource("1")
 
 [resource]
-
-material = SubResource( 2 )
-size = Vector2( 100, 100 )
-subdivide_width = 0
-subdivide_depth = 0
-
+material = SubResource("2")
+size = Vector2(100, 100)

@@ -1,10 +1,17 @@
 module godot.c.core;
 
 public import core.stdc.stddef : wchar_t;
-import godot.c.api;
+public import godot.c.gdnative_interface;
+import godot.core.defs;
+//import godot.c.api;
 
 @nogc nothrow:
 extern(C):
+
+alias godot_api = GDNativeInterface;
+
+// TODO: make sure it is propely loaded within extensions
+__gshared GDNativeInterface* _godot_api;
 
 enum GODOT_API_VERSION = 1;
 
@@ -73,11 +80,47 @@ enum GODOT_FALSE = 0;
 
 /////// int
 
-alias godot_int = int; // C++'s int; Godot assumes it to be always 32 bits.
+alias godot_int = int;
 
 /////// real
+version(GODOT_USE_DOUBLE)
+alias godot_real_t = double;
+else
+alias godot_real_t = float;
 
-alias godot_real = float;
+// TODO: use proper config for GODOT_USE_DOUBLE
+alias godot_float = double;
+
+alias uint64 = ulong;
+alias uint64_t = uint64;
+alias int64 = long;
+alias int64_t = int64;
+alias uint32 = uint;
+alias uint32_t = uint32;
+alias int32 = int;
+alias int32_t = int32;
+alias uint16 = ushort;
+alias uint16_t = uint16;
+alias int16 = short;
+alias int16_t = int16;
+alias uint8 = ubyte;
+alias uint8_t = uint8;
+alias int8 = byte;
+alias int8_t = int8;
+
+// AFAIK this is not related to godot_float and always has fixed size
+//alias real_t = double;
+alias real_t = godot.core.defs.real_t;
+
+
+// internal godot id
+struct ObjectID
+{
+	uint64_t id;
+}
+
+alias char16_t = ushort;
+alias char32_t = uint;
 
 /////// Object reference (type-safe void pointer)
 struct godot_object
@@ -108,43 +151,55 @@ struct godot_dictionary
 }
 struct godot_node_path
 {
-	size_t _opaque;
+	ubyte[8] _opaque;
 }
 struct godot_plane
 {
-	ulong[2] _opaque;
+	ubyte[4*godot_real_t.sizeof] _opaque;
 }
 
-mixin template PoolArray(Type, string name)
+mixin template PackedArray(Type, string name)
 {
-	mixin("struct godot_pool_"~name~"_array { size_t _opaque; }");
-	mixin("struct godot_pool_"~name~"_array_read_access { ubyte _opaque; }");
-	mixin("struct godot_pool_"~name~"_array_write_access { ubyte _opaque; }");
+	mixin("struct godot_packed_"~name~"_array { size_t _opaque; }");
+	//mixin("struct godot_packed_"~name~"_array_read_access { ubyte _opaque; }");
+	//mixin("struct godot_packed_"~name~"_array_write_access { ubyte _opaque; }");
 }
-mixin PoolArray!(ubyte, "byte");
-mixin PoolArray!(int, "int");
-mixin PoolArray!(float, "real");
-mixin PoolArray!(godot_string, "string");
-mixin PoolArray!(godot_vector2, "vector2");
-mixin PoolArray!(godot_vector3, "vector3");
-mixin PoolArray!(godot_color, "color");
+mixin PackedArray!(ubyte, "byte");
+mixin PackedArray!(int, "int32");
+mixin PackedArray!(long, "int64");
+mixin PackedArray!(float, "float32");
+mixin PackedArray!(double, "float64");
+mixin PackedArray!(godot_string, "string");
+mixin PackedArray!(godot_vector2, "vector2");
+mixin PackedArray!(godot_vector3, "vector3");
+mixin PackedArray!(godot_color, "color");
 
+// Alignment hardcoded in `core/variant/callable.h`.
+enum GODOT_CALLABLE_SIZE = 16;
 
-struct godot_quat
+struct godot_callable
 {
-	ulong[2] _opaque;
+	ubyte[GODOT_CALLABLE_SIZE] _opaque;
+}
+struct godot_quaternion
+{
+	ubyte[4*godot_real_t.sizeof] _opaque;
 }
 struct godot_rect2
 {
-	ulong[2] _opaque;
+	ubyte[4*godot_real_t.sizeof] _opaque;
+}
+struct godot_rect2i
+{
+	ubyte[4*int.sizeof] _opaque;
 }
 struct godot_aabb
 {
-	ulong[3] _opaque;
+	ubyte[6*godot_real_t.sizeof] _opaque;
 }
 struct godot_rid
 {
-	size_t _opaque;
+	ulong _opaque;
 }
 struct godot_string
 {
@@ -154,22 +209,17 @@ struct godot_char_string
 {
 	size_t _opaque;
 }
-struct godot_string_name
+struct godot_transform3d
 {
-	size_t _opaque;
-}
-struct godot_transform
-{
-	ulong[6] _opaque;
+	ubyte[12*godot_real_t.sizeof] _opaque;
 }
 struct godot_transform2d
 {
-	ulong[3] _opaque;
+	ubyte[6*godot_real_t.sizeof] _opaque;
 }
 struct godot_variant
 {
-	ulong[2] _opaque;
-	size_t _opaque2;
+	ubyte[24] _opaque;
 }
 enum godot_variant_type
 {
@@ -178,37 +228,48 @@ enum godot_variant_type
 	// atomic types
 	GODOT_VARIANT_TYPE_BOOL,
 	GODOT_VARIANT_TYPE_INT,
-	GODOT_VARIANT_TYPE_REAL,
+	GODOT_VARIANT_TYPE_FLOAT,
 	GODOT_VARIANT_TYPE_STRING,
 
 	// math types
 
 	GODOT_VARIANT_TYPE_VECTOR2, // 5
+	GODOT_VARIANT_TYPE_VECTOR2I,
 	GODOT_VARIANT_TYPE_RECT2,
+	GODOT_VARIANT_TYPE_RECT2I,
 	GODOT_VARIANT_TYPE_VECTOR3,
+	GODOT_VARIANT_TYPE_VECTOR3I, // 10
 	GODOT_VARIANT_TYPE_TRANSFORM2D,
+	GODOT_VARIANT_TYPE_VECTOR4,
+	GODOT_VARIANT_TYPE_VECTOR4I, // 10
 	GODOT_VARIANT_TYPE_PLANE,
-	GODOT_VARIANT_TYPE_QUAT, // 10
+	GODOT_VARIANT_TYPE_QUATERNION,
 	GODOT_VARIANT_TYPE_AABB,
-	GODOT_VARIANT_TYPE_BASIS,
-	GODOT_VARIANT_TYPE_TRANSFORM,
+	GODOT_VARIANT_TYPE_BASIS, // 15
+	GODOT_VARIANT_TYPE_TRANSFORM3D,
+	GODOT_VARIANT_TYPE_PROJECTION,
 
 	// misc types
 	GODOT_VARIANT_TYPE_COLOR,
-	GODOT_VARIANT_TYPE_NODE_PATH, // 15
-	GODOT_VARIANT_TYPE_RID,
+	GODOT_VARIANT_TYPE_STRING_NAME,
+	GODOT_VARIANT_TYPE_NODE_PATH,
+	GODOT_VARIANT_TYPE_RID, // 20
 	GODOT_VARIANT_TYPE_OBJECT,
+	GODOT_VARIANT_TYPE_CALLABLE,
+	GODOT_VARIANT_TYPE_SIGNAL,
 	GODOT_VARIANT_TYPE_DICTIONARY,
-	GODOT_VARIANT_TYPE_ARRAY, // 20
+	GODOT_VARIANT_TYPE_ARRAY, // 25
 
 	// arrays
-	GODOT_VARIANT_TYPE_POOL_BYTE_ARRAY,
-	GODOT_VARIANT_TYPE_POOL_INT_ARRAY,
-	GODOT_VARIANT_TYPE_POOL_REAL_ARRAY,
-	GODOT_VARIANT_TYPE_POOL_STRING_ARRAY,
-	GODOT_VARIANT_TYPE_POOL_VECTOR2_ARRAY, // 25
-	GODOT_VARIANT_TYPE_POOL_VECTOR3_ARRAY,
-	GODOT_VARIANT_TYPE_POOL_COLOR_ARRAY,
+	GODOT_VARIANT_TYPE_PACKED_BYTE_ARRAY,
+	GODOT_VARIANT_TYPE_PACKED_INT32_ARRAY,
+	GODOT_VARIANT_TYPE_PACKED_INT64_ARRAY,
+	GODOT_VARIANT_TYPE_PACKED_FLOAT32_ARRAY,
+	GODOT_VARIANT_TYPE_PACKED_FLOAT64_ARRAY, // 30
+	GODOT_VARIANT_TYPE_PACKED_STRING_ARRAY,
+	GODOT_VARIANT_TYPE_PACKED_VECTOR2_ARRAY,
+	GODOT_VARIANT_TYPE_PACKED_VECTOR3_ARRAY,
+	GODOT_VARIANT_TYPE_PACKED_COLOR_ARRAY,
 }
 enum godot_variant_call_error_error
 {
@@ -242,7 +303,7 @@ enum godot_variant_operator {
 	GODOT_VARIANT_OP_NEGATE,
 	GODOT_VARIANT_OP_POSITIVE,
 	GODOT_VARIANT_OP_MODULE,
-	GODOT_VARIANT_OP_STRING_CONCAT,
+	//GODOT_VARIANT_OP_STRING_CONCAT,
 
 	// bitwise
 	GODOT_VARIANT_OP_SHIFT_LEFT,
@@ -263,13 +324,38 @@ enum godot_variant_operator {
 
 	GODOT_VARIANT_OP_MAX,
 }
+enum godot_variant_utility_function_type  {
+	GODOT_UTILITY_FUNC_TYPE_MATH,
+	GODOT_UTILITY_FUNC_TYPE_RANDOM,
+	GODOT_UTILITY_FUNC_TYPE_GENERAL
+}
 struct godot_vector2
 {
-	ulong _opaque;
+	ubyte[2*godot_real_t.sizeof] _opaque;
+}
+struct godot_vector2i
+{
+	uint[2] _opaque;
 }
 struct godot_vector3
 {
+	ubyte[3*godot_real_t.sizeof] _opaque;
+}
+struct godot_vector3i
+{
 	uint[3] _opaque;
+}
+struct godot_vector4
+{
+	ubyte[4*godot_real_t.sizeof] _opaque;
+}
+struct godot_vector4i
+{
+	uint[4] _opaque;
+}
+struct godot_projection
+{
+	godot_vector4[4] _opaque;
 }
 enum godot_vector3_axis
 {
@@ -278,12 +364,59 @@ enum godot_vector3_axis
 	GODOT_VECTOR3_AXIS_Z,
 }
 
+// Packed arrays
+struct godot_packed_byte_array
+{
+	size_t[2] _opaque;
+}
+struct godot_packed_int32_array
+{
+	size_t[2] _opaque;
+}
+struct godot_packed_int64_array
+{
+	size_t[2] _opaque;
+}
+struct godot_packed_float32_array
+{
+	size_t[2] _opaque;
+}
+struct godot_packed_float64_array
+{
+	size_t[2] _opaque;
+}
+struct godot_packed_string_array
+{
+	size_t[2] _opaque;
+}
+struct godot_packed_vector2_array
+{
+	size_t[2] _opaque;
+}
+struct godot_packed_vector2i_array
+{
+	size_t[2] _opaque;
+}
+struct godot_packed_vector3_array
+{
+	size_t[2] _opaque;
+}
+struct godot_packed_vector3i_array
+{
+	size_t[2] _opaque;
+}
+struct godot_packed_color_array
+{
+	size_t[2] _opaque;
+}
+
 ////// MethodBind API
 
 struct godot_method_bind {
-	ubyte[1] _dont_touch_that; // TODO
+	GDNativeMethodBindPtr ptr; // TODO
+	alias ptr this;
 }
-
+/*
 struct godot_gdnative_api_version {
 	uint major;
 	uint minor;
@@ -304,6 +437,15 @@ struct godot_gdnative_init_options {
 struct godot_gdnative_terminate_options {
 	godot_bool in_editor;
 }
+*/
+// Alignment hardcoded in `core/variant/callable.h`.
+enum GODOT_SIGNAL_SIZE = 16;
+
+struct godot_signal {
+	ubyte[GODOT_SIGNAL_SIZE] _opaque;
+}
+
+version(none):
 
 alias godot_class_constructor = godot_object function();
 
@@ -314,4 +456,27 @@ alias godot_gdnative_procedure_fn = godot_variant function(void *, godot_array *
 
 alias native_call_cb = godot_variant function(void *, godot_array *);
 
+// Types for function pointers.
+alias godot_validated_operator_evaluator = void function(const godot_variant *p_left, const godot_variant *p_right, godot_variant *r_result);
+alias godot_ptr_operator_evaluator = void function(const void *p_left, const void *p_right, void *r_result);
+alias godot_validated_builtin_method = void function(godot_variant *p_base, const godot_variant **p_args, int p_argument_count, godot_variant *r_return);
+alias godot_ptr_builtin_method = void function(void *p_base, const void **p_args, void *r_return, int p_argument_count);
+alias godot_validated_constructor = void function(godot_variant *p_base, const godot_variant **p_args);
+alias godot_ptr_constructor = void function(void *p_base, const void **p_args);
+alias godot_validated_setter = void function(godot_variant *p_base, const godot_variant *p_value);
+alias godot_validated_getter = void function(const godot_variant *p_base, godot_variant *r_value);
+alias godot_ptr_setter = void function(void *p_base, const void *p_value);
+alias godot_ptr_getter = void function(const void *p_base, void *r_value);
+alias godot_validated_indexed_setter = void function(godot_variant *p_base, godot_int p_index, const godot_variant *p_value, bool *r_oob);
+alias godot_validated_indexed_getter = void function(const godot_variant *p_base, godot_int p_index, godot_variant *r_value, bool *r_oob);
+alias godot_ptr_indexed_setter = void function(void *p_base, godot_int p_index, const void *p_value);
+alias godot_ptr_indexed_getter = void function(const void *p_base, godot_int p_index, void *r_value);
+alias godot_validated_keyed_setter = void function(godot_variant *p_base, const godot_variant *p_key, const godot_variant *p_value, bool *r_valid);
+alias godot_validated_keyed_getter = void function(const godot_variant *p_base, const godot_variant *p_key, godot_variant *r_value, bool *r_valid);
+alias godot_validated_keyed_checker = bool function(const godot_variant *p_base, const godot_variant *p_key, bool *r_valid);
+alias godot_ptr_keyed_setter = void function(void *p_base, const void *p_key, const void *p_value);
+alias godot_ptr_keyed_getter = void function(const void *p_base, const void *p_key, void *r_value);
+alias godot_ptr_keyed_checker = uint function(const godot_variant *p_base, const godot_variant *p_key);
+alias godot_validated_utility_function = void function(godot_variant *r_return, const godot_variant **p_arguments, int p_argument_count);
+alias godot_ptr_utility_function = void function(void *r_return, const void **p_arguments, int p_argument_count);
 

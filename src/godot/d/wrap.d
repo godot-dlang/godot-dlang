@@ -4,6 +4,7 @@ to Godot's C interface.
 +/
 module godot.d.wrap;
 
+import std.algorithm : max;
 import std.range;
 import std.meta, std.traits;
 import std.experimental.allocator, std.experimental.allocator.mallocator;
@@ -126,6 +127,56 @@ package(godot) template godotPropertyNames(T)
 		godotPropertySetters!T));
 }
 
+package(godot) template godotEnums(T)
+{
+	import std.traits;
+
+	alias mfs(alias mName) = __traits(getMember, T, mName);
+	alias allMfs = staticMap!(mfs, __traits(derivedMembers, T));
+	template isEnum(alias mf)
+	{
+		static if (is(mf Base == enum) && isIntegral!Base)
+			enum bool isEnum = hasUDA!(mf, Enum);
+		else
+			enum bool isEnum = false;
+	}
+	alias godotEnums = Filter!(isEnum, allMfs);
+}
+
+package(godot) template godotConstants(T)
+{
+	import std.traits;
+
+	alias mfs(alias mName) = Alias!(__traits(getMember, T, mName));
+	alias allMfs = staticMap!(mfs, __traits(derivedMembers, T));
+
+	template isCompileTimeValue(alias V, T...)
+	if (T.length == 0 || (T.length == 1 && is(T[0])))
+	{
+		enum isKnown = is(typeof((){enum v = V;}));
+		static if (!T.length)
+			enum isCompileTimeValue = isKnown;
+		else
+			enum isCompileTimeValue = isKnown && is(typeof(V) == T[0]);
+	}
+	
+	template isConstant(alias mf)
+	{
+		static if (isCompileTimeValue!mf)
+		{
+			enum bool isConstant = hasUDA!(mf, Constant);
+		}
+		else 
+			enum bool isConstant = false;
+	}
+
+
+	enum isConstantMember(string m) = isConstant!(__traits(getMember, T, m));
+	alias godotConstants = Filter!(isConstantMember, __traits(derivedMembers, T));
+	//pragma(msg, filtered);
+	//alias godotConstants = Filter!(isConstant, allMfs);
+}
+
 package(godot) template godotPropertyVariableNames(T)
 {
 	alias fieldNames = FieldNameTuple!T;
@@ -195,21 +246,67 @@ package(godot) struct MethodWrapper(T, alias mf)
 	C function passed to Godot that calls the wrapped method
 	+/
 	extern(C) // for calling convention
-	static godot_variant callMethod(godot_object o, void* methodData,
-		void* userData, int numArgs, godot_variant** args)
+	static void callMethod(void* methodData, void* instance,
+		const(void**) args, const long numArgs, void* r_return, GDNativeCallError* r_error) //@nogc nothrow
 	{
 		// TODO: check types for Variant compatibility, give a better error here
 		// TODO: check numArgs, accounting for D arg defaults
+
+		if (!instance)
+		{
+			r_error.error = GDNATIVE_CALL_ERROR_INSTANCE_IS_NULL;
+			return;
+		}
 		
-		godot_variant vd;
-		_godot_api.godot_variant_new_nil(&vd);
-		Variant* v = cast(Variant*)&vd; // just a pointer; no destructor will be called
+		//godot_variant vd;
+		//_godot_api.variant_new_nil(&vd);
+		//Variant* v = cast(Variant*)&vd; // just a pointer; no destructor will be called
+		Variant v;
 		
-		T obj = cast(T)userData;
+		// basically what we want here...
+		//Variant*[] va = (cast(Variant**) args)[0..numArgs];
+		// however there is also default params that we need to place here
+		scope Variant*[Parameters!mf.length+1] va;
+		scope Variant[ParameterDefaults!mf.length] defaults;
+		static foreach(i, defval; ParameterDefaults!mf)
+		{
+			// should never happen
+			static if (is(defval == void))
+				defaults[i] = Variant();
+			else
+				defaults[i] = Variant(defval);
+		}
+
+		if (args && numArgs)
+			va[0..numArgs] = (cast(Variant**) args)[0..numArgs];
+		if (args && numArgs < defaults.length) // <-- optional parameters that godot decided not to pass
+		{
+			foreach(i; 0..defaults.length)
+				va[max(0, numArgs)+i] = &defaults[i];
+		}
+
+		T obj = cast(T)instance;
 		
 		A[ai] variantToArg(size_t ai)()
 		{
-			return (cast(Variant*)args[ai]).as!(A[ai]);
+			// should also be string and array?
+			//static if (is(A[ai] == NodePath))
+			//{
+			//	import godot.d;
+			//	print(*va[ai]);
+			//	return (*va[ai]).as!(A[ai]);
+			//}
+			//else
+			//return (cast(Variant*)args[ai]).as!(A[ai]);
+			// TODO: properly fix double, it returns pointer instead of value itself
+			static if (is(A[ai] : real))
+			{
+				return **cast(A[ai]**)&va[ai];
+			}
+			else
+			{
+				return va[ai].as!(A[ai]);
+			}
 		}
 		template ArgCall(size_t ai)
 		{
@@ -225,55 +322,204 @@ package(godot) struct MethodWrapper(T, alias mf)
 		}
 		else
 		{
-			mixin("*v = obj." ~ name ~ "(argCall);");
+			mixin("v = Variant(obj." ~ name ~ "(argCall));");
+		
+			if (r_return && v._godot_variant._opaque.ptr)
+			{
+				//*cast(godot_variant*) r_return = vd;   // since alpha 12 instead of this now have to copy it
+				_godot_api.variant_new_copy(r_return, &v._godot_variant);   // since alpha 12 this is now the case
+			}
 		}
-		
-		return vd;
+		//return vd;
 	}
-	
-	/++
-	C function passed to Godot if this is a property getter
-	+/
-	static if(!is(R == void) && A.length == 0)
-	extern(C) // for calling convention
-	static godot_variant callPropertyGet(godot_object o, void* methodData,
-		void* userData)
+
+	extern(C)
+	static void callPtrMethod(void* methodData, void* instance,
+		const(void**) args, void* r_return)
 	{
-		godot_variant vd;
-		_godot_api.godot_variant_new_nil(&vd);
-		Variant* v = cast(Variant*)&vd; // just a pointer; no destructor will be called
+		//GDNativeCallError err;
+		//callMethod(methodData, instance, args, A.length, r_return, &err);
+
+		T obj = cast(T)instance;
+
+		A[ai] nativeToArg(size_t ai)()
+		{
+			return (*cast(A[ai]*)args[ai]);
+		}
+		template ArgCall(size_t ai)
+		{
+			alias ArgCall = nativeToArg!ai; //A[i] function()
+		}
+
+		alias argIota = aliasSeqOf!(iota(A.length));
+		alias argCall = staticMap!(ArgCall, argIota);
 		
-		T obj = cast(T)userData;
-		
-		mixin("*v = obj." ~ name ~ "();");
-		
-		return vd;
+		static if(is(R == void))
+		{
+			mixin("obj." ~ name ~ "(argCall);");
+		}
+		else
+		{
+			mixin("*(cast(R*) r_return) = obj." ~ name ~ "(argCall);");
+		}
 	}
-	
-	/++
-	C function passed to Godot if this is a property setter
-	+/
-	static if(is(R == void) && A.length == 1)
-	extern(C) // for calling convention
-	static void callPropertySet(godot_object o, void* methodData,
-		void* userData, godot_variant* arg)
+
+	extern(C)
+	static void virtualCall(GDExtensionClassInstancePtr instance, const GDNativeTypePtr *args, GDNativeTypePtr ret)
 	{
-		Variant* v = cast(Variant*)arg;
-		
-		T obj = cast(T)userData;
-		
-		auto vt = v.as!(A[0]);
-		mixin("obj." ~ name ~ "(vt);");
+		GDNativeCallError err;
+		callMethod(&mf, instance, args, Parameters!mf.length, ret, &err);
 	}
 }
 
-package(godot) struct OnReadyWrapper(T) if(is(GodotClass!T : Node))
+
+package(godot) struct MethodWrapperMeta(alias mf)
+{
+	alias R = ReturnType!mf; // the return type (can be void)
+	alias A = Parameters!mf; // the argument types (can be empty)
+	
+	//enum string name = __traits(identifier, mf);
+
+	// GDNativeExtensionClassMethodGetArgumentType signature:
+	//   GDNativeVariantType function(void *p_method_userdata, int32_t p_argument)
+	extern(C)
+	static GDNativeVariantType getArgTypesFn(void* method, int32_t argument)
+	{
+		// fill array of argument types and use cached data
+		import godot.core.variant;
+		import std.meta : staticMap;
+		immutable __gshared static VariantType[A.length] argInfo = [staticMap!(Variant.variantTypeOf, A)];
+		immutable __gshared static VariantType retInfo = Variant.variantTypeOf!R;
+		//if (method != &mf)
+		//	return GDNATIVE_VARIANT_TYPE_NIL;
+		if (argument > A.length)
+			return GDNATIVE_VARIANT_TYPE_NIL;
+		if (argument == -1)
+			return retInfo;
+		return cast(GDNativeVariantType) argInfo[argument];
+	}
+
+	// GDNativeExtensionClassMethodGetArgumentInfo signature:
+	//   void function(void *p_method_userdata, int32_t p_argument, GDNativePropertyInfo *r_info)
+	extern(C)
+	static void getArgInfoFn(void* method, int32_t argument, /*out*/GDNativePropertyInfo* info)
+	{
+		static GDNativePropertyInfo[] makeParamInfo() 
+		{
+			GDNativePropertyInfo[A.length+1] argInfo;
+			static foreach(i; 0..A.length)
+			{
+				
+				if (Variant.variantTypeOf!(A[i]) == VariantType.object)
+					argInfo[i].class_name = A[i].stringof;
+				argInfo[i].name = (ParameterIdentifierTuple!mf)[i];
+				argInfo[i].type = Variant.variantTypeOf!(A[i]);
+				argInfo[i].usage = GDNATIVE_EXTENSION_METHOD_FLAGS_DEFAULT;
+				
+			} 
+			return argInfo.dup;
+		}
+		__gshared static GDNativePropertyInfo[A.length+1] argInfo = makeParamInfo();
+		__gshared static GDNativePropertyInfo retInfo = GDNativePropertyInfo (
+			cast(uint32_t) Variant.variantTypeOf!R,
+			null,
+			(Variant.variantTypeOf!R == VariantType.object ? cast(char[]) null : R.stringof).ptr,
+			0,
+			null,
+			GDNATIVE_EXTENSION_METHOD_FLAGS_DEFAULT
+		);
+		// well... it doesn't go well with auto properties
+		//if (method != &mf)
+		//	return;
+		if (argument > cast(int) A.length)  // ooof, implicit signed to unsigned cast...
+			return;
+		if (argument == -1) 
+		{
+			*info = retInfo;
+			return;
+		}
+
+		*info = argInfo[argument];
+	}
+
+	// GDNativeExtensionClassMethodGetArgumentMetadata signature:
+	//   GDNativeExtensionClassMethodArgumentMetadata function(void *p_method_userdata, int32_t p_argument)
+	extern(C)
+	static GDNativeExtensionClassMethodArgumentMetadata getArgMetadataFn(void* method, int32_t argument)
+	{
+		__gshared static GDNativeExtensionClassMethodArgumentMetadata[A.length] argInfo;
+		__gshared static GDNativeExtensionClassMethodArgumentMetadata retInfo;
+		if (method != &mf)
+			return GDNATIVE_EXTENSION_METHOD_ARGUMENT_METADATA_NONE;
+		if (argument > A.length)
+			return GDNATIVE_EXTENSION_METHOD_ARGUMENT_METADATA_NONE;
+		// TODO: implement me
+		return GDNATIVE_EXTENSION_METHOD_ARGUMENT_METADATA_NONE;
+		//if (argument == -1)
+		//	return retInfo;
+		//return argInfo[argument];
+	}
+
+	import std.traits;
+	private enum bool notVoid(alias T) = !is(T == void);
+	enum getDefaultArgNum = cast(int32_t) Filter!(notVoid, ParameterDefaults!mf).length;
+	//enum getDefaultArgNum = cast(int32_t) Parameters!mf.length;
+
+	// this function expected to return Variant[] containing default values
+	extern(C)
+	static GDNativeVariantPtr* getDefaultArgs()
+	{
+		//pragma(msg, "fn: ", __traits(identifier, mf), " > ",  ParameterDefaults!mf);
+		
+		// just pick any possible property for now
+		//alias udas = getUDAs!(mf, Property);
+		//static if (udas.length)
+		//{
+		//	__gshared static Variant[1] defval;
+		//	static if (!is(R == void))
+		//		defval[0] = Variant(R.init);
+		//	else
+		//		defval[0] = Variant(A[0].init);
+		//	return cast(GDNativeVariantPtr*) &defval[0];
+		//}
+		{
+			__gshared static Variant*[ParameterDefaults!mf.length+1] defaultsPtrs;
+			__gshared static Variant[ParameterDefaults!mf.length+1] defaults;
+			static foreach(i, val; ParameterDefaults!mf)
+			{
+				// typeof val is needed because default value returns alias/expression and not a type itself
+				static if (is(val == void) || !Variant.compatibleToGodot!(typeof(val)))
+					defaults[i] = Variant(null); // even though it doesn't have it we probably need some value
+				else
+					defaults[i] = Variant(val);
+				defaultsPtrs[i] = &defaults[i];
+			}
+			defaults[ParameterDefaults!mf.length+1..$] = Variant();
+
+			return cast(GDNativeVariantPtr*) &defaultsPtrs[0];
+		}
+	}
+}
+
+// Special wrapper that fetches OnReady members and then calls real _ready 
+package(godot) struct OnReadyWrapper(T, alias mf) if(is(GodotClass!T : Node))
 {
 	extern(C) // for calling convention
-	static godot_variant callOnReady(godot_object o, void* methodData,
-		void* userData, int numArgs, godot_variant** args)
+	static void callOnReady(void* methodData, void* instance,
+		const(void**) args, const long numArgs, void* r_return, GDNativeCallError* r_error) 
 	{
-		T t = cast(T)userData;
+		//if (!instance)
+		//{
+		//	*r_error = cast(GDNativeCallError) GDNATIVE_CALL_ERROR_INSTANCE_IS_NULL;
+		//	return;
+		//}
+//
+		//auto id = _godot_api.object_get_instance_id(instance);
+		//auto obj = _godot_api.object_get_instance_from_id(id);
+		T t = cast(T)methodData; // method data is an actual D object backing godot instance
+
+		if (!t) 
+			return;
 		
 		foreach(n; onReadyFieldNames!T)
 		{
@@ -337,7 +583,8 @@ package(godot) struct OnReadyWrapper(T) if(is(GodotClass!T : Node))
 				else static if(isGodotClass!F && extends!(F, Node))
 				{
 					// special case: node path
-					mixin("t."~n) = cast(F)t.owner.getNode(result);
+					auto np = NodePath(result);
+					mixin("t."~n) = cast(F)t.owner.getNode(np);
 				}
 				else static if(isGodotClass!F && extends!(F, Resource))
 				{
@@ -351,13 +598,10 @@ package(godot) struct OnReadyWrapper(T) if(is(GodotClass!T : Node))
 		}
 		
 		// Finally, call the actual _ready() if it exists.
-		enum bool isReady(alias func) = "_ready" == godotName!func;
-		alias readies = Filter!(isReady, godotMethods!T);
-		static if(readies.length) mixin("t."~__traits(identifier, readies[0])~"();");
-		
-		godot_variant nil;
-		_godot_api.godot_variant_new_nil(&nil);
-		return nil;
+		MethodWrapper!(T, mf).callMethod(null, methodData, args, numArgs, r_return, r_error); // note that method_data here is actually D object instance
+		//enum bool isReady(alias func) = "_ready" == godotName!func;
+		//alias readies = Filter!(isReady, godotMethods!T);
+		//static if(readies.length) mixin("t."~__traits(identifier, readies[0])~"();");
 	}
 }
 
@@ -368,39 +612,53 @@ Params:
 	T = the class that owns the variable
 	var = the name of the member variable being wrapped
 +/
-package(godot) struct VariableWrapper(T, string var)
+package(godot) struct VariableWrapper(T, alias var)
 {
-	import godot.reference, godot.d.reference;
-	alias P = typeof(mixin("T."~var));
-	static if(extends!(P, Reference)) static assert(is(P : Ref!U, U),
+	import godot.refcounted, godot.d.reference;
+	alias P = typeof(var);
+	static if(extends!(P, RefCounted)) static assert(is(P : Ref!U, U),
 		"Reference type property "~T.stringof~"."~var~" must be ref-counted as Ref!("
 		~P.stringof~")");
+
+	alias getterType = P function ();
+	alias setterType = void function (P val);
 	
 	extern(C) // for calling convention
-	static godot_variant callPropertyGet(godot_object o, void* methodData,
-		void* userData)
+	static void callPropertyGet(void* methodData, void* instance,
+		const(void**) args, const long numArgs, void* r_return, GDNativeCallError* r_error)
 	{
-		T obj = cast(T)userData;
-		
-		godot_variant vd;
-		_godot_api.godot_variant_new_nil(&vd);
-		Variant* v = cast(Variant*)&vd; // just a pointer; no destructor will be called
-		
-		*v = mixin("obj."~var);
-		
-		return vd;
+	 	auto obj = cast(T) instance;
+		if (!obj)
+		{
+			r_error.error = GDNATIVE_CALL_ERROR_INSTANCE_IS_NULL;
+			return;
+		}
+		if (numArgs > 0)
+		{
+			r_error.error = GDNATIVE_CALL_ERROR_TOO_MANY_ARGUMENTS;
+			return;
+		}
+		Variant* v = cast(Variant*) r_return;
+		*v = Variant(mixin("obj." ~ __traits(identifier, var)));
 	}
 	
 	extern(C) // for calling convention
-	static void callPropertySet(godot_object o, void* methodData,
-		void* userData, godot_variant* arg)
+	static void callPropertySet(void* methodData, void* instance,
+		const(void**) args, const long numArgs, void* r_return, GDNativeCallError* r_error)
 	{
-		T obj = cast(T)userData;
-		
-		Variant* v = cast(Variant*)arg;
-		
-		auto vt = v.as!P;
-		mixin("obj."~var) = vt;
+		auto obj = cast(T) instance;
+		if (!obj)
+		{
+			r_error.error = GDNATIVE_CALL_ERROR_INSTANCE_IS_NULL;
+			return;
+		}
+		if (numArgs < 1)
+		{
+			r_error.error = GDNATIVE_CALL_ERROR_TOO_FEW_ARGUMENTS;
+			return;
+		}
+		Variant* v = cast(Variant*) args[0];
+		mixin("obj." ~ __traits(identifier, var)) = v.as!P;
 	}
 }
 
@@ -416,7 +674,28 @@ extern(C) package(godot) godot_variant emptyGetter(godot_object self, void* meth
 {
 	assert(0, "Can't call empty property getter");
 	/+godot_variant v;
-	_godot_api.godot_variant_new_nil(&v);
+	_godot_api.variant_new_nil(&v);
 	return v;+/
 }
 
+
+struct VirtualMethodsHelper(T)
+{
+	static bool matchesNamingConv(string name)()
+	{
+		import std.uni : isAlphaNum;
+		return name[0] == '_' && name[1].isAlphaNum;
+	}
+
+	alias derivedMfs = Filter!(matchesNamingConv, __traits(derivedMembers, T)); 
+
+	static GDNativeExtensionClassCallVirtual findVCall(in string func)
+	{
+		static foreach(name; derivedMfs)
+		{
+			if (func == name)
+				return &MethodWrapper!(T, __traits(getMember, T, name)).virtualCall;
+		}
+		return null;
+	}
+}

@@ -19,60 +19,102 @@ import godot.core.string;
 import godot.core.color;
 import godot.core.vector2;
 import godot.core.vector3;
+import godot.builtins;
 
 import std.range.primitives;
 import std.meta, std.traits;
 
-private alias PoolArrayTypes = AliasSeq!(
+private alias PackedArrayTypes = AliasSeq!(
 	ubyte,
 	int,
-	real_t,
+	long,
+	float,
+	double,
 	String,
 	Vector2,
 	Vector3,
 	Color
 );
 
+// used in GDNativeInterface.variant_get_ptr_destructor()
+private alias PackedArrayVariantType = AliasSeq!(
+	GDNATIVE_VARIANT_TYPE_PACKED_BYTE_ARRAY,
+	GDNATIVE_VARIANT_TYPE_PACKED_INT32_ARRAY,
+	GDNATIVE_VARIANT_TYPE_PACKED_INT64_ARRAY,
+	GDNATIVE_VARIANT_TYPE_PACKED_FLOAT32_ARRAY,
+	GDNATIVE_VARIANT_TYPE_PACKED_FLOAT64_ARRAY,
+	GDNATIVE_VARIANT_TYPE_PACKED_STRING_ARRAY,
+	GDNATIVE_VARIANT_TYPE_PACKED_VECTOR2_ARRAY,
+	GDNATIVE_VARIANT_TYPE_PACKED_VECTOR3_ARRAY,
+	GDNATIVE_VARIANT_TYPE_PACKED_COLOR_ARRAY,
+);
+
 private enum string nameOverride(T) = AliasSeq!(
-	"byte", "int", "real", "string", "vector2", "vector3", "color")[staticIndexOf!(T, PoolArrayTypes)];
+	"byte", "int32", "int64", "float32", "float64", "string", 
+	"vector2", "vector3", "color")[staticIndexOf!(T, PackedArrayTypes)];
 
-private enum string typeName(T) = "godot_pool_"~(nameOverride!T)~"_array";
-private enum string readName(T) = "godot_pool_"~(nameOverride!T)~"_array_read_access";
-private enum string writeName(T) = "godot_pool_"~(nameOverride!T)~"_array_write_access";
+private enum string bindNameOverride(T) = AliasSeq!(
+	"Byte", "Int32", "Int64", "Float32", "Float64", "String", 
+	"Vector2", "Vector3", "Color")[staticIndexOf!(T, PackedArrayTypes)];
 
-alias PoolByteArray = PoolArray!ubyte;
-alias PoolIntArray = PoolArray!int;
-alias PoolRealArray = PoolArray!real_t;
-alias PoolStringArray = PoolArray!String;
-alias PoolVector2Array = PoolArray!Vector2;
-alias PoolVector3Array = PoolArray!Vector3;
-alias PoolColorArray = PoolArray!Color;
+private enum string typeName(T) = "packed_"~(nameOverride!T)~"_array";
+private enum string readName(T) = "packed_"~(nameOverride!T)~"_array_operator_index_const";
+private enum string writeName(T) = "packed_"~(nameOverride!T)~"_array_operator_index";
+
+alias PackedByteArray = PackedArray!ubyte;
+alias PackedInt32Array = PackedArray!int;
+alias PackedInt64Array = PackedArray!long;
+alias PackedFloat32Array = PackedArray!float;
+alias PackedFloat64Array = PackedArray!double;
+alias PackedStringArray = PackedArray!String;
+alias PackedVector2Array = PackedArray!Vector2;
+//alias PackedVector2iArray = PackedArray!Vector2i;
+alias PackedVector3Array = PackedArray!Vector3;
+//alias PackedVector3iArray = PackedArray!Vector3i;
+alias PackedColorArray = PackedArray!Color;
 
 /++
 Copy-on-write array for some Godot types, allocated with a memory pool.
 +/
-struct PoolArray(T)
+struct PackedArray(T)
 {
-	@nogc nothrow:
+	//@nogc nothrow:
 	
-	static assert(staticIndexOf!(T, PoolArrayTypes) != -1,
-		"Cannot make a Godot PoolArray for a non-Godot type");
+	static assert(staticIndexOf!(T, PackedArrayTypes) != -1,
+		"Cannot make a Godot PackedArray for a non-Godot type");
 	
-	mixin("package(godot) "~(typeName!T)~" _godot_array;");
+	// TODO: this is now gone, replace with real array
+	//mixin("package(godot) "~(typeName!T)~" _godot_array;");
+
+	package(godot) union _PackedArray { GDNativeTypePtr _godot_array; mixin("Packed" ~ bindNameOverride!T ~ "Array_Bind _bind;"); }
+	package(godot) _PackedArray _packed_array;
+	alias _packed_array this;
+
+	alias VARIANT_TYPE = PackedArrayVariantType[staticIndexOf!(T, PackedArrayTypes)];
 	
 	this(this)
 	{
-		mixin("auto n = _godot_api."~(typeName!T)~"_new_copy;");
-		const auto tmp = _godot_array;
-		n(&_godot_array, &tmp);
+		import std.array;
+		//mixin("auto n = _godot_api."~(typeName!T)~"_new_copy;");
+		auto ctor = _godot_api.variant_get_ptr_constructor(VARIANT_TYPE, 1);
+		const auto args = [_godot_array].staticArray;
+		ctor(_godot_array, args.ptr);
+		
+		//n(&_godot_array, &tmp);
+
+	}
+
+	package(godot) this(GDNativeTypePtr opaque)
+	{
+		_godot_array = opaque;
 	}
 	
-	PoolArray opAssign(in PoolArray other)
+	PackedArray opAssign(in PackedArray other)
 	{
-		mixin("auto d = _godot_api."~(typeName!T)~"_destroy;");
-		mixin("auto n = _godot_api."~(typeName!T)~"_new_copy;");
-		d(&_godot_array);
-		n(&_godot_array, &other._godot_array);
+		auto dtor = _godot_api.variant_get_ptr_destructor(VARIANT_TYPE);
+		auto ctor = _godot_api.variant_get_ptr_constructor(VARIANT_TYPE, 1);
+		dtor(&_godot_array);
+		ctor(&_godot_array, &other._godot_array);
 		return this;
 	}
 	
@@ -86,40 +128,45 @@ struct PoolArray(T)
 	
 	this(Array arr)
 	{
-		mixin("auto n = _godot_api."~(typeName!T)~"_new_with_array;");
-		n(&_godot_array, &arr._godot_array);
+		auto n = _godot_api.variant_get_ptr_constructor(VARIANT_TYPE, 2);
+		n(&_godot_array, cast(void**)&arr._godot_array);
 	}
 
 	///
-	void pushBack(in ref PoolArray arr)
+	void pushBack(in ref PackedArray arr)
 	{
-		mixin("auto a = _godot_api."~(typeName!T)~"_append_array;");
-		a(&_godot_array, &arr._godot_array);
+		_bind.appendArray(arr);
+		//mixin("auto a = _godot_api."~(typeName!T)~"_append_array;");
+		//a(&_godot_array, &arr._godot_array);
 	}
 	deprecated("Use the concatenation operator ~= instead of append_array.") alias append_array = pushBack;
 	
 	void invert()
 	{
-		mixin("auto i = _godot_api."~(typeName!T)~"_invert;");
-		i(&_godot_array);
+		_bind.reverse();
+		//mixin("auto i = _godot_api."~(typeName!T)~"_invert;");
+		//i(&_godot_array);
 	}
 	
 	void remove(size_t idx)
 	{
-		mixin("auto r = _godot_api."~(typeName!T)~"_remove;");
-		r(&_godot_array, cast(int)idx);
+		_bind.removeAt(idx);
+		//mixin("auto r = _godot_api."~(typeName!T)~"_remove;");
+		//r(&_godot_array, cast(int)idx);
 	}
 	
 	void resize(size_t size)
 	{
-		mixin("auto r = _godot_api."~(typeName!T)~"_resize;");
-		r(&_godot_array, cast(int)size);
+		_bind.resize(size);
+		//mixin("auto r = _godot_api."~(typeName!T)~"_resize;");
+		//r(&_godot_array, cast(int)size);
 	}
 	
 	size_t size() const
 	{
-		mixin("auto s = _godot_api."~(typeName!T)~"_size;");
-		return s(&_godot_array);
+		return _bind.size();
+		//mixin("auto s = _godot_api."~(typeName!T)~"_size;");
+		//return s(&_godot_array);
 	}
 	alias length = size; // D-style name for size
 	alias opDollar = size;
@@ -132,80 +179,85 @@ struct PoolArray(T)
 	
 	~this()
 	{
-		mixin("auto d = _godot_api."~(typeName!T)~"_destroy;");
+		//auto d = _godot_api.variant_get_ptr_destructor(GDNATIVE_VARIANT_TYPE_PACKED_BYTE_ARRAY)
+		auto d = _godot_api.variant_get_ptr_destructor(VARIANT_TYPE);
 		d(&_godot_array);
 	}
 	
 	
 	// a few functions are different for Strings than for the others:
-	static if(is(T == String))
-	{
-		void pushBack(in String data)
-		{
-			_godot_api.godot_pool_string_array_push_back(&_godot_array, &data._godot_string);
-		}
-		void insert(size_t idx, in String data)
-		{
-			_godot_api.godot_pool_string_array_insert(&_godot_array, cast(int)idx, &data._godot_string);
-		}
-		void set(size_t idx, in String data)
-		{
-			_godot_api.godot_pool_string_array_set(&_godot_array, cast(int)idx, &data._godot_string);
-		}
-		void opIndexAssign(in String data, size_t idx)
-		{
-			_godot_api.godot_pool_string_array_set(&_godot_array, cast(int)idx, &data._godot_string);
-		}
-		String opIndex(size_t idx) const
-		{
-			String ret = void;
-			ret._godot_string = _godot_api.godot_pool_string_array_get(&_godot_array, cast(int)idx);
-			return ret;
-		}
-	}
-	else
-	{
+	//static if(is(T == String))
+	//{
+	//	void pushBack(in String data)
+	//	{
+	//		_godot_api.packed_string_array_push_back(&_godot_array, &data._godot_string);
+	//	}
+	//	void insert(size_t idx, in String data)
+	//	{
+	//		_godot_api.packed_string_array_insert(&_godot_array, cast(int)idx, &data._godot_string);
+	//	}
+	//	void set(size_t idx, in String data)
+	//	{
+	//		_godot_api.packed_string_array_operator_index(&_godot_array, cast(int)idx) = &data._godot_string;
+	//	}
+	//	void opIndexAssign(in String data, size_t idx)
+	//	{
+	//		_godot_api.packed_string_array_operator_index(&_godot_array, cast(int)idx) = &data._godot_string;
+	//	}
+	//	String opIndex(size_t idx) const
+	//	{
+	//		String ret = void;
+	//		ret._godot_string = godot_string(cast(size_t)  _godot_api.packed_string_array_operator_index_const(&_godot_array, cast(int)idx));
+	//		return ret;
+	//	}
+	//}
+	//else
+	//{
 		void pushBack(in T data)
 		{
-			mixin("auto p = _godot_api."~(typeName!T)~"_push_back;");
-			static if(is(T==Vector2) || is(T==Vector3) || is(T==Color))
-				p(&_godot_array, cast(InternalType*)&data);
-			else p(&_godot_array, data);
+			_bind.pushBack(data);
+			//mixin("auto p = _godot_api."~(typeName!T)~"_push_back;");
+			//static if(is(T==Vector2) || is(T==Vector3) || is(T==Color))
+			//	p(&_godot_array, cast(InternalType*)&data);
+			//else p(&_godot_array, data);
 		}
 		void insert(size_t idx, in T data)
 		{
-			mixin("auto i = _godot_api."~(typeName!T)~"_insert;");
-			static if(is(T==Vector2) || is(T==Vector3) || is(T==Color))
-				i(&_godot_array, cast(int)idx, cast(InternalType*)&data);
-			else i(&_godot_array, cast(int)idx, data);
+			_bind.insert(idx, data);
+			//mixin("auto i = _godot_api."~(typeName!T)~"_insert;");
+			//static if(is(T==Vector2) || is(T==Vector3) || is(T==Color))
+			//	i(&_godot_array, cast(int)idx, cast(InternalType*)&data);
+			//else i(&_godot_array, cast(int)idx, data);
 		}
 		void set(size_t idx, in T data)
 		{
-			mixin("auto s = _godot_api."~(typeName!T)~"_set;");
-			static if(is(T==Vector2) || is(T==Vector3) || is(T==Color))
-				s(&_godot_array, cast(int)idx, cast(InternalType*)&data);
-			else s(&_godot_array, cast(int)idx, data);
+			_bind.set(idx, data);
+			//mixin("auto s = _godot_api."~(typeName!T)~"_set;");
+			//static if(is(T==Vector2) || is(T==Vector3) || is(T==Color))
+			//	s(&_godot_array, cast(int)idx, cast(InternalType*)&data);
+			//else s(&_godot_array, cast(int)idx, data);
 		}
 		void opIndexAssign(in T data, size_t idx)
 		{
-			mixin("auto s = _godot_api."~(typeName!T)~"_set;");
-			static if(is(T==Vector2) || is(T==Vector3) || is(T==Color))
-				s(&_godot_array, cast(int)idx, cast(InternalType*)&data);
-			else s(&_godot_array, cast(int)idx, data);
+			_bind.set(idx, data);
+			//mixin("auto s = _godot_api."~(typeName!T)~"_set;");
+			//static if(is(T==Vector2) || is(T==Vector3) || is(T==Color))
+			//	s(&_godot_array, cast(int)idx, cast(InternalType*)&data);
+			//else s(&_godot_array, cast(int)idx, data);
 		}
 		T opIndex(size_t idx) const
 		{
-			mixin("auto g = _godot_api."~(typeName!T)~"_get;");
+			mixin("auto g = _godot_api."~(typeName!T)~"_operator_index_const;");
 			static union V
 			{
 				T t;
 				InternalType r;
 			}
 			V v;
-			v.r = g(&_godot_array, cast(int)idx);
+			v.r = *cast(InternalType*) g(&_godot_array, cast(int)idx);
 			return v.t;
 		}
-	}
+	//}
 
 	///
 	alias append = pushBack;
@@ -216,17 +268,32 @@ struct PoolArray(T)
 	}
 
 	///
-	PoolArray opBinary(string op)(in ref PoolArray other) const if(op == "~" || op == "+")
+	PackedArray opBinary(string op)(in ref PackedArray other) const if(op == "~" || op == "+")
 	{
-		PoolArray ret = this;
+		PackedArray ret = this;
 		ret ~= other;
 		return ret;
 	}
 
+	static if (is(T==String))
+	char* data() inout
+	{
+		return cast(char*) _godot_array;
+	}
+	else
+	T* data() inout
+	{
+		return cast(T*) _godot_array;
+	}
+
+// Superbelko: PoolVector was replaced by Vector, all PoolTypeArray's was replaced with PackedTypeArray 
+//             which is simply Vector<Type> under the hood plus bells and whistles.
+//             No need to keep this anymore, but ok. use raw pointer instead of Read.
 	/// Read/Write access locks with RAII.
+	version(none)
 	static struct Access(bool write = false)
 	{
-		private enum string rw = write ? "write" : "read";
+		private enum string rw = write ? "operator_index" : "operator_index_const";
 		private enum string RW = write ? "Write" : "Read";
 		static if(write) private alias access = writeName!T;
 		else private alias access = readName!T;
@@ -250,7 +317,7 @@ struct PoolArray(T)
 		// TODO: `scope` for data to ensure it doesn't outlive `this`?
 		alias data this;
 
-		this(PoolArray!T p)
+		this(PackedArray!T p)
 		{
 			mixin("_access = _godot_api." ~ typeName!T ~ "_" ~ rw ~ "(&p._godot_array);");
 			mixin("void* _ptr = cast(void*)_godot_api." ~ access ~ "_ptr(_access);");
@@ -270,6 +337,8 @@ struct PoolArray(T)
 			mixin("_godot_api." ~ access ~ "_destroy(_access);");
 		}
 	}
+version(none)
+{
 
 	/// 
 	alias Read = Access!false;
@@ -281,13 +350,14 @@ struct PoolArray(T)
 	/// Lock the array for write access to the underlying memory.
 	/// This is faster than using opIndexAssign, which locks each time it's called.
 	Write write() { return Write(this); }
+}
 	
-	/// Slice-like view of the PoolArray.
+	/// Slice-like view of the PackedArray.
 	static struct Range
 	{
 		private
 		{
-			PoolArray* arr;
+			PackedArray* arr;
 			size_t start, end;
 		}
 		

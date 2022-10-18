@@ -54,7 +54,7 @@ class GodotScript(Base) if(isGodotBaseClass!Base)
 		return a is b ? 0 : a < b ? -1 : 1;
 	}
 
-	@disable new(size_t s);
+	//@disable new(size_t s);
 	
 	/// HACK to work around evil bug in which cast(void*) invokes `alias this`
 	/// https://issues.dlang.org/show_bug.cgi?id=6777
@@ -77,47 +77,6 @@ class GodotScript(Base) if(isGodotBaseClass!Base)
 		U u;
 		u.c = this;
 		return u.ptr;
-	}
-}
-
-/++
-Storage for the NativeScript associated with each D class. Workflow using the
-editor is to create a .gdns NativeScript for each class, but this serves the
-opposite purpose: assigning a Script to D classes created from D with `memnew`.
-
-Assigned by the `register` function.
-+/
-public template NativeScriptTemplate(T) if(extendsGodotBaseClass!T)
-{
-	private static import godot.nativescript;
-	private static import godot.d.reference;
-	__gshared godot.d.reference.Ref!(godot.nativescript.NativeScript) NativeScriptTemplate;
-}
-
-/++
-Static storage for a D script's typetag.
-
-The $(D tag) for T is the *address* of $(D base), while $(D base) itself points
-to the base D script's tag.
-+/
-package(godot) struct NativeScriptTag(T) if(extendsGodotBaseClass!T)
-{
-	private import std.traits : BaseClassesTuple;
-	
-	static if(BaseClassesTuple!T.length == 2) __gshared static immutable void* base = null;
-	else __gshared static immutable void* base = NativeScriptTag!(BaseClassesTuple!T[0]).tag;
-	
-	static immutable(void*) tag() { return cast(immutable(void*))(&base); }
-	static bool matches(in void* tag)
-	{
-		const(void)* ptr = tag;
-		do
-		{
-			if(tag is ptr) return true;
-			ptr = *cast(const(void)**)ptr;
-		}
-		while(ptr);
-		return false;
 	}
 }
 
@@ -179,27 +138,33 @@ Allocate a new T and attach it to a new Godot object.
 +/
 RefOrT!T memnew(T)() if(extendsGodotBaseClass!T)
 {
-	import godot.reference;
-	GodotClass!T o = GodotClass!T._new();
-	static if(extends!(T, Reference))
-	{
-		bool success = o.initRef();
-		assert(success, "Failed to init refcount");
-	}
+	import godot.refcounted;
+	//GodotClass!T o = GodotClass!T._new();
+	auto obj = _godot_api.classdb_construct_object(godotName!T);
+	assert(obj !is null);
+
+	auto id = _godot_api.object_get_instance_id(obj);
+	T o = cast(T) _godot_api.object_get_instance_from_id(id);
+	//static if(extends!(T, RefCounted))
+	//{
+	//	bool success = o.initRef();
+	//	assert(success, "Failed to init refcount");
+	//}
 	// Set script and let Object create the script instance
-	o.setScript(NativeScriptTemplate!T);
+	//o.setScript(NativeScriptTemplate!T);
 	// Skip typecheck in release; should always be T
-	assert(o.as!T);
-	T t = cast(T)_godot_nativescript_api.godot_nativescript_get_userdata(o._godot_object);
-	return refOrT(t);
+	//assert(o.as!T);
+	//T t = cast(T)_godot_nativescript_api.godot_nativescript_get_userdata(o._godot_object);
+	//T t = cast(T) &o._godot_object;
+	return refOrT(o);
 }
 
 RefOrT!T memnew(T)() if(isGodotBaseClass!T)
 {
-	import godot.reference;
+	import godot.refcounted;
 	/// FIXME: block those that aren't marked instanciable in API JSON (actually a generator bug)
 	T t = T._new();
-	static if(extends!(T, Reference))
+	static if(extends!(T, RefCounted))
 	{
 		bool success = t.initRef();
 		assert(success, "Failed to init refcount");
@@ -209,30 +174,65 @@ RefOrT!T memnew(T)() if(isGodotBaseClass!T)
 
 void memdelete(T)(T t) if(isGodotClass!T)
 {
-	_godot_api.godot_object_destroy(t.getGDNativeObject);
+	_godot_api.object_destroy(t.getGDNativeObject.ptr);
 }
 
-extern(C) package(godot) void* createFunc(T)(godot_object self, void* methodData)
+package(godot) extern(C) __gshared GDNativeInstanceBindingCallbacks _instanceCallbacks = {
+	&___binding_create_callback,
+	&___binding_free_callback,
+	&___binding_reference_callback
+};
+
+extern(C) static void* ___binding_create_callback(void *p_token, void *p_instance) {                                     
+	return null;
+}                                                                                                              
+extern(C) static void ___binding_free_callback(void *p_token, void *p_instance, void *p_binding) {                       
+}
+extern(C) static GDNativeBool ___binding_reference_callback(void *p_token, void *p_instance, GDNativeBool p_reference) { 
+	return cast(GDNativeBool) true;
+}
+
+extern(C) package(godot) void* createFunc(T)(void* data) //nothrow @nogc
 {
+	import std.conv;
+
+	static assert(is(T==class));
+	static assert(__traits(compiles, new T()), "script class " ~ T.stringof ~ " must have default constructor");
 	static import godot;
+
+	import std.exception;
+	import godot.d.register : _GODOT_library;
 	
-	T t = Mallocator.instance.make!T();
-	static if(extendsGodotBaseClass!T)
+	
+	enum classname = cast(const char*)(godotName!T ~ '\0');
+	T t = cast(T) _godot_api.mem_alloc(__traits(classInstanceSize, T));
+
+	emplace(t);
+	// class must have default ctor to be properly initialized
+	t.__ctor();
+
+	//static if(extendsGodotBaseClass!T)
 	{
-		t.owner._godot_object = self;
+		if (!t.owner._godot_object.ptr)
+			t.owner._godot_object.ptr = _godot_api.classdb_construct_object((GodotClass!T)._GODOT_internal_name);
+		_godot_api.object_set_instance(cast(void*) t.owner._godot_object.ptr, classname, cast(void*) t);
 	}
-	
+	//else
+	//	t.owner._godot_object.ptr = cast(void*) t;
 	godot.initialize(t);
+
+	_godot_api.object_set_instance_binding(cast(void*) t.owner._godot_object.ptr, _GODOT_library, cast(void*)t, &_instanceCallbacks);
 	
-	return cast(void*)t;
+	return cast(void*) t.owner._godot_object.ptr;
 }
 
-extern(C) package(godot) void destroyFunc(T)(godot_object self, void* methodData, void* userData)
+extern(C) package(godot) void destroyFunc(T)(void* userData, void* instance) //nothrow @nogc
 {
 	static import godot;
 	
-	T t = cast(T)userData;
+	T t = cast(T)instance;
 	godot.finalize(t);
-	Mallocator.instance.dispose(t);
+	_godot_api.mem_free(cast(void*) t);
+	//Mallocator.instance.dispose(t);
 }
 

@@ -34,38 +34,38 @@ extern(C):
 
 import godot.c.core;
 
-enum godot_method_rpc_mode {
+enum godot_nativescript_method_rpc_mode {
 	GODOT_METHOD_RPC_MODE_DISABLED,
-	GODOT_METHOD_RPC_MODE_REMOTE,
-	GODOT_METHOD_RPC_MODE_SYNC,
-	GODOT_METHOD_RPC_MODE_MASTER,
-	GODOT_METHOD_RPC_MODE_SLAVE,
+	GODOT_METHOD_RPC_MODE_ANY_PEER,
+	GODOT_METHOD_RPC_MODE_AUTHORITY,
 }
 
-struct godot_method_attributes {
-	godot_method_rpc_mode rpc_type;
+struct godot_nativescript_method_attributes {
+	godot_nativescript_method_rpc_mode rpc_type;
 }
 
-enum godot_property_hint {
+enum godot_nativescript_property_hint {
 	GODOT_PROPERTY_HINT_NONE, ///< no hint provided.
 	GODOT_PROPERTY_HINT_RANGE, ///< hint_text = "min,max,step,slider; //slider is optional"
 	GODOT_PROPERTY_HINT_EXP_RANGE, ///< hint_text = "min,max,step", exponential edit
 	GODOT_PROPERTY_HINT_ENUM, ///< hint_text= "val1,val2,val3,etc"
 	GODOT_PROPERTY_HINT_EXP_EASING, /// exponential easing funciton (Math::ease)
 	GODOT_PROPERTY_HINT_LENGTH, ///< hint_text= "length" (as integer)
-	GODOT_PROPERTY_HINT_SPRITE_FRAME,
 	GODOT_PROPERTY_HINT_KEY_ACCEL, ///< hint_text= "length" (as integer)
 	GODOT_PROPERTY_HINT_FLAGS, ///< hint_text= "flag1,flag2,etc" (as bit flags)
 	GODOT_PROPERTY_HINT_LAYERS_2D_RENDER,
 	GODOT_PROPERTY_HINT_LAYERS_2D_PHYSICS,
+	GODOT_PROPERTY_HINT_LAYERS_2D_NAVIGATION,
 	GODOT_PROPERTY_HINT_LAYERS_3D_RENDER,
 	GODOT_PROPERTY_HINT_LAYERS_3D_PHYSICS,
+	GODOT_PROPERTY_HINT_LAYERS_3D_NAVIGATION,
 	GODOT_PROPERTY_HINT_FILE, ///< a file path must be passed, hint_text (optionally) is a filter "*.png,*.wav,*.doc,"
 	GODOT_PROPERTY_HINT_DIR, ///< a directort path must be passed
 	GODOT_PROPERTY_HINT_GLOBAL_FILE, ///< a file path must be passed, hint_text (optionally) is a filter "*.png,*.wav,*.doc,"
 	GODOT_PROPERTY_HINT_GLOBAL_DIR, ///< a directort path must be passed
 	GODOT_PROPERTY_HINT_RESOURCE_TYPE, ///< a resource object type
 	GODOT_PROPERTY_HINT_MULTILINE_TEXT, ///< used for string properties that can contain multiple lines
+	GODOT_PROPERTY_HINT_PLACEHOLDER_TEXT, ///< used to set a placeholder text for string properties
 	GODOT_PROPERTY_HINT_COLOR_NO_ALPHA, ///< used for ignoring alpha component when editing a color
 	GODOT_PROPERTY_HINT_IMAGE_COMPRESS_LOSSY,
 	GODOT_PROPERTY_HINT_IMAGE_COMPRESS_LOSSLESS,
@@ -83,7 +83,7 @@ enum godot_property_hint {
 	GODOT_PROPERTY_HINT_MAX,
 }
 
-enum godot_property_usage_flags {
+enum godot_nativescript_property_usage_flags {
 
 	GODOT_PROPERTY_USAGE_STORAGE = 1,
 	GODOT_PROPERTY_USAGE_EDITOR = 2,
@@ -94,8 +94,7 @@ enum godot_property_usage_flags {
 	GODOT_PROPERTY_USAGE_INTERNATIONALIZED = 64, //hint for internationalized strings
 	GODOT_PROPERTY_USAGE_GROUP = 128, //used for grouping props in the editor
 	GODOT_PROPERTY_USAGE_CATEGORY = 256,
-	GODOT_PROPERTY_USAGE_STORE_IF_NONZERO = 512, //only store if nonzero
-	GODOT_PROPERTY_USAGE_STORE_IF_NONONE = 1024, //only store if false
+	GODOT_PROPERTY_USAGE_SUBGROUP = 512,
 	GODOT_PROPERTY_USAGE_NO_INSTANCE_STATE = 2048,
 	GODOT_PROPERTY_USAGE_RESTART_IF_CHANGED = 4096,
 	GODOT_PROPERTY_USAGE_SCRIPT_VARIABLE = 8192,
@@ -105,87 +104,89 @@ enum godot_property_usage_flags {
 
 	GODOT_PROPERTY_USAGE_DEFAULT = GODOT_PROPERTY_USAGE_STORAGE | GODOT_PROPERTY_USAGE_EDITOR | GODOT_PROPERTY_USAGE_NETWORK,
 	GODOT_PROPERTY_USAGE_DEFAULT_INTL = GODOT_PROPERTY_USAGE_STORAGE | GODOT_PROPERTY_USAGE_EDITOR | GODOT_PROPERTY_USAGE_NETWORK | GODOT_PROPERTY_USAGE_INTERNATIONALIZED,
-	GODOT_PROPERTY_USAGE_NOEDITOR = GODOT_PROPERTY_USAGE_STORAGE | GODOT_PROPERTY_USAGE_NETWORK,
+	GODOT_PROPERTY_USAGE_NO_EDITOR = GODOT_PROPERTY_USAGE_STORAGE | GODOT_PROPERTY_USAGE_NETWORK,
 }
 
-struct godot_property_attributes {
+struct godot_nativescript_property_attributes {
 align(1):
-	godot_method_rpc_mode rset_type;
+	godot_nativescript_method_rpc_mode rset_type;
 
 	godot_int type;
-	godot_property_hint hint = godot_property_hint.GODOT_PROPERTY_HINT_NONE;
+	godot_nativescript_property_hint hint = godot_nativescript_property_hint.GODOT_PROPERTY_HINT_NONE;
 	godot_string hint_string;
-	godot_property_usage_flags usage = godot_property_usage_flags.GODOT_PROPERTY_USAGE_DEFAULT;
+	godot_nativescript_property_usage_flags usage = godot_nativescript_property_usage_flags.GODOT_PROPERTY_USAGE_DEFAULT;
 	godot_variant default_value;
 }
 
-struct godot_instance_create_func {
+struct godot_nativescript_instance_create_func {
 	// instance pointer, method_data - return user data
 	void* function(godot_object , void* ) create_func;
 	void* method_data;
 	void function(void* ) free_func;
 }
 
-struct godot_instance_destroy_func {
+struct godot_nativescript_instance_destroy_func {
 	// instance pointer, method data, user data
 	void function(godot_object , void* , void* ) destroy_func;
 	void* method_data;
 	void function(void* ) free_func;
 }
 
-struct godot_instance_method {
+struct godot_nativescript_instance_method {
 	// instance pointer, method data, user data, num args, args - return result as varaint
 	godot_variant function(godot_object , void* , void* , int, godot_variant**) method;
 	void* method_data;
 	void function(void* ) free_func;
 }
 
-struct godot_property_set_func {
+struct godot_nativescript_property_set_func {
 	// instance pointer, method data, user data, value
 	void function(godot_object , void* , void* , godot_variant *) set_func;
 	void* method_data;
 	void function(void* ) free_func;
 }
 
-struct godot_property_get_func {
+struct godot_nativescript_property_get_func {
 	// instance pointer, method data, user data, value
 	godot_variant function(godot_object , void* , void* ) get_func;
 	void* method_data;
 	void function(void* ) free_func;
 }
 
-struct godot_signal_argument {
+struct godot_nativescript_signal_argument {
 align(1):
 	godot_string name;
 	godot_int type;
-	godot_property_hint hint;
+	godot_nativescript_property_hint hint;
 	godot_string hint_string;
-	godot_property_usage_flags usage;
+	godot_nativescript_property_usage_flags usage;
 	godot_variant default_value;
 }
 
-struct godot_signal {
+struct godot_nativescript_signal {
 	godot_string name;
 	int num_args;
-	godot_signal_argument* args;
+	godot_nativescript_signal_argument* args;
 	int num_default_args;
 	godot_variant* default_args;
 }
 
 // NativeScript 1.1
 
-struct godot_method_arg
+struct godot_nativescript_method_argument
 {
 	godot_string name;
 	godot_variant_type type;
-	godot_property_hint hint;
+	godot_nativescript_property_hint hint;
 	godot_string hint_string;
 }
 
-struct godot_instance_binding_functions
+struct godot_nativescript_instance_binding_functions
 {
-	void* function(void *, godot_object) alloc_instance_binding_data;
+	void* function(void *, const void*, godot_object) alloc_instance_binding_data;
 	void function(void *, void *) free_instance_binding_data;
+	void function(void *, godot_object) refcount_incremented_instance_binding;
+	bool function(void *, godot_object) refcount_decremented_instance_binding;
 	void* data;
 	void function(void *) free_func;
 }

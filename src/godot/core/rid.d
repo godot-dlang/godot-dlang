@@ -15,25 +15,30 @@ module godot.core.rid;
 import godot.c;
 import godot.object;
 import godot.resource;
+import godot.builtins;
 
 /**
 The RID type is used to access the unique integer ID of a resource. They are opaque, so they do not grant access to the associated resource by themselves. They are used by and with the low-level Server classes such as $(D VisualServer).
 */
 struct RID
 {
-	@nogc nothrow:
+	//@nogc nothrow:
 	
-	package(godot) godot_rid _godot_rid;
+	package(godot) union _RID { godot_rid _godot_rid; RID_Bind _bind; }
+	package(godot) _RID _rid;
+	alias _rid this;
 	
 	/// Get the RID of a Resource
-	this(scope Resource resource)
+	@disable this(scope Resource resource)
 	{
-		_godot_api.godot_rid_new_with_resource(&_godot_rid, cast(const godot_object)(cast(void*)resource));
+		// wtf this means?
+		//_godot_api.rid_new_with_resource(&_godot_rid, cast(const godot_object)(cast(void*)resource));
 	}
 	
 	int getId() const
 	{
-		return _godot_api.godot_rid_get_id(&_godot_rid);
+		return cast(int) _bind.getId();
+		//return _godot_api.rid_get_id(&_godot_rid);
 	}
 
 	///

@@ -2,7 +2,7 @@
 
 [ext_resource path="res://rock.obj" type="ArrayMesh" id=1]
 
-[sub_resource type="SpatialMaterial" id=3]
+[sub_resource type="StandardMaterial3D" id=3]
 
 render_priority = 0
 flags_transparent = false
@@ -54,11 +54,11 @@ proximity_fade_enable = false
 distance_fade_enable = false
 _sections_unfolded = [ "Roughness" ]
 
-[sub_resource type="SphereShape" id=2]
+[sub_resource type="SphereShape3D" id=2]
 
 radius = 1.93453
 
-[node name="Rock" type="RigidBody"]
+[node name="Rock" type="RigidBody3D"]
 
 input_ray_pickable = false
 input_capture_on_drag = false
@@ -71,7 +71,7 @@ bounce = 1.0
 gravity_scale = 0.0
 custom_integrator = false
 continuous_cd = false
-contacts_reported = 0
+max_contacts_reported = 0
 contact_monitor = false
 sleeping = false
 can_sleep = true
@@ -87,9 +87,9 @@ angular_velocity = Vector3( 0, 0, 0 )
 angular_damp = 1.0
 _sections_unfolded = [ "Axis Lock" ]
 
-[node name="MeshInstance" type="MeshInstance" parent="." index="0"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." index="0"]
 
-transform = Transform( 2.21924, 0, 0, 0, 2.21924, 0, 0, 0, 2.21924, 0, 0, 0 )
+transform = Transform3D( 2.21924, 0, 0, 0, 2.21924, 0, 0, 0, 2.21924, 0, 0, 0 )
 layers = 1
 material_override = null
 cast_shadow = 1
@@ -102,12 +102,12 @@ lod_max_hysteresis = 0.0
 mesh = ExtResource( 1 )
 skeleton = NodePath("..")
 material/0 = SubResource( 3 )
-_sections_unfolded = [ "Transform", "material" ]
+_sections_unfolded = [ "Transform3D", "material" ]
 
-[node name="CollisionShape" type="CollisionShape" parent="." index="1"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." index="1"]
 
 shape = SubResource( 2 )
 disabled = false
-_sections_unfolded = [ "Transform" ]
+_sections_unfolded = [ "Transform3D" ]
 
 

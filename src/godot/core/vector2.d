@@ -13,6 +13,7 @@ License: $(LINK2 https://opensource.org/licenses/MIT, MIT License)
 module godot.core.vector2;
 
 import godot.core.defs;
+import godot.c.core;
 
 import std.math;
 
@@ -99,8 +100,21 @@ struct Vector2
 		this.x = b.x;
 		this.y = b.y;
 	}
+
+	this(in Vector2i b)
+	{
+		this.x = b.x;
+		this.y = b.y;
+	}
 	
 	void opAssign(in Vector2 b)
+	{
+		this.x = b.x;
+		this.y = b.y;
+	}
+
+	// there is cases where this happens in api.json
+	void opAssign(in Vector2i b)
 	{
 		this.x = b.x;
 		this.y = b.y;
@@ -349,5 +363,153 @@ struct Vector2
 }
 
 
+// TODO: replace this stub
+struct Vector2i
+{
+	@nogc nothrow:
+	
+	union
+	{
+		struct
+		{
+			union
+			{
+				godot_int x = 0; /// 
+				godot_int width; /// 
+			}
+			union
+			{
+				godot_int y = 0; /// 
+				godot_int height; /// 
+			}
+		}
 
+		godot_int[2] coord;
+	}
+
+	this(godot_int x, godot_int y)
+	{
+		this.x = x;
+		this.y = y;
+	}
+	
+	this(int[2] coord)
+	{
+		this.coord = cast(godot_int[]) coord;
+	}
+
+	this(in Vector2i b)
+	{
+		this.x = b.x;
+		this.y = b.y;
+	}
+
+	this(in godot_vector2i b)
+	{
+		this.x = b._opaque[0];
+		this.y = b._opaque[1];
+	}
+	
+	void opAssign(in Vector2i b)
+	{
+		this.x = b.x;
+		this.y = b.y;
+	}
+
+	void opAssign(in godot_vector2i b)
+	{
+		this.x = b._opaque[0];
+		this.y = b._opaque[1];
+	}
+
+	ref godot_int opIndex(int axis) return
+	{
+		return axis?y:x;
+	}
+	const(godot_int) opIndex(int axis) const
+	{
+		return axis?y:x;
+	}
+	
+	Vector2i opBinary(string op)(in Vector2i other) const
+		if(op=="+" || op=="-" || op=="*" || op=="/")
+	{
+		Vector2i ret;
+		ret.x = mixin("x "~op~"other.x");
+		ret.y = mixin("y "~op~"other.y");
+		return ret;
+	}
+	void opOpAssign(string op)(in Vector2i other)
+		if(op=="+" || op=="-" || op=="*" || op=="/")
+	{
+		x = mixin("x "~op~"other.x");
+		y = mixin("y "~op~"other.y");
+	}
+	
+	Vector2i opUnary(string op : "-")()
+	{
+		return Vector2i(-x, -y);
+	}
+	
+	Vector2i opBinary(string op)(in godot_int scalar) const
+		if(op=="*" || op=="/")
+	{
+		Vector2 ret;
+		ret.x = mixin("x "~op~" scalar");
+		ret.y = mixin("y "~op~" scalar");
+		return ret;
+	}
+	Vector2i opBinaryRight(string op)(in godot_int scalar) const
+		if(op=="*")
+	{
+		Vector2i ret;
+		ret.x = mixin("x "~op~" scalar");
+		ret.y = mixin("y "~op~" scalar");
+		return ret;
+	}
+	void opOpAssign(string op)(in godot_int scalar)
+		if(op=="*" || op=="/")
+	{
+		x = mixin("x "~op~" scalar");
+		y = mixin("y "~op~" scalar");
+	}
+	
+	int opCmp(in Vector2 other) const
+	{
+		import std.algorithm.comparison;
+		import std.range;
+		return cmp(only(x,y), only(other.x, other.y));
+	}
+
+	Vector2 opCast(Vector2)() const
+	{
+		return Vector2(x, y);
+	}
+
+	real_t aspect() const
+	{
+		return width/cast(real_t) height;
+	}
+
+	real_t length() const
+	{
+		return cast(real_t) sqrt(cast(double) lengthSquared());
+	}
+	int64_t lengthSquared() const
+	{
+		return (x * cast(int64_t)x) + (y * cast(int64_t)y);
+	}
+
+	Vector2i abs() const
+	{
+		import std.math : abs;
+		return Vector2i( .abs(x), .abs(y) );
+	}
+
+	Vector2i clamp(in Vector2i p_min, in Vector2i p_max) const
+	{
+		import std.algorithm.comparison : _clamp = clamp; // template looses priority to local symbol
+		return Vector2i(_clamp(x, p_min.x, p_max.x), _clamp(y, p_min.y, p_max.y));
+	}
+}
 

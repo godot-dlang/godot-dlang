@@ -4,6 +4,8 @@
 	"targetType": "dynamicLibrary",
 	"targetPath": "project",
 	"dflags-windows-ldc": ["-link-defaultlib-shared=false"],
+	"libs-windows-debug-dmd": ["libcmtd"],
+	"libs-windows-release-dmd": ["libcmt"],
 	"dependencies":
 	{
 		"godot-d": { "path": "../../" }

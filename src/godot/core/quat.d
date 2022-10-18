@@ -27,7 +27,7 @@ Multiplying quaternions reproduces rotation sequences. However quaternions need 
 
 It can be used to perform SLERP (spherical-linear interpolation) between two rotations.
 */
-struct Quat
+struct Quaternion
 {
 	@nogc nothrow:
 	
@@ -57,14 +57,14 @@ struct Quat
 		this /= length();
 	}
 	
-	Quat normalized() const
+	Quaternion normalized() const
 	{
 		return this / length();
 	}
 	
-	Quat inverse() const
+	Quaternion inverse() const
 	{
-		return Quat( -x, -y, -z, w );
+		return Quaternion( -x, -y, -z, w );
 	}
 	
 	void setEuler(in Vector3 p_euler)
@@ -90,9 +90,9 @@ struct Quat
 			-sin_a1*sin_a2*sin_a3 + cos_a1*cos_a2*cos_a3);
 	}
 	
-	Quat slerp(in Quat q, in real_t t) const
+	Quaternion slerp(in Quaternion q, in real_t t) const
 	{
-		Quat to1;
+		Quaternion to1;
 		real_t omega, cosom, sinom, scale0, scale1;
 		// calc cosine
 		cosom = dot(q);
@@ -130,7 +130,7 @@ struct Quat
 			scale1 = t;
 		}
 		// calculate final values
-		return Quat(
+		return Quaternion(
 			scale0 * x + scale1 * to1.x,
 			scale0 * y + scale1 * to1.y,
 			scale0 * z + scale1 * to1.z,
@@ -138,9 +138,9 @@ struct Quat
 		);
 	}
 	
-	Quat slerpni(in Quat q, in real_t t) const
+	Quaternion slerpni(in Quaternion q, in real_t t) const
 	{
-		Quat from = this;
+		Quaternion from = this;
 	
 		real_t dot = from.dot(q);
 	
@@ -151,18 +151,18 @@ struct Quat
 		       newFactor = sin(t * theta) * sinT,
 		       invFactor = sin((1.0 - t) * theta) * sinT;
 	
-		return Quat(invFactor * from.x + newFactor * q.x,
+		return Quaternion(invFactor * from.x + newFactor * q.x,
 		            invFactor * from.y + newFactor * q.y,
 		            invFactor * from.z + newFactor * q.z,
 		            invFactor * from.w + newFactor * q.w);
 	}
 	
-	Quat cubicSlerp(in Quat q, in Quat prep, in Quat postq, in real_t t) const
+	Quaternion cubicSlerp(in Quaternion q, in Quaternion prep, in Quaternion postq, in real_t t) const
 	{
 		//the only way to do slerp :|
 		real_t t2 = (1.0-t)*t*2;
-		Quat sp = this.slerp(q,t);
-		Quat sq = prep.slerpni(postq,t);
+		Quaternion sp = this.slerp(q,t);
+		Quaternion sq = prep.slerpni(postq,t);
 		return sp.slerpni(sq,t2);
 	}
 	
@@ -176,9 +176,9 @@ struct Quat
 	
 	
 	
-	Quat opBinary(string op : "*")(in Vector3 v) const
+	Quaternion opBinary(string op : "*")(in Vector3 v) const
 	{
-		return Quat( w * v.x + y * v.z - z * v.y,
+		return Quaternion( w * v.x + y * v.z - z * v.y,
 			w * v.y + z * v.x - x * v.z,
 			w * v.z + x * v.y - y * v.x,
 			-x * v.x - y * v.y - z * v.z);
@@ -186,7 +186,7 @@ struct Quat
 	
 	Vector3 xform(in Vector3 v) const
 	{
-		Quat q = this * v;
+		Quaternion q = this * v;
 		q *= this.inverse();
 		return Vector3(q.x,q.y,q.z);
 	}
@@ -231,7 +231,7 @@ struct Quat
 	}
 	
 	
-	real_t dot(in Quat q) const
+	real_t dot(in Quaternion q) const
 	{
 		return x * q.x+y * q.y+z * q.z+w * q.w;
 	}
@@ -241,17 +241,17 @@ struct Quat
 		return dot(this);
 	}
 	
-	void opOpAssign(string op : "+")(in Quat q)
+	void opOpAssign(string op : "+")(in Quaternion q)
 	{
 		x += q.x; y += q.y; z += q.z; w += q.w;
 	}
 	
-	void opOpAssign(string op : "-")(in Quat q)
+	void opOpAssign(string op : "-")(in Quaternion q)
 	{
 		x -= q.x; y -= q.y; z -= q.z; w -= q.w;
 	}
 	
-	void opOpAssign(string op : "*")(in Quat q)
+	void opOpAssign(string op : "*")(in Quaternion q)
 	{
 		x *= q.x; y *= q.y; z *= q.z; w *= q.w;
 	}
@@ -268,37 +268,37 @@ struct Quat
 		this *= 1.0 / s;
 	}
 	
-	Quat opBinary(string op : "+")(in Quat q2) const
+	Quaternion opBinary(string op : "+")(in Quaternion q2) const
 	{
-		Quat q1 = this;
-		return Quat( q1.x+q2.x, q1.y+q2.y, q1.z+q2.z, q1.w+q2.w );
+		Quaternion q1 = this;
+		return Quaternion( q1.x+q2.x, q1.y+q2.y, q1.z+q2.z, q1.w+q2.w );
 	}
 	
-	Quat opBinary(string op : "-")(in Quat q2) const
+	Quaternion opBinary(string op : "-")(in Quaternion q2) const
 	{
-		Quat q1 = this;
-		return Quat( q1.x-q2.x, q1.y-q2.y, q1.z-q2.z, q1.w-q2.w);
+		Quaternion q1 = this;
+		return Quaternion( q1.x-q2.x, q1.y-q2.y, q1.z-q2.z, q1.w-q2.w);
 	}
 	
-	Quat opBinary(string op : "*")(in Quat q2) const
+	Quaternion opBinary(string op : "*")(in Quaternion q2) const
 	{
-		Quat q1 = this;
+		Quaternion q1 = this;
 		q1 *= q2;
 		return q1;
 	}
 	
 	
-	Quat opUnary(string op : "-")() const
+	Quaternion opUnary(string op : "-")() const
 	{
-		return Quat(-x, -y, -z, -w);
+		return Quaternion(-x, -y, -z, -w);
 	}
 	
-	Quat opBinary(string op : "*")(in real_t s) const
+	Quaternion opBinary(string op : "*")(in real_t s) const
 	{
-		return Quat(x * s, y * s, z * s, w * s);
+		return Quaternion(x * s, y * s, z * s, w * s);
 	}
 	
-	Quat opBinary(string op : "/")(in real_t s) const
+	Quaternion opBinary(string op : "/")(in real_t s) const
 	{
 		return this * (1.0 / s);
 	}

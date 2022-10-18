@@ -1,8 +1,12 @@
+import godot.c;
+
 import godot;
 import godot.object;
 import godot.node;
-import godot.spatial;
-import godot.rigidbody;
+import godot.node3d;
+import godot.area3d;
+import godot.rigidbody3d;
+import godot.engine;
 
 import std.random;
 import std.math;
@@ -16,7 +20,7 @@ mixin GodotNativeLibrary!(
 );
 
 
-class Asteroids : GodotScript!Node
+class Asteroids : GodotScript!Node3D
 {
 	alias owner this;
 	
@@ -24,47 +28,54 @@ class Asteroids : GodotScript!Node
 	enum float speed = 20f;
 	enum float speedVariance = 5f;
 	
-	@OnReady!"CameraTarget" Spatial cameraTarget;
-	@OnReady!"Player" Spatial player;
+	@OnReady!"CameraTarget" Node3D cameraTarget;
+	@OnReady!"Player" Area3D player;
 	
-	@OnReady!"Asteroids" Node asteroids;
+	//@OnReady!"Asteroids" Node3D asteroids;
 	
 	@Method _ready()
 	{
+		if (Engine.isEditorHint())
+			return;
 		foreach(i; 0..10) addAsteroid();
 	}
 	
 	@Method _process(float delta)
 	{
-		cameraTarget.translation = player.translation;
+		cameraTarget.position = player.position;
 		
-		foreach(ch; asteroids.getChildren)
+		foreach(ch; getChildren(false))
 		{
-			RigidBody rock = ch.as!RigidBody;
-			if(rock.translation.length > 60f) addAsteroid(rock);
+			if (RigidBody3D rock = ch.as!RigidBody3D)
+			{
+				if(rock.position.length > 60f) 
+					addAsteroid(rock);
+			}
 		}
 	}
 	
-	@Method addAsteroid(RigidBody recycled = RigidBody.init)
+	@Method addAsteroid(RigidBody3D recycled = RigidBody3D.init)
 	{
 		import godot.resourceloader, godot.packedscene;
 		
-		RigidBody rock = recycled;
+		RigidBody3D rock = recycled;
 		
 		if(!rock)
 		{
-			Ref!PackedScene scene = ResourceLoader.load(gs!"res://Rock.tscn").as!PackedScene;
-			rock = scene.instance().as!RigidBody;
-			asteroids.addChild(rock);
+			Ref!PackedScene scene = ResourceLoader.load(gs!"res://Rock.tscn", gs!"", ResourceLoader.CacheMode.cacheModeReplace).as!PackedScene;
+			rock = scene.instantiate(PackedScene.GenEditState.genEditStateInstance).as!RigidBody3D;
+			addChild(rock, false, Node.InternalMode.internalModeDisabled);
 		}
 		
 		Vector3 randomDir = Vector3(0,0,1).rotated(Vector3(0,1,0), uniform(0f, 2f * PI));
-		rock.translation = 55f * randomDir;
+		rock.position = 55f * randomDir;
 		
 		Vector3 velocity = (-randomDir).rotated(Vector3(0,1,0), uniform!"[]"(-spread, spread));
 		velocity *= speed + uniform!"[]"(-speedVariance, speedVariance);
 		rock.linearVelocity = velocity;
 	}
+
+	this() {}
 }
 
 

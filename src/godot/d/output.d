@@ -23,7 +23,7 @@ void godotAssertHandlerCrash(string file, size_t line, string msg)
 	buffer[file.length+1 .. $-1] = msg[];
 	buffer[$-1] = '\0';
 	
-	_godot_api.godot_print_error(&buffer.ptr[file.length+1], "", buffer.ptr, cast(int)line);
+	_godot_api.print_error(&buffer.ptr[file.length+1], "", buffer.ptr, cast(int)line);
 	
 	version(D_Exceptions) throw new AssertError(msg, file, line);
 	else
@@ -55,7 +55,7 @@ void godotAssertHandlerEditorDebug(string file, size_t line, string msg)
 	buffer[file.length+1 .. $-1] = msg[];
 	buffer[$-1] = '\0';
 	
-	_godot_api.godot_print_error(&buffer.ptr[file.length+1], "", buffer.ptr, cast(int)line);
+	_godot_api.print_error(&buffer.ptr[file.length+1], "", buffer.ptr, cast(int)line);
 	
 	//version(assert) // any `assert(x)` gets compiled; usually a debug version
 	//{
@@ -79,7 +79,7 @@ Print to Godot's console and stdout.
 Params:
 	args = any Godot-compatible types or strings
 */
-void print(Args...)(Args args)
+void print(Args...)(Args args, string fn = __FUNCTION__, string f = __FILE__, int l = __LINE__)
 {
 	import godot.core.string, godot.core.variant;
 	
@@ -88,11 +88,13 @@ void print(Args...)(Args args)
 	foreach(arg; args)
 	{
 		static if(is(typeof(arg) : String)) str ~= arg;
+		else static if(is(typeof(arg) : NodePath)) str ~= arg.str;
 		else static if(is(typeof(arg) : string)) str ~= String(arg);
 		else static if(is(typeof(arg) : Variant)) str ~= arg.as!String;
 		else static if(Variant.compatibleToGodot!(typeof(arg))) str ~= Variant(arg).as!String;
 		else static assert(0, "Unable to print type "~typeof(arg).stringof);
 	}
-	_godot_api.godot_print(&str._godot_string);
+	auto utfstr = str.utf8;
+	_godot_api.print_warning(cast(char*) utfstr.data, &fn[0], &f[0], l);
 }
 

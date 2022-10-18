@@ -14,6 +14,7 @@ module godot.core.dictionary;
 
 import godot.c;
 import godot.core;
+import godot.builtins;
 
 import std.meta;
 
@@ -24,49 +25,59 @@ struct Dictionary
 {
 	int opApply(int delegate(const(Variant), ref Variant) dg)
 	{
-		const(godot_variant)* k = _godot_api.godot_dictionary_next(&_godot_dictionary, null);
+		
+		godot_variant* k;
+		_godot_api.variant_iter_next(&_godot_dictionary, k, null);
 		while(k)
 		{
-			Variant* v = cast(Variant*)_godot_api.godot_dictionary_operator_index(
+			Variant* v = cast(Variant*)_godot_api.dictionary_operator_index(
 				&_godot_dictionary, k);
 			int res = dg(*cast(const(Variant*))k, *v);
 			if(res) return res;
-			k = _godot_api.godot_dictionary_next(&_godot_dictionary, k);
+			_godot_api.variant_iter_next(&_godot_dictionary, k, null);
 		}
 		return 0;
 	}
 	
 	int opApply(int delegate(const(Variant), ref const(Variant)) dg) const
 	{
-		const(godot_variant)* k = _godot_api.godot_dictionary_next(&_godot_dictionary, null);
+		godot_variant* k;
+		_godot_api.variant_iter_next(&_godot_dictionary, k, null);
 		while(k)
 		{
-			Variant* v = cast(Variant*)_godot_api.godot_dictionary_operator_index(
+			Variant* v = cast(Variant*)_godot_api.dictionary_operator_index(
 				cast(godot_dictionary*)&_godot_dictionary, k);
 			int res = dg(*cast(const(Variant*))k, *v);
 			if(res) return res;
-			k = _godot_api.godot_dictionary_next(&_godot_dictionary, k);
+			_godot_api.variant_iter_next(&_godot_dictionary, k, null);
 		}
 		return 0;
 	}
 	
 	
-	@nogc nothrow:
+	//@nogc nothrow:
 	
-	package(godot) godot_dictionary _godot_dictionary;
+	package(godot) union dictionary { godot_dictionary _godot_dictionary; Dictionary_Bind _bind; }
+	package(godot) dictionary _dictionary;
+	alias _dictionary this;
 	
 	@disable this();
 	
+	package(godot) this(godot_dictionary opaque)
+	{
+		_godot_dictionary = opaque;
+	}
+
 	this(this)
 	{
 		const godot_dictionary tmp = _godot_dictionary;
-		_godot_api.godot_dictionary_new_copy(&_godot_dictionary, &tmp);
+		_godot_api.variant_new_copy(&_godot_dictionary, &tmp);
 	}
 	
 	Dictionary opAssign(in Dictionary other)
 	{
-		_godot_api.godot_dictionary_destroy(&_godot_dictionary);
-		_godot_api.godot_dictionary_new_copy(&_godot_dictionary, &other._godot_dictionary);
+		_godot_api.variant_destroy(&_godot_dictionary);
+		_godot_api.variant_new_copy(&_godot_dictionary, &other._godot_dictionary);
 		return this;
 	}
 
@@ -83,7 +94,8 @@ struct Dictionary
 		if(Args.length % 2 == 0 && allSatisfy!(Variant.compatibleToGodot, Args))
 	{
 		Dictionary ret = void;
-		_godot_api.godot_dictionary_new(&ret._godot_dictionary);
+		//_godot_api.dictionary_new(&ret._godot_dictionary);
+		_godot_api.get_variant_from_type_constructor(GDNATIVE_VARIANT_TYPE_DICTIONARY)(cast(GDNativeTypePtr) &ret._godot_dictionary, null);
 		/+
 		BUG: wtf? when using static foreach(i; 0..Args.length/2):
 		Error: cannot use operator ~= in @nogc delegate godot.core.dictionary.Dictionary.make!(GodotStringLiteral!"name", String, GodotStringLiteral!"type", int).make.__lambda6
@@ -103,55 +115,63 @@ struct Dictionary
 	static Dictionary empty_dictionary()
 	{
 		Dictionary d = void;
-		_godot_api.godot_dictionary_new(&d._godot_dictionary);
+		_godot_api.get_variant_from_type_constructor(GDNATIVE_VARIANT_TYPE_DICTIONARY)(cast(GDNativeTypePtr) &d._godot_dictionary, null);
 		return d;
 	}
 	
 	void clear()
 	{
-		_godot_api.godot_dictionary_clear(&_godot_dictionary);
+		//auto m =_godot_api.variant_get_ptr_builtin_method(GDNATIVE_VARIANT_TYPE_DICTIONARY, "clear", 134152229);
+		//m(cast(GDNativeTypePtr)&_godot_dictionary);
+		_bind.clear();
 	}
 	
 	bool empty() const
 	{
-		return cast(bool)_godot_api.godot_dictionary_empty(&_godot_dictionary);
+		//return cast(bool)_godot_api.dictionary_empty(&_godot_dictionary);
+		return _bind.isEmpty();
 	}
 	
 	void erase(K)(in K key) if(is(K : Variant) || Variant.compatibleToGodot!K)
 	{
 		const Variant k = key;
-		_godot_api.godot_dictionary_erase(&_godot_dictionary, &k._godot_variant);
+		//_godot_api.dictionary_erase(&_godot_dictionary, &k._godot_variant);
+		_bind.erase(k);
 	}
 	
 	bool has(K)(in K key) const if(is(K : Variant) || Variant.compatibleToGodot!K)
 	{
 		const Variant k = key;
-		return cast(bool)_godot_api.godot_dictionary_has(&_godot_dictionary, &k._godot_variant);
+		return cast(bool)_godot_api.dictionary_has(&_godot_dictionary, &k._godot_variant);
 	}
 	
 	bool hasAll(in Array keys) const
 	{
-		return cast(bool)_godot_api.godot_dictionary_has_all(&_godot_dictionary, &keys._godot_array);
+		//return cast(bool)_godot_api.dictionary_has_all(&_godot_dictionary, &keys._godot_array);
+		return _bind.hasAll(keys);
 	}
 	
 	uint hash() const
 	{
-		return _godot_api.godot_dictionary_hash(&_godot_dictionary);
+		//return _godot_api.dictionary_hash(&_godot_dictionary);
+		return cast(uint) _bind.hash();
 	}
 	
 	Array keys() const
 	{
 		Array a = void;
-		a._godot_array = _godot_api.godot_dictionary_keys(&_godot_dictionary);
+		//a._godot_array = _godot_api.dictionary_keys(&_godot_dictionary);
+		a = _bind.keys();
 		return a;
 	}
 	
 	Variant opIndex(K)(in K key) const if(is(K : Variant) || Variant.compatibleToGodot!K)
 	{
 		const Variant k = key;
-		Variant ret = void;
-		ret._godot_variant = _godot_api.godot_dictionary_get(&_godot_dictionary, &k._godot_variant);
-		return ret;
+		//Variant ret = void;
+		//ret._godot_variant = _godot_api.dictionary_get(&_godot_dictionary, &k._godot_variant);
+		//return ret;
+		return _bind.get(k, k);
 	}
 	
 	void opIndexAssign(K, V)(in auto ref V value, in auto ref K key) if(
@@ -160,29 +180,41 @@ struct Dictionary
 	{
 		const Variant k = key;
 		const Variant v = value;
-		_godot_api.godot_dictionary_set(&_godot_dictionary, &k._godot_variant, &v._godot_variant);
+		auto tmp = _godot_api.dictionary_operator_index(&_godot_dictionary, &k._godot_variant);
+		Variant t = void;
+		t._godot_variant = tmp;
+		t = value;
 	}
 	
 	int size() const
 	{
-		return _godot_api.godot_dictionary_size(&_godot_dictionary);
+		//return _godot_api.dictionary_size(&_godot_dictionary);
+		return cast(int) _bind.size;
 	}
 	
 	String toJson() const
 	{
-		godot_string s = _godot_api.godot_dictionary_to_json(&_godot_dictionary);
-		return cast(String)s;
+		import godot.json;
+		import godot.d;
+		
+		Variant v = void;
+		v._godot_variant = *cast(godot_variant*) &this;
+		JSON json = memnew!JSON();
+		return json.stringify(v, gs!(`""`), true, false);
+		//godot_string s = _godot_api.dictionary_to_json(&_godot_dictionary);
+		//return cast(String)s;
 	}
 	
 	Array values() const
 	{
-		godot_array a = _godot_api.godot_dictionary_values(&_godot_dictionary);
-		return cast(Array)a;
+		//godot_array a = _godot_api.dictionary_values(&_godot_dictionary);
+		//return cast(Array)a;
+		return _bind.values();
 	}
 	
 	~this()
 	{
-		_godot_api.godot_dictionary_destroy(&_godot_dictionary);
+		_godot_api.variant_destroy(&_godot_dictionary);
 	}
 }
 

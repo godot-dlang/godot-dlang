@@ -156,6 +156,22 @@ struct Property
 }
 
 /++
+A UDA to mark a enum or static members to be used by Godot as a constant.
++/
+struct Constant
+{
+
+}
+
+/++
+A UDA to mark a enum to be registered with Godot.
++/
+struct Enum
+{
+
+}
+
+/++
 A UDA for explicitly specifying the default value of a Property.
 
 This UDA works with getter/setter functions. It should be attached to only one

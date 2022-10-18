@@ -15,10 +15,15 @@ import core.stdc.string;
 import std.algorithm.iteration;
 import std.meta;
 
-import godot.control.all;
+//import godot.control.all;
+import godot.colorrect;
+import godot.label;
+import godot.control;
 import godot.resource;
 import godot.node;
+import godot.refcounted;
 
+@Rename("TestD")
 class Test : GodotScript!Label
 {
 	/++
@@ -26,6 +31,17 @@ class Test : GodotScript!Label
 	+/
 	alias owner this;
 	
+	@Enum
+	enum Flag
+	{
+		DEFAULT,
+		WITH_VALUE = 5,
+		MAX
+	}
+
+	@Constant enum ANSWER = 42; 
+	@Constant enum BAR = -1; 
+
 	private String _prop;
 	@Property @DefaultValue!"testDefaultValue"
 	String property() const
@@ -46,8 +62,8 @@ class Test : GodotScript!Label
 	
 	@Property
 	{
-		float freal;
-		double dreal;
+		float freal = 1.5;
+		double dreal = 0.25;
 	}
 	
 	@Property onlySetter(int value) { print("onlySetter: ", value); }
@@ -63,14 +79,23 @@ class Test : GodotScript!Label
 	@OnReady!((){ print("In OnReady of onReadyInt"); return 99; })
 	int onReadyInt;
 	
-	@Property NodePath longNodePath;
+	//@Property 
+	NodePath _longNodePath; // = NodePath("One/Looooong/Incredibly/Unbroken/Node/Path/Label"); // should be set from edtior
+	@Property void longNodePath(NodePath value) { _longNodePath = value; print(value); }
+	@Property NodePath longNodePath() const { return _longNodePath; }
+
+	String _myStr;
+	@Property void myStr(String value) { _myStr = value; }
+	@Property String myStr() const { return _myStr; }
+
 	// another variable in this class: use it instead of some compile-time value
-	@OnReady!longNodePath
+	@OnReady!_longNodePath
 	Label longNode;
 	
 	this()
 	{
-		writefln("Test.this(); this: %x", cast(void*)this);
+		//_prop = String("testDefaultValue");
+		//_longNodePath = NodePath("One/Looooong/Incredibly/Unbroken/Node/Path/Label"); 
 	}
 	
 	@(godot.Method) // fully qualified name, in case you have another "Method" in the module
@@ -95,17 +120,22 @@ class Test : GodotScript!Label
 		return ret;
 	}
 
-	@Signal
+	@Signal @Rename("send_message")
 	static void function(String message) sendMessage;
 
 	@Method
 	void _ready()
 	{
+		// don't do anything in editor
+		import godot.engine;
+		if (Engine.isEditorHint())
+			return;
+
 		// the node variables will have been set by OnReady
-		colorRect.setFrameColor(Color(0f, 1f, 0f));
+		colorRect.setColor(Color(0f, 1f, 0f));
 		longNode.setText(gs!"This node was set by OnReady");
 		
-		owner.emitSignal(gs!"send_message", gs!"Some text sent by a signal");
+		owner.emitSignal(gn!"send_message", gs!"Some text sent by a signal");
 		
 		writefln("owner: %x", cast(void*)owner);
 		// print() will write into Godot's editor output, unlike writeln
@@ -120,7 +150,7 @@ class Test : GodotScript!Label
 		
 		{
 			writefln("This (%s) is a normal D method of type %s.",
-				__FUNCTION__, typeof(_notification).stringof);
+				__FUNCTION__, typeof(notification).stringof);
 		}
 		
 		{
@@ -230,12 +260,12 @@ class Test : GodotScript!Label
 		{
 			String empty;
 			writefln("empty.length: %d", empty.length);
-			auto cStr = empty.data;
+			auto cStr = empty;
 			writefln("empty.data: %x <%s>", cast(void*)cStr.ptr, cStr);
 			
 			String other = empty;
-			auto ocStr = other.data;
-			writefln("other.data: %x <%s>", cast(void*)ocStr.ptr, ocStr);
+			auto ocStr = other;
+			writefln("other.data: %x <%s>"w, cast(void*)ocStr.ptr, ocStr);
 			
 			String cat = empty ~ gs!"cat";
 			writefln("cat: <%s>", cat);
@@ -256,7 +286,7 @@ class Test : GodotScript!Label
 			print("Executable path: ", exe);
 			
 			import godot.projectsettings;
-			String projectName = ProjectSettings.get(gs!"application/config/name").as!String;
+			String projectName = ProjectSettings.get(gn!"application/config/name").as!String;
 			print("ProjectSettings property \"application/config/name\": ", projectName);
 		}
 		
@@ -302,14 +332,14 @@ class Test : GodotScript!Label
 			writefln("assert(!ResourceLoader.hasCached(%s))", iconPath);
 			assert(!ResourceLoader.hasCached(iconPath));
 			
-			Ref!Resource res = ResourceLoader.load(iconPath, gs!"", false);
+			Ref!Resource res = ResourceLoader.load(iconPath, gs!"", ResourceLoader.CacheMode.cacheModeReplace);
 			writefln("Loaded Resource %s at path %s", res.getName, res.getPath);
 			
 			// test upcasts
-			import godot.texture, godot.mesh;
+			import godot.texture2d, godot.mesh;
 			Ref!Mesh wrongCast = res.as!Mesh;
 			assert(wrongCast.isNull);
-			Ref!Texture rightCast = res.as!Texture;
+			Ref!Texture2D rightCast = res.as!Texture2D;
 			assert(rightCast.isValid);
 			auto size = rightCast.getSize();
 			writefln("Texture size: %f,%f", size.x, size.y);
@@ -321,7 +351,7 @@ class Test : GodotScript!Label
 		// test properties
 		// FIXME: D Object has "get" shadowing GodotObject.get
 		{
-			String pn = gs!"property";
+			StringName pn = gn!"property";
 			String someText = gs!"Some text.";
 			Variant someTextV = Variant(someText);
 			
@@ -332,7 +362,7 @@ class Test : GodotScript!Label
 			writefln("getting property: <%s>", res);
 		}
 		{
-			String pn = gs!"number";
+			StringName pn = gn!"number";
 			long someNum = 42;
 			Variant someNumV = Variant(someNum);
 			
@@ -342,8 +372,8 @@ class Test : GodotScript!Label
 			auto res = owner.get(pn).as!long;
 			writefln("getting number: <%d>", res);
 		}
-		owner.set(gs!"only_setter", 5678);
-		print("onlyGetter: ", owner.get(gs!"only_getter"));
+		owner.set(gn!"only_setter", 5678);
+		print("onlyGetter: ", owner.get(gn!"only_getter"));
 
 		// test array slicing and equality
 		{
@@ -352,13 +382,14 @@ class Test : GodotScript!Label
 			Array a = Array.make(1, gs!"two", NodePath("three"), 4.01);
 			print("Array a: ", a);
 			assert(a[1..$].equal(Array.make(gs!"two", NodePath("three"), 4.01)[]));
+			// it seems slice operator changes, assert here has 2 elements, but since godot 4 slice now returns only one
 			Array b = a.slice(1, a.length, 2);
 			print("Array b (a.slice(1, a.length, 2)): ", b);
-			assert(b[].equal([Variant(gs!"two"), Variant(4.01)]));
+			assert(b[].equal([Variant(gs!"two")]));
 
 			Array c = a ~ b;
 			print("Array c: ", c);
-			assert(c[].equal(Array.make(1, gs!"two", NodePath("three"), 4.01, gs!"two", 4.01)[]));
+			assert(c[].equal(Array.make(1, gs!"two", NodePath("three"), 4.01, gs!"two")[]));
 			Array d = Array.make(5);
 			d.appendRange([6,7]);
 			print("Array d: ", d);
@@ -391,9 +422,9 @@ class Test : GodotScript!Label
 	}
 }
 
-class RefTest : GodotScript!Resource
+@Rename("RefTestD")
+class RefTest : GodotScript!RefCounted
 {
-	
 	this()
 	{
 		print(__PRETTY_FUNCTION__);
@@ -411,11 +442,5 @@ mixin GodotNativeLibrary!
 	"test",
 	Test,
 	RefTest,
-	(GodotInitOptions o)
-	{
-		writeln("Initializing library");
-		writeln("Godot is in ", o.in_editor ? "EDITOR" : "GAME", " mode.");
-	},
-	(GodotTerminateOptions o) { writeln("Terminating library"); }
 );
 

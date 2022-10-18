@@ -22,7 +22,7 @@ import godot.core.plane;
 /**
 Represents one or many transformations in 3D space such as translation, rotation, or scaling. It is similar to a 3x4 matrix.
 */
-struct Transform
+struct Transform3D
 {
 	@nogc nothrow:
 	
@@ -37,10 +37,10 @@ struct Transform
 	this(in Basis basis, in Vector3 origin) { this.basis = basis; this.origin = origin; }
 	
 	
-	Transform inverseXform(in Transform t) const
+	Transform3D inverseXform(in Transform3D t) const
 	{
 		Vector3 v = t.origin - origin;
-		return Transform(basis.transposeXform(t.basis),
+		return Transform3D(basis.transposeXform(t.basis),
 			basis.xform(v));
 	}
 	
@@ -116,10 +116,10 @@ struct Transform
 		Vector3 x=basis.getAxis(0)*p_aabb.size.x;
 		Vector3 y=basis.getAxis(1)*p_aabb.size.y;
 		Vector3 z=basis.getAxis(2)*p_aabb.size.z;
-		Vector3 pos = xform( p_aabb.pos );
+		Vector3 pos = xform( p_aabb.position );
 		//could be even further optimized
 		AABB new_aabb;
-		new_aabb.pos=pos;
+		new_aabb.position=pos;
 		new_aabb.expandTo( pos+x );
 		new_aabb.expandTo( pos+y );
 		new_aabb.expandTo( pos+z );
@@ -133,17 +133,17 @@ struct Transform
 	{
 		/* define vertices */
 		Vector3[8] vertices=[
-				Vector3(p_aabb.pos.x+p_aabb.size.x,	p_aabb.pos.y+p_aabb.size.y,	p_aabb.pos.z+p_aabb.size.z),
-				Vector3(p_aabb.pos.x+p_aabb.size.x,	p_aabb.pos.y+p_aabb.size.y,	p_aabb.pos.z),
-				Vector3(p_aabb.pos.x+p_aabb.size.x,	p_aabb.pos.y,		p_aabb.pos.z+p_aabb.size.z),
-				Vector3(p_aabb.pos.x+p_aabb.size.x,	p_aabb.pos.y,		p_aabb.pos.z),
-				Vector3(p_aabb.pos.x,	p_aabb.pos.y+p_aabb.size.y,	p_aabb.pos.z+p_aabb.size.z),
-				Vector3(p_aabb.pos.x,	p_aabb.pos.y+p_aabb.size.y,	p_aabb.pos.z),
-				Vector3(p_aabb.pos.x,	p_aabb.pos.y,		p_aabb.pos.z+p_aabb.size.z),
-				Vector3(p_aabb.pos.x,	p_aabb.pos.y,		p_aabb.pos.z)
+				Vector3(p_aabb.position.x+p_aabb.size.x,	p_aabb.position.y+p_aabb.size.y,	p_aabb.position.z+p_aabb.size.z),
+				Vector3(p_aabb.position.x+p_aabb.size.x,	p_aabb.position.y+p_aabb.size.y,	p_aabb.position.z),
+				Vector3(p_aabb.position.x+p_aabb.size.x,	p_aabb.position.y,		p_aabb.position.z+p_aabb.size.z),
+				Vector3(p_aabb.position.x+p_aabb.size.x,	p_aabb.position.y,		p_aabb.position.z),
+				Vector3(p_aabb.position.x,	p_aabb.position.y+p_aabb.size.y,	p_aabb.position.z+p_aabb.size.z),
+				Vector3(p_aabb.position.x,	p_aabb.position.y+p_aabb.size.y,	p_aabb.position.z),
+				Vector3(p_aabb.position.x,	p_aabb.position.y,		p_aabb.position.z+p_aabb.size.z),
+				Vector3(p_aabb.position.x,	p_aabb.position.y,		p_aabb.position.z)
 		];
 		AABB ret;
-		ret.pos=xformInv(vertices[0]);
+		ret.position=xformInv(vertices[0]);
 		for(int i=1;i<8;i++)
 		{
 			ret.expandTo( xformInv(vertices[i]) );
@@ -158,9 +158,9 @@ struct Transform
 		origin = basis.xform(-origin);
 	}
 	
-	Transform affineInverse() const
+	Transform3D affineInverse() const
 	{
-		Transform ret=this;
+		Transform3D ret=this;
 		ret.affineInvert();
 		return ret;
 	
@@ -173,11 +173,11 @@ struct Transform
 		origin = basis.xform(-origin);
 	}
 	
-	Transform inverse() const
+	Transform3D inverse() const
 	{
 		// FIXME: this function assumes the basis is a rotation matrix, with no scaling.
 		// affine_inverse can handle matrices with scaling, so GDScript should eventually use that.
-		Transform ret=this;
+		Transform3D ret=this;
 		ret.invert();
 		return ret;
 	}
@@ -188,9 +188,9 @@ struct Transform
 		this = rotated(p_axis, p_phi);
 	}
 	
-	Transform rotated(in Vector3 p_axis,real_t p_phi) const
+	Transform3D rotated(in Vector3 p_axis,real_t p_phi) const
 	{
-		return Transform(Basis( p_axis, p_phi ), Vector3()) * (this);
+		return Transform3D(Basis( p_axis, p_phi ), Vector3()) * (this);
 	}
 	
 	void rotateBasis(in Vector3 p_axis,real_t p_phi)
@@ -198,9 +198,9 @@ struct Transform
 		basis.rotate(p_axis,p_phi);
 	}
 	
-	Transform lookingAt( in Vector3 p_target, in Vector3 p_up ) const
+	Transform3D lookingAt( in Vector3 p_target, in Vector3 p_up ) const
 	{
-		Transform t = this;
+		Transform3D t = this;
 		t.setLookAt(origin,p_target,p_up);
 		return t;
 	}
@@ -233,18 +233,18 @@ struct Transform
 		origin=p_eye;
 	}
 	
-	Transform interpolateWith(in Transform p_transform, real_t p_c) const
+	Transform3D interpolateWith(in Transform3D p_transform, real_t p_c) const
 	{
 		/* not sure if very "efficient" but good enough? */
 		Vector3 src_scale = basis.getScale();
-		Quat src_rot = basis.quat;
+		Quaternion src_rot = basis.quat;
 		Vector3 src_loc = origin;
 		
 		Vector3 dst_scale = p_transform.basis.getScale();
-		Quat dst_rot = p_transform.basis.quat;
+		Quaternion dst_rot = p_transform.basis.quat;
 		Vector3 dst_loc = p_transform.origin;
 		
-		Transform dst;
+		Transform3D dst;
 		dst.basis = Basis(src_rot.slerp(dst_rot,p_c));
 		dst.basis.scale(src_scale.linearInterpolate(dst_scale,p_c));
 		dst.origin=src_loc.linearInterpolate(dst_loc,p_c);
@@ -258,9 +258,9 @@ struct Transform
 		origin*=p_scale;
 	}
 	
-	Transform scaled(in Vector3 p_scale) const
+	Transform3D scaled(in Vector3 p_scale) const
 	{
-		Transform t = this;
+		Transform3D t = this;
 		t.scale(p_scale);
 		return t;
 	}
@@ -282,9 +282,9 @@ struct Transform
 		}
 	}
 	
-	Transform translated(in Vector3 p_translation) const
+	Transform3D translated(in Vector3 p_translation) const
 	{
-		Transform t=this;
+		Transform3D t=this;
 		t.translate(p_translation);
 		return t;
 	}
@@ -294,22 +294,22 @@ struct Transform
 		basis.orthonormalize();
 	}
 	
-	Transform orthonormalized() const
+	Transform3D orthonormalized() const
 	{
-		Transform _copy = this;
+		Transform3D _copy = this;
 		_copy.orthonormalize();
 		return _copy;
 	}
 	
-	void opOpAssign(string op : "*")(in Transform p_transform)
+	void opOpAssign(string op : "*")(in Transform3D p_transform)
 	{
 		origin=xform(p_transform.origin);
 		basis*=p_transform.basis;
 	}
 	
-	Transform opBinary(string op : "*")(in Transform p_transform) const
+	Transform3D opBinary(string op : "*")(in Transform3D p_transform) const
 	{
-		Transform t=this;
+		Transform3D t=this;
 		t*=p_transform;
 		return t;
 	}

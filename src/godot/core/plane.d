@@ -17,14 +17,7 @@ import godot.core.vector3;
 
 import std.math;
 
-enum ClockDirection
-{
-	clockwise,
-	counterClockwise,
-	
-	cw = clockwise,
-	ccw = counterClockwise
-}
+public import godot.globalenums : ClockDirection;
 
 /**
 Plane represents a normalized plane equation. Basically, “normal” is the normal of the plane (a,b,c normalized), and “d” is the distance from the origin to the plane (in the direction of “normal”). “Over” or “Above” the plane is considered the side of the plane towards where the normal is pointing.
@@ -201,6 +194,12 @@ struct Plane
 		normal=p_normal;
 		d=p_d;
 	}
+
+	this(real_t p_a, real_t p_b, real_t p_c, real_t p_d)
+	{
+		normal = Vector3(p_a, p_b, p_c);
+		d = p_d;
+	}
 	
 	this(in Vector3 p_point, in Vector3 p_normal)
 	{
@@ -208,7 +207,7 @@ struct Plane
 		d=p_normal.dot(p_point);
 	}
 	
-	this(in Vector3 p_point1, in Vector3 p_point2, in Vector3 p_point3,ClockDirection p_dir = ClockDirection.ccw)
+	this(in Vector3 p_point1, in Vector3 p_point2, in Vector3 p_point3,ClockDirection p_dir = ClockDirection.counterclockwise)
 	{
 		if (p_dir == ClockDirection.clockwise)
 			normal=(p_point1-p_point3).cross(p_point1-p_point2);

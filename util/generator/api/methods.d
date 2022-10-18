@@ -12,91 +12,41 @@ import std.conv : text;
 import std.string;
 
 
-struct Argument
-{
-	Name name;
-	Type type;
-	@serdeOptional
-	string meta;
-	@serdeOptional
-	string default_value; // expression
-}
-struct Function
-{
-	Name name;
-	@serdeOptional
-	Type return_type;
-	string category;
-	bool is_vararg;
-	hash_t hash;
-	@serdeOptional
-	Argument[] arguments;
-}
-
-struct Operator
-{
-	Name name; // some different than D op, like "unary+" or "not"
-	@serdeOptional
-	Type right_type;
-	Type return_type;
-}
-struct Constructor
-{
-	int index; // what?
-	@serdeOptional
-	Argument[] arguments;
-}
-class BuiltinMethod
-{
-	Name name;
-	@serdeOptional
-	Type return_type;
-	bool is_vararg, is_const, is_static;
-	hash_t hash;
-	@serdeOptional
-	Argument[] arguments;
-}
-struct MethodReturnValue
-{
-	Type type;
-	@serdeOptional
-	string meta;
-}
-struct Method
-{
-	Name name;
-	bool is_const, is_vararg, is_virtual;
-	@serdeOptional // TODO: doesn't seem correct, but currently some have no hash
-	hash_t hash;
-	@serdeOptional
-	MethodReturnValue return_value;
-	@serdeOptional
-	Argument[] arguments;
-}
-struct Signal
-{
-	Name name;
-	@serdeOptional
-	Argument[] arguments;
-}
 
 
 
-version(none):
 class GodotMethod
 {
-	string name;
+	@serdeOptional 
+	string name; // constructors doesn't have name
+	@serdeOptional @serdeKeys("return_type", "return_value")
 	Type return_type;
+	@serdeOptional
 	bool is_editor;
+	@serdeOptional
 	bool is_noscript;
+	@serdeOptional
 	bool is_const;
+	@serdeOptional
 	bool is_virtual;
+	@serdeOptional
+	bool is_static;
+	@serdeOptional
+	string category;
+	@serdeOptional @serdeKeys("is_vararg", "has_varargs")
 	bool has_varargs;
+	@serdeOptional
 	bool is_from_script;
+	@serdeOptional
+	uint hash;
+	@serdeOptional
 	GodotArgument[] arguments;
+	
 	
 	void finalizeDeserialization(Asdf data)
 	{
+		if (!return_type)
+			return_type = Type.get("void");
 		foreach(i, ref a; arguments)
 		{
 			a.index = i;
@@ -104,10 +54,14 @@ class GodotMethod
 		}
 	}
 	
-	@serializationIgnore:
+	@serdeIgnore:
 	GodotClass parent;
 	
 	string ddoc;
+
+	Constructor isConstructor() const { return null; }
+	// Operator isOperator() { return null; }
+	// Indexer isIndexer() { return null; }
 	
 	bool same(in GodotMethod other) const
 	{
@@ -163,28 +117,83 @@ class GodotMethod
 		return ret;
 	}
 	
+
+	/++
+	Outputs binding method declaration with meta information. 
+	e.g.:
+
+		@GodotName("insert") @MethodHash(0) GodotMethod!(long, long, Variant) method_insert;
+	+/
 	string binding() const
 	{
 		string ret;
-		
+
 		ret ~= "\t\t@GodotName(\""~name~"\") GodotMethod!("~return_type.d;
 		foreach(ai, const a; arguments)
 		{
 			ret ~= ", " ~ a.type.d;
 		}
 		if(has_varargs) ret ~= ", GodotVarArgs";
-		ret ~= ") " ~ name.snakeToCamel.escapeD ~ ";\n";
+		ret ~= ") " ~ wrapperIdentifier ~ ";\n";
 		
 		return ret;
 	}
+
+	/// Function pointer name for this method
+	/// 	"constructor_new_0", "method_normalize", ...
+	string wrapperIdentifier() const
+	{
+		return funKindName ~ "_" ~ name.snakeToCamel.escapeD;
+	}
+
+	/// Function type name used in some cases: like "method", "ctor", "getter", etc...
+	string funKindName() const 
+	{
+		return "method";
+	} 
 	
+	/++ 
+	Formats whole method including function signature and body with implementation.
+	e.g.:
+
+		Array slice(in long begin, in long end, in long step, in bool deep) const
+		{
+			if (!GDNativeGDNativeClassBinding.method_slice)
+				GDNativeClassBinding.slice = _godot_api.get_method_bind("Class", "Method", 42);
+			return callBuiltinMethod!(Array)(cast(GDNativePtrBuiltInMethod) GDNativeClassBinding.slice.mb, cast(void*) &_godot_object, cast() begin, cast() end, cast() step, cast() deep);
+		}
+	+/
 	string source() const
 	{
 		string ret;
-		
+
+		// ddoc comment (if any)
 		ret ~= "\t/**\n\t"~ddoc.replace("\n", "\n\t")~"\n\t*/\n";
 		ret ~= "\t";
-		ret ~= return_type.dRef~" ";
+
+		ret ~= signature();
+
+		ret ~= "\n\t{\n";
+
+			ret ~= body_();
+
+		ret ~= "\t}\n";
+		
+		return ret;
+	}
+
+	/// Formats function signature, e.g.
+	///   Array slice(in long begin, in long end, in long step, in bool deep) const
+	string signature() const
+	{
+		string ret;
+
+		// optional static modifier
+		if (isConstructor)
+			ret ~= "static ";
+		// note that even though it strips constness of return type the method is still marked const
+		// const in D is transitive, which means compiler should disallow modifying returned reference types
+		ret ~= return_type.stripConst.dRef~" ";
 		// none of the types (Classes/Core/Primitive) are pointers in D
 		// Classes are reference types; the others are passed by value.
 		ret ~= name.snakeToCamel.escapeD;
@@ -192,54 +201,178 @@ class GodotMethod
 		ret ~= templateArgsString;
 		ret ~= argsString;
 		
+		// function const attribute
 		if(is_const) ret ~= " const";
 		else if(name == "callv" && parent.name.godot == "Object") ret ~= " const"; /// HACK
-		ret ~= "\n\t{\n";
-		
-		// implementation
+
+		return ret;
+	}
+
+	/// Formats body containing implementation, omitting outer braces
+	string body_() const
+	{
+		string ret;
+
+		// load function pointer
+		ret ~= "\t\tif (!GDNativeClassBinding." ~ wrapperIdentifier ~ ".mb)\n";
+		ret ~= "\t\t\t" ~ loader() ~ "\n";
+
 		if(is_virtual || has_varargs)
 		{
-			ret ~= "\t\tArray _GODOT_args = Array.make();\n";
-			foreach(const a; arguments)
+			// keep it like this for now, serves as example.
+			// function will put normal arguments first, then varargs
+			// next, in order to call that function we need actually array of pointers
+			// after that we call the function with array of pointers instead of plain args array
+			version(none) if (name == "emit_signal")
 			{
-				ret ~= "\t\t_GODOT_args.append("~escapeD(a.name)~");\n";
+				// two tabs
+				ret ~=`		Variant[varArgs.length+2] _GODOT_args;
+	_GODOT_args[0] = String("emit_signal");
+	_GODOT_args[1] = signal;
+	foreach(vai, VA; VarArgs)
+	{
+		_GODOT_args[vai+2] = Variant(varArgs[vai]);
+	}
+	Variant*[varArgs.length+2] _args;
+	foreach(i; 0.._GODOT_args.length)
+	{
+		_args[i] = &_GODOT_args[i];
+	}
+	Variant ret;
+	GDNativeCallError err;
+	_godot_api.object_method_bind_call(GDNativeClassBinding.method_emitSignal.mb, _godot_object.ptr, cast(void**) _args.ptr, _GODOT_args.length, cast(void*) &ret, &err);
+	debug if (int code = ret.as!int())
+	{
+		import godot.d;
+		print("signal error: ", signal, " code: ", code);
+	}
+	return cast(GodotError) err.error;`;
+			}
+
+			// static array must have at least 1 element
+			import std.algorithm : max;
+			int argsLength = max(1, (cast(int)arguments.length));
+			// choose between varargs and regular function for arguments
+			if (has_varargs)
+			{
+				ret ~= "\t\tVariant[varArgs.length+"~ text(argsLength) ~"] _GODOT_args;\n";
+				ret ~= "\t\tVariant*[varArgs.length+"~ text(argsLength) ~"] _args;\n";
+			}
+			else 
+			{
+				ret ~= "\t\tVariant["~ text(argsLength) ~"] _GODOT_args;\n";
+				ret ~= "\t\tVariant*["~ text(argsLength) ~"] _args;\n";
+
+			}
+			foreach(i, const a; arguments)
+			{
+				// gathers normal parameters in variant array to be later used as pointers
+				ret ~= "\t\t_GODOT_args[" ~ text(cast(int)i) ~"] = "~escapeD(a.name)~";\n";
 			}
 			
 			if(has_varargs)
 			{
-				ret ~= "\t\tforeach(vai, VA; VarArgs)\n\t\t{\n";
-				// TODO: check that VA can convert to Variant
-				ret ~= "\t\t\t_GODOT_args.append(varArgs[vai]);\n";
+				// copy varargs after regular args
+				ret ~= "\t\tforeach(vai, VA; VarArgs)\n";
+				ret ~= "\t\t{\n";
+				ret ~= "\t\t\t_GODOT_args[vai+"~ text(cast(int)arguments.length) ~"] = Variant(varArgs[vai]);\n";
 				ret ~= "\t\t}\n";
 			}
+
+			// make pointer array
+			ret ~= "\t\tforeach(i; 0.._GODOT_args.length)\n";
+			ret ~= "\t\t{\n";
+			ret ~= "\t\t\t_args[i] = &_GODOT_args[i];\n";
+			ret ~= "\t\t}\n";
 			
-			ret ~= "\t\tString _GODOT_method_name = String(\""~name~"\");\n";
-			
+			//ret ~= "\t\tStringName _GODOT_method_name = StringName(\""~name~"\");\n";
+
+			ret ~= "\t\tVariant ret;\n";
+			ret ~= "\t\tGDNativeCallError err;\n";
+			ret ~= "\t\t_godot_api.object_method_bind_call(GDNativeClassBinding." ~ wrapperIdentifier ~ ".mb, cast(void*) _godot_object.ptr, cast(void**) _args.ptr, _GODOT_args.length, cast(void*) &ret, &err);\n";
 			ret ~= "\t\t";
-			if(return_type.d != "void") ret ~= "return ";
-			ret ~= "this.callv(_GODOT_method_name, _GODOT_args)";
-			if(return_type.d != "void" && return_type.d != "Variant")
-				ret ~= ".as!(RefOrT!"~return_type.d~")";
-			ret ~= ";\n";
+			if(return_type.d != "void")
+			{
+				ret ~= "return ";
+				if(return_type.d != "Variant")
+					ret ~= "ret.as!(RefOrT!("~return_type.stripConst.d~"))";
+				else ret ~= "ret";
+				ret ~= ";\n";
+			} 
 		} // end varargs/virtual impl
 		else
 		{
-			ret ~= "\t\tcheckClassBinding!(typeof(this))();\n";
-			/// ".bind(\"" parent.name.godot ~ "\", \"" ~ name ~ "\");\n";
-			ret ~= "\t\t";
-			if(return_type.d != "void") ret ~= "return ";
-			ret ~= "ptrcall!(" ~ return_type.d ~ ")(GDNativeClassBinding."
-				~ name.snakeToCamel.escapeD ~ ", _godot_object";
+			// add temp variable for static ctor
+			if (isConstructor)
+			{
+				if (parent.name.canBeCopied)
+					ret ~= parent.name.d;
+				else
+					ret ~= parent.name.opaqueType;
+				ret ~= " _godot_object;\n\t\t";
+			}
+			// omit return for constructors, it will be wrapped and returned later
+			if(return_type.d != "void" && !(isConstructor && parent.name.isCoreType)) ret ~= "return ";
+			ret ~= callType() ~ "!(" ~ return_type.d ~ ")(";
+			if (parent.isBuiltinClass)
+				ret ~= "cast(GDNativePtrBuiltInMethod) ";
+			ret ~= "GDNativeClassBinding." ~ wrapperIdentifier;
+			if (parent.isBuiltinClass)  // Adds method pointer accessor instead of template itself
+				ret ~= ".mb";
+			ret ~= ", ";
+			if (parent.isBuiltinClass)
+				ret ~= "cast(void*) &_godot_object";
+			else
+				ret ~= "_godot_object";
 			foreach(ai, const a; arguments)
 			{
-				ret ~= ", "~a.name.escapeD;
+				ret ~= ", cast() "~a.name.escapeD; // FIXME: const cast hack
 			}
 			ret ~= ");\n";
+			// wrap temporary object
+			if (isConstructor)
+			{
+				if (parent.name.canBeCopied)
+					ret ~= "\t\treturn _godot_object;\n";
+				else
+					ret ~= "\t\treturn " ~ return_type.d ~ "(_godot_object);\n";
+			}
 		} // end normal method impl
-		
-		ret ~= "\t}\n";
-		
+
 		return ret;
+	}
+
+	/// call type wrapper, "ptrcall", "callv", "callBuiltinMethod", etc...
+	string callType() const
+	{
+		if (parent.isBuiltinClass)
+			return "callBuiltinMethod";
+		//if (has_varargs)
+		//	return "callv";
+		return "ptrcall";
+	}
+
+	/// formats function pointer loader, e.g.
+	/// 	GDNativeClassBinding.method_append.mb = _godot_api.clasdb_get_methodbind("class", "method", hash);
+	string loader() const
+	{
+		// probably better to move in its own subclass
+		if (parent.isBuiltinClass)
+		{
+			return format(`GDNativeClassBinding.%s.mb = _godot_api.variant_get_ptr_builtin_method(%s, "%s", %d);`,
+				wrapperIdentifier,
+				parent.name.toNativeVariantType,
+				name,
+				hash
+			);
+		}
+
+		return format(`GDNativeClassBinding.%s.mb = _godot_api.classdb_get_method_bind("%s", "%s", %d);`,
+			wrapperIdentifier,
+			parent.name.godot,
+			name,
+			hash,
+		);
 	}
 }
 
@@ -247,10 +380,12 @@ struct GodotArgument
 {
 	string name;
 	Type type;
+	@serdeOptional
 	bool has_default_value;
+	@serdeOptional
 	string default_value;
 	
-	@serializationIgnore:
+	@serdeIgnore:
 	
 	size_t index;
 	GodotMethod parent;
@@ -263,7 +398,7 @@ class GodotProperty
 	string getter, setter;
 	int index;
 	
-	@serializationIgnore:
+	@serdeIgnore:
 	
 	string ddoc;
 	
@@ -273,7 +408,13 @@ class GodotProperty
 		ret ~= "\t/**\n\t" ~ ddoc.replace("\n", "\n\t") ~ "\n\t*/\n";
 		ret ~= "\t@property " ~ m.return_type.d ~ " " ~ name.replace("/","_").snakeToCamel.escapeD ~ "()\n\t{\n"; /// TODO: const?
 		ret ~= "\t\treturn " ~ getter.snakeToCamel.escapeD ~ "(";
-		if(index != -1) ret ~= text(index);
+		if(index != -1) 
+		{
+			// add cast to enum types
+			if (m.arguments[0].type.isEnum)
+				ret ~= "cast(" ~ m.arguments[0].type.d ~ ") ";
+			ret ~= text(index);
+		}
 		ret ~= ");\n";
 		ret ~= "\t}\n";
 		return ret;
@@ -284,7 +425,13 @@ class GodotProperty
 		ret ~= "\t/// ditto\n";
 		ret ~= "\t@property void " ~ name.replace("/","_").snakeToCamel.escapeD ~ "(" ~ m.arguments[$-1].type.d ~ " v)\n\t{\n";
 		ret ~= "\t\t" ~ setter.snakeToCamel.escapeD ~ "(";
-		if(index != -1) ret ~= text(index) ~ ", ";
+		if(index != -1)
+		{
+			// add cast to enum types
+			if (m.arguments[0].type.isEnum)
+				ret ~= "cast(" ~ m.arguments[0].type.d ~ ") ";
+			ret ~= text(index) ~ ", ";
+		} 
 		ret ~= "v);\n";
 		ret ~= "\t}\n";
 		return ret;

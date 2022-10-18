@@ -68,6 +68,58 @@ unittest
 	c = vc.as!C;
 }
 
+/// 
+enum VariantType
+{
+	nil,
+	
+	// atomic types
+	bool_,
+	int_,
+	float_,
+	string,
+	
+	// math types
+	
+	vector2,// 5
+	vector2i,
+	rect2,
+	rect2i,
+	vector3,
+	vector3i,// 10
+	transform2d,
+	vector4,
+	vector4i,
+	plane,
+	quaternion,
+	aabb,
+	basis,// 15
+	transform3d,
+	projection,
+	
+	// misc types
+	color,
+	string_name,
+	node_path,
+	rid,
+	object,// 20
+	callable,
+	signal,
+	dictionary,
+	array,
+	
+	// arrays
+	packed_byte_array,// 25
+	packed_int32_array,
+	packed_int64_array,
+	packed_float32_array,
+	packed_float64_array,
+	packed_string_array,// 30
+	packed_vector2_array,
+	packed_vector3_array,
+	packed_color_array,
+}
+
 /**
 Godot's tagged union type.
 
@@ -82,81 +134,56 @@ struct Variant
 {
 	package(godot) godot_variant _godot_variant;
 	
-	/// 
-	enum Type
-	{
-		nil,
-		
-		// atomic types
-		bool_,
-		int_,
-		real_,
-		string,
-		
-		// math types
-		
-		vector2,// 5
-		rect2,
-		vector3,
-		transform2d,
-		plane,
-		quat,// 10
-		aabb,
-		basis,
-		transform,
-		
-		// misc types
-		color,
-		node_path,// 15
-		rid,
-		object,
-		dictionary,
-		array,
-		
-		// arrays
-		pool_byte_array,// 20
-		pool_int_array,
-		pool_real_array,
-		pool_string_array,
-		pool_vector2_array,
-		pool_vector3_array,// 25
-		pool_color_array,
-	}
+	// having it inside variant creates annoying recursive alias issue
+	alias Type = VariantType;
 	
 	/// GDNative type that gets passed to the C functions
+	// NOTE: godot 4 now uses default int as int32 and double precision by default
+	// TODO: verify this
 	alias InternalType = AliasSeq!
 	(
 		typeof(null),
 		
 		godot_bool,
-		long,
+		int,
 		double,
 		godot_string,
 		
-		godot_vector2,
+		godot_vector2, // 5
+		godot_vector2i,
 		godot_rect2,
+		godot_rect2i,
 		godot_vector3,
+		godot_vector3i, // 10
 		godot_transform2d,
+		godot_vector4,
+		godot_vector4i,
 		godot_plane,
-		godot_quat,
+		godot_quaternion,
 		godot_aabb,
-		godot_basis,
-		godot_transform,
+		godot_basis, // 15
+		godot_transform3d,
+		godot_projection,
 		
 		godot_color,
+		godot_string, //godot_string_name
 		godot_node_path,
-		godot_rid,
+		godot_rid, // 20
 		godot_object,
+		godot_callable,
+		godot_signal,
 		godot_dictionary,
-		godot_array,
+		godot_array, // 25
 		
-		godot_pool_byte_array,
-		godot_pool_int_array,
-		godot_pool_real_array,
-		godot_pool_string_array,
-		godot_pool_vector2_array,
-		godot_pool_vector3_array,
-		godot_pool_color_array,
+		godot_packed_byte_array,
+		godot_packed_int32_array,
+		godot_packed_int64_array,
+		godot_packed_float32_array,
+		godot_packed_float64_array, // 30
+		godot_packed_string_array,
+		godot_packed_vector2_array,
+		godot_packed_vector3_array,
+		godot_packed_color_array,
 	);
 	
 	/// D type that this Variant implementation uses
@@ -170,31 +197,42 @@ struct Variant
 		String,
 		
 		Vector2,// 5
+		Vector2i,
 		Rect2,
+		Rect2i,
 		Vector3,
+		Vector3i,// 10
 		Transform2D,
+		Vector4,
+		Vector4i,
 		Plane,
-		Quat,// 10
+		Quaternion,
 		AABB,
-		Basis,
-		Transform,
+		Basis,// 15
+		Transform3D,
+		Projection,
 		
 		// misc types
 		Color,
-		NodePath,// 15
-		RID,
+		StringName,
+		NodePath,
+		RID,// 20
 		GodotObject,
+		GodotCallable,
+		GodotSignal,
 		Dictionary,
-		Array,
+		Array,// 25
 		
 		// arrays
-		PoolByteArray,// 20
-		PoolIntArray,
-		PoolRealArray,
-		PoolStringArray,
-		PoolVector2Array,
-		PoolVector3Array,// 25
-		PoolColorArray,
+		PackedByteArray,
+		PackedInt32Array,
+		PackedInt64Array,
+		PackedFloat32Array,
+		PackedFloat64Array,// 30
+		PackedStringArray,
+		PackedVector2Array,
+		PackedVector3Array,
+		PackedColorArray,
 	);
 	
 	/// 
@@ -216,7 +254,8 @@ struct Variant
 		negate,
 		positive,
 		modulus,
-		stringConcat,
+		power,
+		//stringConcat,
 
 		//bitwise
 		shiftLeft,
@@ -255,6 +294,17 @@ struct Variant
 	T as(T)() const if(isStaticArray!T && compatibleFromGodot!(ElementType!T))
 	{
 		return as!Array.as!T;
+	}
+
+	/// 
+	T as(T)() const if(is(T : TypedArray!U, U...) && !is(U == Array))
+	{
+		return T(as!Array);
+	}
+
+	T as(T : void*)()
+	{
+		return cast(T) &_godot_variant;
 	}
 
 	/// 
@@ -297,6 +347,8 @@ struct Variant
 		return ret;
 	}
 
+	// TODO: fix me
+	/*
 	static assert(hasInternalAs!Node, internalAs!Node);
 	static assert(hasInternalAs!(Ref!Resource), internalAs!(Ref!Resource));
 	static assert(!hasInternalAs!Object); // `directlyCompatible` types not handled by internalAs
@@ -307,6 +359,7 @@ struct Variant
 	static assert(hasInternalAs!GodotType, internalAs!GodotType);
 	static assert(hasInternalFrom!GodotType, internalFrom!GodotType);
 	static assert(compatible!GodotType);
+	*/
 
 	private template getToVariantFunction(T)
 	{
@@ -421,7 +474,7 @@ struct Variant
 		static if(VarType == Type.vector3 && sV)
 		{
 			godot_vector3 ret = void;
-			void* _func = cast(void*)_godot_api.godot_variant_as_vector3;
+			void* _func = cast(void*)_godot_api.variant_as_vector3;
 			void* _this = cast(void*)&this;
 			
 			asm @nogc nothrow
@@ -438,10 +491,32 @@ struct Variant
 		{
 			return conversionFromGodot!R(this);
 		}
+		else static if(is(Unqual!R == String))
+		{
+			static if (is(Unqual!R == NodePath))
+				godot_node_path str;
+			else
+				godot_string str;
+			_godot_api.variant_stringify(&_godot_variant, cast(void*) &str);
+			return R(str);
+		}
 		else
 		{
 			DType[VarType] ret = void;
-			*cast(InternalType[VarType]*)&ret = mixin("_godot_api.godot_variant_as_"~FunctionAs!VarType~"(&_godot_variant)");
+			//*cast(InternalType[VarType]*)&ret = mixin("_godot_api.variant_as_"~FunctionAs!VarType~"(&_godot_variant)");
+
+			// this gives wrong result, try the other way around
+			//auto fn = _godot_api.get_variant_from_type_constructor(VarType);
+			//fn(cast(GDNativeVariantPtr) &_godot_variant, &ret);
+
+			// special case such as calling function with null optional parameter
+			if (_godot_variant._opaque.ptr is null)
+			{
+				return R.init;
+			}
+
+			auto fn = _godot_api.get_variant_to_type_constructor(VarType);
+			fn(cast(void*) &ret, cast(void*) &_godot_variant);
 
 			static if(directlyCompatible!R) return ret;
 			else
@@ -462,7 +537,8 @@ struct Variant
 		}
 		else
 		{
-			mixin("auto Fn = _godot_api.godot_variant_new_"~FunctionNew!VarType~";");
+			//mixin("auto Fn = _godot_api.variant_new_"~FunctionNew!VarType~";");
+			auto Fn = _godot_api.get_variant_from_type_constructor(VarType);
 			alias PassType = Parameters!Fn[1]; // second param is the value
 
 			alias IT = InternalType[VarType];
@@ -477,12 +553,29 @@ struct Variant
 	}
 	
 	pragma(inline, true)
-	void opAssign(T)(in auto ref T input) if(!is(T : Variant) && !is(T : typeof(null)))
+	void opAssign(T)(in auto ref T input) if(!is(T : Variant) && !is(T : typeof(null)) && !is(Unqual!T : void*))
 	{
 		import std.conv : emplace;
 		
-		_godot_api.godot_variant_destroy(&_godot_variant);
-		emplace!(Variant)(&this, input);
+		_godot_api.variant_destroy(&_godot_variant);
+		static if (is(T : TypedArray!Args, Args...))
+		{
+			// hacky way, for some reasons 'alias this' was ignored
+			emplace!(Variant)(&this, input._array);
+		}
+		else
+		{
+			emplace!(Variant)(&this, input);
+		}
+	}
+
+	// internal use only, but can be useful for users who knows what they are doing
+	// used in few cases only, audioeffect.process() as a buffer is one example
+	pragma(inline, true)
+	package(godot) void opAssign(const void* input)
+	{
+		// can it be messed up by alignment?
+		_godot_variant = *cast(godot_variant*) input;
 	}
 	
 	static assert(allSatisfy!(compatible, DType));
@@ -491,14 +584,18 @@ struct Variant
 	static assert(directlyCompatible!GodotObject);
 	static assert(directlyCompatible!(const(GodotObject)));
 	static assert(!directlyCompatible!Node);
-	static assert(compatibleFromGodot!Node);
+	// TODO: fix me
+	//static assert(compatibleFromGodot!Node);
 	static assert(compatibleToGodot!Node);
-	static assert(compatibleFromGodot!(const(Node)));
+	// TODO: fix me
+	//static assert(compatibleFromGodot!(const(Node)));
 	static assert(compatibleToGodot!(const(Node)));
 	static assert(!directlyCompatible!(Ref!Resource));
-	static assert(compatibleFromGodot!(Ref!Resource));
+	// TODO: fix me
+	//static assert(compatibleFromGodot!(Ref!Resource));
 	static assert(compatibleToGodot!(Ref!Resource));
-	static assert(compatibleFromGodot!(const(Ref!Resource)));
+	// TODO: fix me
+	//static assert(compatibleFromGodot!(const(Ref!Resource)));
 	static assert(compatibleToGodot!(const(Ref!Resource)));
 
 	private template FunctionAs(Type type)
@@ -512,38 +609,39 @@ struct Variant
 		private enum string FunctionNew = (name_[$-1]=='_')?(name_[0..$-1]):name_;
 	}
 	
-	@nogc nothrow:
+	//@nogc nothrow:
 	this(this)
 	{
 		godot_variant other = _godot_variant; // source Variant still owns this
-		_godot_api.godot_variant_new_copy(&_godot_variant, &other);
+		_godot_api.variant_new_copy(&_godot_variant, &other);
 	}
 	
 	static Variant nil()
 	{
 		Variant v = void;
-		_godot_api.godot_variant_new_nil(&v._godot_variant);
+		_godot_api.variant_new_nil(&v._godot_variant);
 		return v;
 	}
 	
 	this(in ref Variant other)
 	{
-		_godot_api.godot_variant_new_copy(&_godot_variant, &other._godot_variant);
+		_godot_api.variant_new_copy(&_godot_variant, &other._godot_variant);
 	}
 	
 	this(T : typeof(null))(in T nil)
 	{
-		_godot_api.godot_variant_new_nil(&_godot_variant);
+		_godot_api.variant_new_nil(&_godot_variant);
 	}
 	
 	~this()
 	{
-		_godot_api.godot_variant_destroy(&_godot_variant);
+		// TODO: need to check this, causes broken values after several Variant to variant assignments
+		_godot_api.variant_destroy(&_godot_variant);
 	}
 	
 	Type type() const
 	{
-		return cast(Type)_godot_api.godot_variant_get_type(&_godot_variant);
+		return cast(Type)_godot_api.variant_get_type(&_godot_variant);
 	}
 	
 	inout(T) as(T : Variant)() inout { return this; }
@@ -551,33 +649,51 @@ struct Variant
 	pragma(inline, true)
 	void opAssign(T : typeof(null))(in T nil)
 	{
-		_godot_api.godot_variant_destroy(&_godot_variant);
-		_godot_api.godot_variant_new_nil(&_godot_variant);
+		_godot_api.variant_destroy(&_godot_variant);
+		_godot_api.variant_new_nil(&_godot_variant);
 	}
 	
 	pragma(inline, true)
 	void opAssign(T : Variant)(in T other)
 	{
-		_godot_api.godot_variant_destroy(&_godot_variant);
-		_godot_api.godot_variant_new_copy(&_godot_variant, &other._godot_variant);
+		_godot_api.variant_destroy(&_godot_variant);
+		_godot_api.variant_new_copy(&_godot_variant, &other._godot_variant);
 	}
 	
 	bool opEquals(in ref Variant other) const
 	{
-		return cast(bool)_godot_api.godot_variant_operator_equal(&_godot_variant, &other._godot_variant);
+		Variant ret;
+		bool valid;
+		evaluate(GDNATIVE_VARIANT_OP_EQUAL, this, other, ret, valid);
+		return ret.as!bool;
+		//return cast(bool)_godot_api.variant_operator_equal(&_godot_variant, &other._godot_variant);
+	}
+
+	private void evaluate(int op, ref const Variant a, ref const Variant b, ref Variant ret, ref bool isValid) const
+	{
+		GDNativeBool res;
+		_godot_api.variant_evaluate(op, &a._godot_variant, &b._godot_variant, &ret._godot_variant, &res);
+		isValid = !!res;
 	}
 	
 	int opCmp(in ref Variant other) const
 	{
-		if(_godot_api.godot_variant_operator_equal(&_godot_variant, &other._godot_variant))
+		Variant res;
+		bool valid;
+		evaluate(GDNATIVE_VARIANT_OP_EQUAL, this, other, res, valid);
+		if (res.as!bool)
 			return 0;
-		return _godot_api.godot_variant_operator_less(&_godot_variant, &other._godot_variant)?
-			-1 : 1;
+		evaluate(GDNATIVE_VARIANT_OP_LESS, this, other, res, valid);
+		return res.as!bool ? -1 : 1;
+		//if(_godot_api.variant_operator_equal(&_godot_variant, &other._godot_variant))
+		//	return 0;
+		//return _godot_api.variant_operator_less(&_godot_variant, &other._godot_variant)?
+		//	-1 : 1;
 	}
 	
 	bool booleanize() const
 	{
-		return cast(bool)_godot_api.godot_variant_booleanize(&_godot_variant);
+		return cast(bool)_godot_api.variant_booleanize(&_godot_variant);
 	}
 	
 	auto toString() const

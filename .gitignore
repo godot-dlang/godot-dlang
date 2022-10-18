@@ -19,4 +19,5 @@ __test__*__
 godot-d_generator
 examples/*/project/.import/*
 examples/*/project/logs/*
-
+examples/**/.godot
+classes

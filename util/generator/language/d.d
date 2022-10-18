@@ -4,13 +4,13 @@ import godotutil.string;
 import api.util;
 import api.classes, api.methods;
 
+import language;
+
 import std.algorithm.iteration;
 import std.range;
 import std.path;
 import std.conv : text;
 import std.string;
-
-version(none):
 
 Language getDLanguage()
 {
@@ -37,7 +37,7 @@ Copyright (c) 2017-2018 Godot-D contributors  `;
 
 string[2] generatePackage(GodotClass c)
 {
-	if(c.name.godot == "GlobalConstants") return [null, null];
+	if(c.name.godot == "CoreConstants") return [null, null];
 	
 	if(c.descendant_ptrs.length == 0) return [null, null];
 	
@@ -72,7 +72,7 @@ string[2] generatePackage(GodotClass c)
 
 string[2] generateClass(GodotClass c)
 {
-	if(c.name.godot == "GlobalConstants") return [null, null];
+	if(c.name.godot == "CoreConstants") return [null, null];
 	
 	string folder = "godot";
 	string filename = (c.descendant_ptrs.length == 0) ?
@@ -117,7 +117,7 @@ string[2] generateGlobalConstants(GodotClass c)
 	import std.algorithm.iteration, std.algorithm.searching, std.algorithm.sorting;
 	import std.range : array;
 	
-	if(c.name.godot != "GlobalConstants") return [null, null];
+	if(c.name.godot != "CoreConstants") return [null, null];
 	
 	string filename = buildPath("godot", "globalconstants.d");
 	string ret;
@@ -126,9 +126,9 @@ string[2] generateGlobalConstants(GodotClass c)
 	ret ~= "module godot.globalconstants;\n";
 	ret ~= "public import godot.globalenums;\n";
 	
-	foreach(const string name, const int value; c.constants)
+	foreach(constant; c.constants)
 	{
-		ret ~= "enum int "~name.snakeToCamel.escapeD~" = "~text(value)~";\n";
+		ret ~= "enum int "~constant.name.snakeToCamel.escapeD~" = "~text(constant.value)~";\n";
 	}
 
 	string[2] arr = [filename, ret];
@@ -143,7 +143,7 @@ string[2] generateGlobalEnums(GodotClass c)
 	import std.algorithm.iteration, std.algorithm.searching, std.algorithm.sorting;
 	import std.range : array;
 
-	if(c.name.godot != "GlobalConstants") return [null, null];
+	if(c.name.godot != "CoreConstants") return [null, null];
 
 	string filename = buildPath("godot", "globalenums.d");
 	string ret;
@@ -160,21 +160,28 @@ string[2] generateGlobalEnums(GodotClass c)
 	
 	alias groups = AliasSeq!(
 		Group("Key", "KEY_"),
-		Group("MouseButton", "BUTTON_"),
+		Group("MouseButton", "MOUSE_BUTTON_"),
 		Group("PropertyHint", "PROPERTY_HINT_"),
 		Group("PropertyUsage", "PROPERTY_USAGE_"),
-		Group("Type", "TYPE_")
+		Group("Type", "TYPE_"),
+		Group("TransferMode", "TRANSFER_MODE_"),
+		Group("InlineAlign", "INLINE_ALIGN_"),
 	);
-	
-	foreach(g; groups)
+
+	import api.enums;
+
+	foreach(g; c.enums)
 	{
+		// Skip Variant.Type & Variant.Operator, they are defined in core C module
+		if (g.name.startsWith("Variant.") || g.name == "PropertyUsageFlags")
+			continue;
+
 		ret ~= "enum "~g.name~" : int\n{\n";
 		
-		foreach(const string name; c.constants.keys[].filter!(k => k.startsWith(g.prefix))
-			.array.sort!((a,b) => c.constants[a] < c.constants[b]))
+		foreach(e; g.values)
 		{
-			ret ~= "\t" ~ name[g.prefix.length..$].snakeToCamel.escapeD
-				~ " = " ~ text(c.constants[name]) ~ ",\n";
+			ret ~= "\t" ~ e.name.snakeToCamel.escapeD
+				~ " = " ~ text(e.value) ~ ",\n";
 		}
 		
 		ret ~= "}\n";
@@ -182,11 +189,11 @@ string[2] generateGlobalEnums(GodotClass c)
 
 	// Godot itself never refers to these, but some modules like Goost do.
 	// Allow bindings for them to compile by keeping the original names.
-	string[2][] aliases = [["KeyList", "Key"], ["PropertyUsageFlags", "PropertyUsage"], ["ButtonList", "MouseButton"]];
-	foreach(a; aliases)
-	{
-		ret ~= "alias " ~ a[0] ~ " = " ~ a[1] ~ ";\n";
-	}
+	//string[2][] aliases = [["KeyList", "Key"], ["PropertyUsageFlags", "PropertyUsage"], ["ButtonList", "MouseButton"]];
+	//foreach(a; aliases)
+	//{
+	//	ret ~= "alias " ~ a[0] ~ " = " ~ a[1] ~ ";\n";
+	//}
 
 	string[2] arr = [filename, ret];
 	return arr;

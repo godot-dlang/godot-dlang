@@ -14,7 +14,7 @@ enum GODOT_NET_API_MINOR = 1;
 struct godot_net_stream_peer
 {
 
-	godot_gdnative_api_version ver; /* version of our API */
+	//godot_gdnative_api_version ver; /* version of our API */
 	godot_object data; /* User reference */
 
 	/* This is StreamPeer */
@@ -30,7 +30,7 @@ struct godot_net_stream_peer
 
 struct godot_net_packet_peer
 {
-	godot_gdnative_api_version ver; /* version of our API */
+	//godot_gdnative_api_version ver; /* version of our API */
 
 	godot_object data; /* User reference */
 
@@ -45,7 +45,7 @@ struct godot_net_packet_peer
 
 struct godot_net_multiplayer_peer
 {
-	godot_gdnative_api_version ver; /* version of our API */
+	//godot_gdnative_api_version ver; /* version of our API */
 
 	godot_object data; /* User reference */
 
@@ -74,7 +74,7 @@ struct godot_net_multiplayer_peer
 
 struct godot_net_webrtc_library
 {
-	godot_gdnative_api_version version_; /* version of our API */
+	//godot_gdnative_api_version version_; /* version of our API */
 
 	/* Called when the library is unset as default interface via godot_net_set_webrtc_library */
 	void* function() unregistered;
@@ -89,7 +89,7 @@ struct godot_net_webrtc_library
 /* WebRTCPeerConnection interface */
 struct godot_net_webrtc_peer_connection
 {
-	godot_gdnative_api_version version_; /* version of our API */
+	//godot_gdnative_api_version version_; /* version of our API */
 
 	godot_object *data; /* User reference */
 
@@ -112,7 +112,7 @@ struct godot_net_webrtc_peer_connection
 /* WebRTCDataChannel interface */
 struct godot_net_webrtc_data_channel
 {
-	godot_gdnative_api_version version_; /* version of our API */
+	//godot_gdnative_api_version version_; /* version of our API */
 
 	godot_object *data; /* User reference */
 
@@ -144,7 +144,7 @@ struct godot_net_webrtc_data_channel
 
 struct godot_net_webrtc_peer
 {
-	godot_gdnative_api_version ver; /* version of our API */
+	//godot_gdnative_api_version ver; /* version of our API */
 
 	godot_object data; /* User reference */
 

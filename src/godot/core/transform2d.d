@@ -29,7 +29,7 @@ struct Transform2D
 	
 	union
 	{
-		Vector2[3] elements = [ Vector2(1,0), Vector2(0,1), Vector2(0,0) ];
+		Vector2[3] columns = [ Vector2(1,0), Vector2(0,1), Vector2(0,0) ];
 		struct
 		{
 			Vector2 x_axis; /// 
@@ -38,21 +38,21 @@ struct Transform2D
 		}
 	}
 	
-	real_t tdotx(in Vector2 v) const { return elements[0][0] * v.x + elements[1][0] * v.y; }
-	real_t tdoty(in Vector2 v) const { return elements[0][1] * v.x + elements[1][1] * v.y; }
+	real_t tdotx(in Vector2 v) const { return columns[0][0] * v.x + columns[1][0] * v.y; }
+	real_t tdoty(in Vector2 v) const { return columns[0][1] * v.x + columns[1][1] * v.y; }
 	
 	this(real_t xx, real_t xy, real_t yx, real_t yy, real_t ox, real_t oy)
 	{
-		elements[0][0] = xx;
-		elements[0][1] = xy;
-		elements[1][0] = yx;
-		elements[1][1] = yy;
-		elements[2][0] = ox;
-		elements[2][1] = oy;
+		columns[0][0] = xx;
+		columns[0][1] = xy;
+		columns[1][0] = yx;
+		columns[1][1] = yy;
+		columns[2][0] = ox;
+		columns[2][1] = oy;
 	}
 	
-	const(Vector2) opIndex(int axis) const { return elements[axis]; }
-	ref Vector2 opIndex(int axis) return { return elements[axis]; }
+	const(Vector2) opIndex(int axis) const { return columns[axis]; }
+	ref Vector2 opIndex(int axis) return { return columns[axis]; }
 	
 	
 	
@@ -67,8 +67,8 @@ struct Transform2D
 	Vector2 basisXformInv(in Vector2 v) const
 	{
 		return Vector2(
-			elements[0].dot(v),
-			elements[1].dot(v)
+			columns[0].dot(v),
+			columns[1].dot(v)
 		);
 	}
 	
@@ -77,25 +77,25 @@ struct Transform2D
 		return Vector2(
 			tdotx(v),
 			tdoty(v)
-		) + elements[2];
+		) + columns[2];
 	}
 	Vector2 xformInv(in Vector2 p_vec) const
 	{
-		Vector2 v = p_vec - elements[2];
+		Vector2 v = p_vec - columns[2];
 		
 		return Vector2(
-			elements[0].dot(v),
-			elements[1].dot(v)
+			columns[0].dot(v),
+			columns[1].dot(v)
 		);
 	}
 	Rect2 xform(in Rect2 p_rect) const
 	{
-		Vector2 x=elements[0]*p_rect.size.x;
-		Vector2 y=elements[1]*p_rect.size.y;
-		Vector2 pos = xform( p_rect.pos );
+		Vector2 x=columns[0]*p_rect.size.x;
+		Vector2 y=columns[1]*p_rect.size.y;
+		Vector2 pos = xform( p_rect.position );
 	
 		Rect2 new_rect;
-		new_rect.pos=pos;
+		new_rect.position=pos;
 		new_rect.expandTo( pos+x );
 		new_rect.expandTo( pos+y );
 		new_rect.expandTo( pos+x+y );
@@ -104,24 +104,24 @@ struct Transform2D
 	
 	void setRotationAndScale(real_t p_rot,in Vector2 p_scale)
 	{
-		elements[0][0]=cos(p_rot)*p_scale.x;
-		elements[1][1]=cos(p_rot)*p_scale.y;
-		elements[1][0]=-sin(p_rot)*p_scale.y;
-		elements[0][1]=sin(p_rot)*p_scale.x;
+		columns[0][0]=cos(p_rot)*p_scale.x;
+		columns[1][1]=cos(p_rot)*p_scale.y;
+		columns[1][0]=-sin(p_rot)*p_scale.y;
+		columns[0][1]=sin(p_rot)*p_scale.x;
 	
 	}
 	
 	Rect2 xformInv(in Rect2 p_rect) const
 	{
 		Vector2[4] ends=[
-			xformInv( p_rect.pos ),
-			xformInv( Vector2(p_rect.pos.x,p_rect.pos.y+p_rect.size.y ) ),
-			xformInv( Vector2(p_rect.pos.x+p_rect.size.x,p_rect.pos.y+p_rect.size.y ) ),
-			xformInv( Vector2(p_rect.pos.x+p_rect.size.x,p_rect.pos.y ) )
+			xformInv( p_rect.position ),
+			xformInv( Vector2(p_rect.position.x,p_rect.position.y+p_rect.size.y ) ),
+			xformInv( Vector2(p_rect.position.x+p_rect.size.x,p_rect.position.y+p_rect.size.y ) ),
+			xformInv( Vector2(p_rect.position.x+p_rect.size.x,p_rect.position.y ) )
 		];
 	
 		Rect2 new_rect;
-		new_rect.pos=ends[0];
+		new_rect.position=ends[0];
 		new_rect.expandTo(ends[1]);
 		new_rect.expandTo(ends[2]);
 		new_rect.expandTo(ends[3]);
@@ -133,8 +133,8 @@ struct Transform2D
 	{
 		// FIXME: this function assumes the basis is a rotation matrix, with no scaling.
 		// affine_inverse can handle matrices with scaling, so GDScript should eventually use that.
-		swap(elements[0][1],elements[1][0]);
-		elements[2] = basisXform(-elements[2]);
+		swap(columns[0][1],columns[1][0]);
+		columns[2] = basisXform(-columns[2]);
 	}
 	
 	Transform2D inverse() const
@@ -151,11 +151,11 @@ struct Transform2D
 		///ERR_FAIL_COND(det==0);
 		real_t idet = 1.0 / det;
 	
-		swap( elements[0][0],elements[1][1] );
-		elements[0]*=Vector2(idet,-idet);
-		elements[1]*=Vector2(-idet,idet);
+		swap( columns[0][0],columns[1][1] );
+		columns[0]*=Vector2(idet,-idet);
+		columns[1]*=Vector2(-idet,idet);
 	
-		elements[2] = basisXform(-elements[2]);
+		columns[2] = basisXform(-columns[2]);
 	
 	}
 	
@@ -185,40 +185,40 @@ struct Transform2D
 	{
 		real_t cr = cos(p_rot);
 		real_t sr = sin(p_rot);
-		elements[0][0]=cr;
-		elements[0][1]=sr;
-		elements[1][0]=-sr;
-		elements[1][1]=cr;
+		columns[0][0]=cr;
+		columns[0][1]=sr;
+		columns[1][0]=-sr;
+		columns[1][1]=cr;
 	}
 	
 	this(real_t p_rot, in Vector2 p_pos)
 	{
 		real_t cr = cos(p_rot);
 		real_t sr = sin(p_rot);
-		elements[0][0]=cr;
-		elements[0][1]=sr;
-		elements[1][0]=-sr;
-		elements[1][1]=cr;
-		elements[2]=p_pos;
+		columns[0][0]=cr;
+		columns[0][1]=sr;
+		columns[1][0]=-sr;
+		columns[1][1]=cr;
+		columns[2]=p_pos;
 	}
 	
 	Vector2 getScale() const
 	{
 		real_t det_sign = basisDeterminant() > 0 ? 1 : -1;
-		return det_sign * Vector2( elements[0].length(), elements[1].length() );
+		return det_sign * Vector2( columns[0].length(), columns[1].length() );
 	}
 	
 	void scale(in Vector2 p_scale)
 	{
 		scaleBasis(p_scale);
-		elements[2]*=p_scale;
+		columns[2]*=p_scale;
 	}
 	void scaleBasis(in Vector2 p_scale)
 	{
-		elements[0][0]*=p_scale.x;
-		elements[0][1]*=p_scale.y;
-		elements[1][0]*=p_scale.x;
-		elements[1][1]*=p_scale.y;
+		columns[0][0]*=p_scale.x;
+		columns[0][1]*=p_scale.y;
+		columns[1][0]*=p_scale.x;
+		columns[1][1]*=p_scale.y;
 	
 	}
 	void translate(real_t p_tx, real_t p_ty)
@@ -227,22 +227,22 @@ struct Transform2D
 	}
 	void translate(in Vector2 p_translation)
 	{
-		elements[2]+=basisXform(p_translation);
+		columns[2]+=basisXform(p_translation);
 	}
 	
 	void orthonormalize()
 	{
 		// Gram-Schmidt Process
 	
-		Vector2 x=elements[0];
-		Vector2 y=elements[1];
+		Vector2 x=columns[0];
+		Vector2 y=columns[1];
 	
 		x.normalize();
 		y = (y-x*(x.dot(y)));
 		y.normalize();
 	
-		elements[0]=x;
-		elements[1]=y;
+		columns[0]=x;
+		columns[1]=y;
 	}
 	Transform2D orthonormalized() const
 	{
@@ -254,19 +254,19 @@ struct Transform2D
 	
 	void opOpAssign(string op : "*")(in Transform2D p_transform)
 	{
-		elements[2] = xform(p_transform.elements[2]);
+		columns[2] = xform(p_transform.columns[2]);
 	
 		real_t x0,x1,y0,y1;
 	
-		x0 = tdotx(p_transform.elements[0]);
-		x1 = tdoty(p_transform.elements[0]);
-		y0 = tdotx(p_transform.elements[1]);
-		y1 = tdoty(p_transform.elements[1]);
+		x0 = tdotx(p_transform.columns[0]);
+		x1 = tdoty(p_transform.columns[0]);
+		y0 = tdotx(p_transform.columns[1]);
+		y1 = tdoty(p_transform.columns[1]);
 	
-		elements[0][0]=x0;
-		elements[0][1]=x1;
-		elements[1][0]=y0;
-		elements[1][1]=y1;
+		columns[0][0]=x0;
+		columns[0][1]=x1;
+		columns[1][0]=y0;
+		columns[1][1]=y1;
 	}
 	
 	
@@ -297,7 +297,7 @@ struct Transform2D
 	Transform2D untranslated() const
 	{
 		Transform2D copy=this;
-		copy.elements[2]=Vector2();
+		copy.columns[2]=Vector2();
 		return copy;
 	}
 	
@@ -318,7 +318,7 @@ struct Transform2D
 	
 	real_t basisDeterminant() const
 	{
-		return elements[0].x * elements[1].y - elements[0].y * elements[1].x;
+		return columns[0].x * columns[1].y - columns[0].y * columns[1].x;
 	}
 	
 	Transform2D interpolateWith(in Transform2D p_transform, real_t p_c) const

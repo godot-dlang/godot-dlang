@@ -1,25 +1,31 @@
 import godot;
 import godot.object;
-import godot.area;
-import godot.camera;
+import godot.area3d;
+import godot.camera3d;
 import godot.input;
-import godot.inputevent.all;
+import godot.inputevent;
+import godot.engine;
 
-class Player : GodotScript!Area
+class Player : GodotScript!Area3D
 {
 	alias owner this;
 	
 	enum float speed = 25; /// units per second
+
+	this() {}
 	
 	@Method _ready()
 	{
 		
 	}
 	
-	@Method _process(float delta)
+	@Method _process(double delta)
 	{
+		if (Engine.isEditorHint)
+			return;
+
 		Vector2 mousePos = getTree.root.getMousePosition;
-		Camera camera = getTree.root.getCamera;
+		Camera3D camera = getTree.root.getCamera3d;
 		Vector3 rayOrigin = camera.projectRayOrigin(mousePos);
 		Vector3 rayNormal = camera.projectRayNormal(mousePos);
 		
@@ -31,10 +37,10 @@ class Player : GodotScript!Area
 		}
 		
 		
-		if(Input.isActionPressed(gs!"fly"))
+		if(Input.isActionPressed(gn!"fly", false))
 		{
 			translateObjectLocal(Vector3(0f, 0f, -delta * speed));
-			if(translation.length > 50f) translation = 50f * translation.normalized;
+			if(position.length > 50f) position = 50f * position.normalized;
 		}
 	}
 	
@@ -43,7 +49,7 @@ class Player : GodotScript!Area
 		import godot.control;
 		setProcess(false);
 		hide();
-		getNode(gs!"GameOver").as!Control.show();
+		getNode(NodePath("GameOver")).as!Control.show();
 	}
 }
 

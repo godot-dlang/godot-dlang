@@ -11,8 +11,6 @@ import std.exception : enforce;
 import dxml.dom;
 import dxml.util : stripIndent;
 
-version(none):
-
 void parseClassDoc(GodotClass c, string xml)
 {
 	string ddoc;
@@ -85,6 +83,7 @@ void parseClassDoc(GodotClass c, string xml)
 		auto constants = cDoc.child("constants");
 		foreach(ceDoc; constants.children)
 		{
+			/*
 			auto cPtr = ceDoc.attribute("name") in c.constants;
 			if(cPtr) c.ddocConstants[ceDoc.attribute("name")] = ceDoc.childText.godotToDdoc;
 			
@@ -93,6 +92,7 @@ void parseClassDoc(GodotClass c, string xml)
 				auto index = c.enums.countUntil!"a.name == b"(ceDoc.attribute("enum"));
 				if(index != -1) c.enums[index].ddoc[ceDoc.attribute("name")] = ceDoc.childText.godotToDdoc;
 			}
+			*/
 		}
 	}
 	

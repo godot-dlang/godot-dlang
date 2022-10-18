@@ -11,20 +11,19 @@ import std.path;
 import std.conv : text;
 import std.string;
 
-/// FIXME: support global enums such as "enum::Error", "enum::HAlign", etc
-
 string enumParent(string name)
 {
 	return name.splitEnumName[0];
 }
 
 /// splits the name of an enum as obtained from the JSON into [class, enum] names.
-string[2] splitEnumName(string godotName)
+string[2] splitEnumName(string type)
 {
-	string name = godotName[6..$];
-	auto end = name.countUntil(".");
+	// skip 'enum::' part
+	string name = type[6..$];
+	auto end = name.countUntil("."); // enum:: arleady skipped, now look for scope qualifier e.g. TextServer.Hinting 
 	if(end == -1) return [null, name]; // not a class
-	return [name[0..end], name[end+2..$]];
+	return [name[0..end], name[end+1..$]];
 }
 
 /// format the enum type for D.
@@ -32,29 +31,22 @@ string qualifyEnumName(string type)
 {
 	string[2] split = type.splitEnumName;
 	if(!split[0]) return split[1].escapeD;
-	return BaseType.get(split[0]).d~"."~split[1].escapeD;
+	return Type.get(split[0]).d~"."~split[1].escapeD;
 }
 
-struct Constant
-{
-	Name name; // case
-	int value;
-}
-struct Enum
+struct EnumValues
 {
 	string name;
-	Constant[] values;
-	@serdeIgnore:
-	BaseType type; // enum::ParentClass.name
+	int value;
 }
 
-version(none):
 struct GodotEnum
 {
 	string name;
-	int[string] values;
+	EnumValues[] values;
+	@serdeOptional bool is_bitfield;
 	
-	@serializationIgnore:
+	@serdeIgnore:
 	GodotClass parent;
 	
 	string[string] ddoc;
@@ -63,11 +55,11 @@ struct GodotEnum
 	{
 		string ret = "\t/// \n\tenum "~name.escapeD~" : int\n\t{\n";
 		
-		foreach(n; values.keys.sort!((a, b)=>(values[a] < values[b])))
+		foreach(n; values/*.sort!((a, b)=>(a.value < b.value))*/)
 		{
-			if(auto ptr = n in ddoc) ret ~= "\t\t/**\n\t\t" ~ (*ptr).replace("\n", "\n\t\t") ~ "\n\t\t*/\n";
+			if(auto ptr = n.name in ddoc) ret ~= "\t\t/**\n\t\t" ~ (*ptr).replace("\n", "\n\t\t") ~ "\n\t\t*/\n";
 			else ret ~= "\t\t/** */\n";
-			ret ~= "\t\t"~n.snakeToCamel.escapeD~" = "~values[n].text~",\n";
+			ret ~= "\t\t"~n.name.snakeToCamel.escapeD~" = " ~ n.value.text~",\n";
 		}
 		
 		ret ~= "\t}\n";

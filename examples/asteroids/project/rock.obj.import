@@ -1,20 +1,21 @@
 [remap]
 
 importer="wavefront_obj"
+importer_version=1
 type="Mesh"
-path="res://.import/rock.obj-6eef1f089948cb1f5e02cdf2f3ea603b.mesh"
+uid="uid://co1fmw6sfkgys"
+path="res://.godot/imported/rock.obj-6eef1f089948cb1f5e02cdf2f3ea603b.mesh"
 
 [deps]
 
-files=[ "res://.import/rock.obj-6eef1f089948cb1f5e02cdf2f3ea603b.mesh" ]
+files=["res://.godot/imported/rock.obj-6eef1f089948cb1f5e02cdf2f3ea603b.mesh"]
 
 source_file="res://rock.obj"
-source_md5="9d7e7c40183ab7ca17e2117fcd4eea5f"
-
-dest_files=[ "res://.import/rock.obj-6eef1f089948cb1f5e02cdf2f3ea603b.mesh", "res://.import/rock.obj-6eef1f089948cb1f5e02cdf2f3ea603b.mesh" ]
-dest_md5="68fd2b197945163f2025cfa839e8f240"
+dest_files=["res://.godot/imported/rock.obj-6eef1f089948cb1f5e02cdf2f3ea603b.mesh", "res://.godot/imported/rock.obj-6eef1f089948cb1f5e02cdf2f3ea603b.mesh"]
 
 [params]
 
 generate_tangents=true
-scale_mesh=Vector3( 1, 1, 1 )
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+optimize_mesh=true
