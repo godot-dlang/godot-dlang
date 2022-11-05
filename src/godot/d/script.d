@@ -209,7 +209,7 @@ extern(C) package(godot) void* createFunc(T)(void* data) //nothrow @nogc
 
 	emplace(t);
 	// class must have default ctor to be properly initialized
-	t.__ctor();
+	// t.__ctor();
 
 	//static if(extendsGodotBaseClass!T)
 	{
