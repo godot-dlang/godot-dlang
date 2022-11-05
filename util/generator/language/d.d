@@ -4,7 +4,7 @@ import godotutil.string;
 import api.util;
 import api.classes, api.methods;
 
-import language;
+// import language;
 
 import std.algorithm.iteration;
 import std.range;
@@ -12,17 +12,17 @@ import std.path;
 import std.conv : text;
 import std.string;
 
-Language getDLanguage()
-{
-	Language ret;
-	ret.classOutputFiles = [
-		Language.ClassOutputFile(&generateClass),
-		Language.ClassOutputFile(&generateGlobalConstants),
-		Language.ClassOutputFile(&generateGlobalEnums),
-		Language.ClassOutputFile(&generatePackage)
-	];
-	return ret;
-}
+// Language getDLanguage()
+// {
+// 	Language ret;
+// 	ret.classOutputFiles = [
+// 		Language.ClassOutputFile(&generateClass),
+// 		Language.ClassOutputFile(&generateGlobalConstants),
+// 		Language.ClassOutputFile(&generateGlobalEnums),
+// 		Language.ClassOutputFile(&generatePackage)
+// 	];
+// 	return ret;
+// }
 
 
 
