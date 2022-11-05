@@ -205,12 +205,12 @@ alias GDNativeExtensionClassGetRID = uint64_t function(GDExtensionClassInstanceP
 struct GDNativePropertyInfo
 {
 //@nogc nothrow:
-	uint32_t type;
+	GDNativeVariantType type;
 	const(char)* name;
 	const(char)* class_name;
-	uint32_t hint;
+	uint32_t hint; // Bitfield of `PropertyHint` (defined in `extension_api.json`)
 	const(char)* hint_string;
-	uint32_t usage;
+	uint32_t usage; // Bitfield of `PropertyUsageFlags` (defined in `extension_api.json`)
 }
 
 struct GDNativeMethodInfo
@@ -218,7 +218,7 @@ struct GDNativeMethodInfo
 //@nogc nothrow:
 	const(char)* name;
 	GDNativePropertyInfo return_value;
-	uint32_t flags; // From GDNativeExtensionClassMethodFlags
+	uint32_t flags; // Bitfield of `GDNativeExtensionClassMethodFlags`
 	int32_t id;
 	GDNativePropertyInfo* arguments;
 	uint32_t argument_count;
@@ -237,12 +237,13 @@ alias GDNativeExtensionClassUnreference = void function(GDExtensionClassInstance
 alias GDNativeExtensionClassCallVirtual = void function(GDExtensionClassInstancePtr p_instance, const GDNativeTypePtr *p_args, GDNativeTypePtr r_ret);
 alias GDNativeExtensionClassCreateInstance = GDNativeObjectPtr function(void* p_userdata);
 alias GDNativeExtensionClassFreeInstance = void function(void* p_userdata, GDExtensionClassInstancePtr p_instance);
-alias GDNativeExtensionClassObjectInstance = void function(GDExtensionClassInstancePtr p_instance, GDNativeObjectPtr p_object_instance);
 alias GDNativeExtensionClassGetVirtual = GDNativeExtensionClassCallVirtual function(void* p_userdata, const char *p_name);
 
 struct GDNativeExtensionClassCreationInfo
 {
 //@nogc nothrow:
+	GDNativeBool is_virtual;
+	GDNativeBool is_abstract;
 	GDNativeExtensionClassSet set_func;
 	GDNativeExtensionClassGet get_func;
 	GDNativeExtensionClassGetPropertyList get_property_list_func;
@@ -307,7 +308,7 @@ struct GDNativeExtensionClassMethodInfo
 	void *method_userdata;
 	GDNativeExtensionClassMethodCall call_func;
 	GDNativeExtensionClassMethodPtrCall ptrcall_func;
-	uint32_t method_flags; /* GDNativeExtensionClassMethodFlags */
+	uint32_t method_flags; // Bitfield of `GDNativeExtensionClassMethodFlags`
 	uint32_t argument_count;
 	GDNativeBool has_return_value;
 	GDNativeExtensionClassMethodGetArgumentType get_argument_type_func;
