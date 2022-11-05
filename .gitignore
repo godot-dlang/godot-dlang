@@ -15,6 +15,7 @@ __dummy.html
 *.so
 *.dll
 *.exe
+*.pdb
 __test__*__
 godot-d_generator
 examples/*/project/.import/*
