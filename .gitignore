@@ -18,7 +18,9 @@ __dummy.html
 *.pdb
 __test__*__
 godot-d_generator
+extension_api.json
 examples/*/project/.import/*
 examples/*/project/logs/*
 examples/**/.godot
+examples/dlangtest/
 classes
