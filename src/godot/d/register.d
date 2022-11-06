@@ -3,7 +3,7 @@ Initialization, termination, and registration of D libraries in Godot
 +/
 module godot.d.register;
 
-import godotutil.classes;
+import godot.api.util.classes;
 
 import std.format;
 import std.meta, std.traits;
@@ -74,7 +74,7 @@ mixin template GodotNativeLibrary(string symbolPrefix, Args...)
 {
 	private static import godot.c;
 	private static import godot.c.gdnative_interface;
-	private static import godotutil.classes;
+	private static import godot.api.util.classes;
 	private import godot.d.reference;
 
 	static if(__traits(compiles, import("classes.csv")))

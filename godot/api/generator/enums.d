@@ -1,7 +1,7 @@
-module api.enums;
+module godot.api.generator.enums;
 
-import godotutil.string;
-import api.classes, api.util;
+import godot.api.util.string;
+import godot.api.generator.classes, godot.api.generator.util;
 
 import asdf;
 
@@ -31,7 +31,7 @@ string qualifyEnumName(string type)
 {
 	string[2] split = type.splitEnumName;
 	if(!split[0]) return split[1].escapeD;
-	return Type.get(split[0]).d~"."~split[1].escapeD;
+	return Type.get(split[0]).dType~"."~split[1].escapeD;
 }
 
 struct EnumValues

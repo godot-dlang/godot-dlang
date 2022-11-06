@@ -1,6 +1,6 @@
-module api.c;
+module godot.api.generator.c;
 
-import api.util;
+import godot.api.generator.util;
 
 import std.string;
 import std.format;

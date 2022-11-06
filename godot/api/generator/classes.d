@@ -1,7 +1,7 @@
-module api.classes;
+module godot.api.generator.classes;
 
-import godotutil.string;
-import api.methods, api.enums, api.util;
+import godot.api.util.string;
+import godot.api.generator.methods, godot.api.generator.enums, godot.api.generator.util;
 
 import asdf;
 
@@ -131,7 +131,7 @@ final class GodotClass
 	void addUsedClass(in Type c)
 	{
 		auto u = c.unqual();
-		if(u.isPrimitive || u.isCoreType || u.godot == "Object") return;
+		if(u.isPrimitive || u.isCoreType || u.godotType == "Object") return;
 		if(u.isTypedArray) u = u.arrayType;
 		if(!used_classes.canFind(u)) used_classes ~= u;
 	}
@@ -142,11 +142,11 @@ final class GodotClass
 		name.objectClass = this;
 		name.original = this;
 
-		// why they are different? name != Type.get(name.godot)
-		Type.get(name.godot).original = this;
-		Type.get(name.godot).objectClass = this;
+		// FIXME why they are different? name != Type.get(name.godotType)
+		Type.get(name.godotType).original = this;
+		Type.get(name.godotType).objectClass = this;
 		
-		if(base_class && base_class.godot != "Object" && name.godot != "Object") used_classes ~= base_class;
+		if(base_class && base_class.godotType != "Object" && name.godotType != "Object") used_classes ~= base_class;
 		
 		foreach(m; constructors)
 		{
@@ -187,7 +187,7 @@ final class GodotClass
 		if(singleton)
 		{
 			ret ~= "\t\tgodot_object _singleton;\n";
-			ret ~= "\t\timmutable char* _singletonName = \""~name.godot.chompPrefix("_")~"\";\n";
+			ret ~= "\t\timmutable char* _singletonName = \""~name.godotType.chompPrefix("_")~"\";\n";
 		}
 		foreach(const ct; constructors)
 		{
@@ -226,7 +226,7 @@ final class GodotClass
 			{
 				auto c = m.return_type.enumParent;
 				if (!c)
-					c = Type.get(enumParent(m.return_type.godot));
+					c = Type.get(enumParent(m.return_type.godotType));
 				if(c && c !is name) addUsedClass(c);
 			}
 			else if(m.return_type !is name)
@@ -239,7 +239,7 @@ final class GodotClass
 				{
 					auto c = cast() a.type.enumParent;
 					if (!c)
-						c = Type.get(enumParent(a.type.godot));
+						c = Type.get(enumParent(a.type.godotType));
 					if(c && c !is name) addUsedClass(c);
 				}
 				else if(a.type !is name)
@@ -270,7 +270,7 @@ final class GodotClass
 			if(getterMethod) pType = getterMethod.return_type;
 			else pType = p.type;
 
-			if(pType.godot.canFind(',')) continue; /// FIXME: handle with common base. Also see godot#35467
+			if(pType.godotType.canFind(',')) continue; /// FIXME: handle with common base. Also see godot#35467
 			if(pType.isEnum)
 			{
 				auto c = pType.enumParent;
@@ -282,7 +282,7 @@ final class GodotClass
 			}
 		}
 		assert(!used_classes.canFind(name));
-		assert(!used_classes.canFind!(c => c.godot == "Object"));
+		assert(!used_classes.canFind!(c => c.godotType == "Object"));
 
 		if (!isBuiltinClass)
 		{
@@ -310,21 +310,21 @@ import godot.classdb;`;
 			ret ~= ";\n";
 		}
 
-		string className = name.d;
+		string className = name.dType;
 		if(singleton) className ~= "Singleton";
 		if(isBuiltinClass) className ~= "_Bind";
 		ret ~= "/**\n"~ddoc~"\n*/\n";
 		ret ~= "@GodotBaseClass struct "~className;
 		ret ~= "\n{\n";
-		ret ~= "\tpackage(godot) enum string _GODOT_internal_name = \""~name.godot~"\";\n";
+		ret ~= "\tpackage(godot) enum string _GODOT_internal_name = \""~name.godotType~"\";\n";
 		ret ~= "public:\n";
 		// way to much PITA, ignore for now
 		//ret ~= "@nogc nothrow:\n";
 		
 		// Pointer to Godot object, fake inheritance through alias this
-		if(name.godot != "Object" && name.godot != "CoreConstants" && !isBuiltinClass)
+		if(name.godotType != "Object" && name.godotType != "CoreConstants" && !isBuiltinClass)
 		{
-			ret ~= "\tunion { /** */ godot_object _godot_object; /** */ "~base_class.d;
+			ret ~= "\tunion { /** */ godot_object _godot_object; /** */ "~base_class.dType;
 			if(base_class && base_class.original && base_class.original.singleton) 
 				ret ~= "Singleton";
 			ret ~= " _GODOT_base; }\n\talias _GODOT_base this;\n";
@@ -351,7 +351,7 @@ import godot.classdb;`;
 		ret ~= "\tpragma(inline, true) bool opEquals(typeof(null) n) const\n";
 		ret ~= "\t{ return _godot_object.ptr is n; }\n";
 		// comparison operator
-		if(name.godot == "Object")
+		if(name.godotType == "Object")
 		{
 			ret ~= "\t/// \n";
 			ret ~= "\tpragma(inline, true) int opCmp(in GodotObject other) const\n";
@@ -370,7 +370,7 @@ import godot.classdb;`;
 		ret ~= "\t/// Construct a new instance of "~className~".\n";
 		ret ~= "\t/// Note: use `memnew!"~className~"` instead.\n";
 		ret ~= "\tstatic "~className~" _new()\n\t{\n";
-		ret ~= "\t\tif(auto obj = _godot_api.classdb_construct_object(\""~name.godot~"\"))\n";
+		ret ~= "\t\tif(auto obj = _godot_api.classdb_construct_object(\""~name.godotType~"\"))\n";
 		ret ~= "\t\t\treturn "~className~"(godot_object(obj));\n";
 		ret ~= "\t\treturn typeof(this).init;\n";
 		ret ~= "\t}\n";
@@ -378,7 +378,7 @@ import godot.classdb;`;
 		foreach(ct; constructors)
 		{
 			//ret ~= "\tstatic "~name.d~" "~ ct.name ~ ct.templateArgsString ~ ct.argsString ~ "\n\t{\n";
-			//ret ~= "\t\tif(auto fn = _godot_api.variant_get_ptr_constructor(GDNATIVE_VARIANT_TYPE_"~name.godot.snakeToCamel.toUpper ~ ", " ~ text(ct.index) ~"))\n";
+			//ret ~= "\t\tif(auto fn = _godot_api.variant_get_ptr_constructor(GDNATIVE_VARIANT_TYPE_"~name.godotType.snakeToCamel.toUpper ~ ", " ~ text(ct.index) ~"))\n";
 			//ret ~= "\t\t\treturn "~name.d~"(godot_object(fn(...)));\n";
 			//ret ~= "\t\treturn typeof(this).init;\n";
 			//ret ~= "\t}\n";
@@ -391,7 +391,7 @@ import godot.classdb;`;
 			ret ~= "\tvoid _destructor()\n";
 			ret ~= "\t{\n";
 			ret ~= "\t\tif (!GDNativeClassBinding.destructor)\n";
-			ret ~= "\t\t\tGDNativeClassBinding.destructor = _godot_api.variant_get_ptr_destructor(GDNATIVE_VARIANT_TYPE_"~name.godot.camelToSnake.toUpper ~ ");\n";
+			ret ~= "\t\t\tGDNativeClassBinding.destructor = _godot_api.variant_get_ptr_destructor(GDNATIVE_VARIANT_TYPE_"~name.godotType.camelToSnake.toUpper ~ ");\n";
 			ret ~= "\t\tGDNativeClassBinding.destructor(&_godot_object);\n";
 			ret ~= "\t}\n";
 		}
@@ -406,10 +406,10 @@ import godot.classdb;`;
 		foreach(const ref e; missingEnums)
 		{
 			import std.stdio;
-			writeln("Warning: The enum "~e.d~" is missing from Godot's script API; using a non-typesafe int instead.");
-			ret ~= "\t/// Warning: The enum "~e.d~" is missing from Godot's script API; using a non-typesafe int instead.\n";
-			ret ~= "\tdeprecated(\"The enum "~e.d~" is missing from Godot's script API; using a non-typesafe int instead.\")\n";
-			string shortName = e.d[e.d.countUntil(".")+1..$];
+			writeln("Warning: The enum "~e.dType~" is missing from Godot's script API; using a non-typesafe int instead.");
+			ret ~= "\t/// Warning: The enum "~e.dType~" is missing from Godot's script API; using a non-typesafe int instead.\n";
+			ret ~= "\tdeprecated(\"The enum "~e.dType~" is missing from Godot's script API; using a non-typesafe int instead.\")\n";
+			string shortName = e.dType[e.dType.countUntil(".")+1..$];
 			ret ~= "\talias " ~ shortName ~ " = int;\n";
 		}
 		
@@ -437,7 +437,7 @@ import godot.classdb;`;
 		foreach(const p; properties)
 		{
 			import std.stdio : writeln;
-			if(p.type.godot.canFind(',')) continue; /// FIXME: handle with common base
+			if(p.type.godotType.canFind(',')) continue; /// FIXME: handle with common base
 			
 			GodotMethod getterMethod, setterMethod;
 			
@@ -458,8 +458,8 @@ import godot.classdb;`;
 				
 				if(c.base_class is null)
 				{
-					if(!getterMethod) writeln("Warning: property ", name.godot, ".", p.name, " specifies a getter that doesn't exist: ", p.getter);
-					if(p.setter.length && !setterMethod) writeln("Warning: property ", name.godot, ".", p.name, " specifies a setter that doesn't exist: ", p.setter);
+					if(!getterMethod) writeln("Warning: property ", name.godotType, ".", p.name, " specifies a getter that doesn't exist: ", p.getter);
+					if(p.setter.length && !setterMethod) writeln("Warning: property ", name.godotType, ".", p.name, " specifies a setter that doesn't exist: ", p.setter);
 					break;
 				}
 			}
@@ -481,7 +481,7 @@ import godot.classdb;`;
 			ret ~= "/// Returns: the "~className~"\n";
 			//ret ~= "@property @nogc nothrow pragma(inline, true)\n";
 			ret ~= "@property pragma(inline, true)\n";
-			ret ~= className ~ " " ~ name.d;
+			ret ~= className ~ " " ~ name.dType;
 			ret ~= "()\n{\n";
 			ret ~= "\tcheckClassBinding!"~className~"();\n";
 			ret ~= "\treturn "~className~"("~className~".GDNativeClassBinding._singleton);\n";

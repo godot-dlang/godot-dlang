@@ -1,0 +1,30 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Generate API",
+            "type": "shell",
+            "command": "./generate-api.sh",
+            "problemMatcher": [
+                "$dmd"
+            ],
+        },
+        {
+            "type": "dub",
+            "run": false,
+            "cwd": "g:/godot-dlang",
+            "compiler": "$current",
+            "archType": "$current",
+            "buildType": "$current",
+            "configuration": "$current",
+            "problemMatcher": [
+                "$dmd"
+            ],
+            "group": "build",
+            "label": "dub: Build godot-dlang",
+            "detail": "dub build --compiler=dmd.EXE -a=x86_64 -b=debug -c=library"
+        }
+    ]
+}

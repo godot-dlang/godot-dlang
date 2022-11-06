@@ -6,7 +6,7 @@ subpackage to actually obtain the info by parsing D files.
 
 TODO: replace temporary CSV serialization with proper JSON.
 +/
-module godotutil.classes;
+module godot.api.util.classes;
 
 import std.string;
 
