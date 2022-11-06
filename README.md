@@ -1,4 +1,4 @@
-[<img src="logo.svg" alt="Godot-DLang Logo" width="600"/>](https://github.com/godot-dlang/godot-dlang)
+[![DLang Logo](logo.png)](https://github.com/godot-dlang/godot-dlang)
 
 Godot-DLang
 =======
