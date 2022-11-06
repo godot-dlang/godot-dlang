@@ -30,13 +30,12 @@
 module godot.c;
 
 @nogc nothrow:
-extern(C):
+extern (C):
 
-public import //godot.c.api,
-	godot.c.core,
-	godot.c.gdnative_interface,
-	godot.c.nativescript,
-	godot.c.arvr,
-	godot.c.pluginscript,
-	godot.c.android;
-
+public import  //godot.c.api,
+godot.c.core,
+godot.c.gdnative_interface,
+godot.c.nativescript,
+godot.c.arvr,
+godot.c.pluginscript,
+godot.c.android;

@@ -3,7 +3,10 @@ module godot.c.android;
 import godot.c.core;
 
 @nogc nothrow:
-extern(C):
+extern (C):
 
-struct JNIEnv {}
-struct jobject {}
+struct JNIEnv {
+}
+
+struct jobject {
+}

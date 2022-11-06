@@ -1,3 +1,5 @@
+# DEPRECATED
+
 Godot-D API Binding Generator
 =============================
 This program generates D bindings for the API exported by Godot. It requires two JSON files: `gdnative_api.json` for the C interface, `api.json` for the rest of Godot's API. The JSONs from the most recent [official Godot release](https://godotengine.org/download) are included in the Godot-D repository, but the steps below show how to obtain them from a custom Godot build.
@@ -22,6 +24,6 @@ API Documentation
 The generator can include Godot's API documentation as ddoc comments by reading it from the XML files in the Godot source. This can be useful for generating D-themed doc pages or for showing class/method documentation in your IDE. Pass your Godot source directory to the generator with the `-s` switch:  
 
 ``` sh
-dub run :api-binding-generator -- -s path/to/godot
+dub run :api-binding-generator -- -j path/to/api.json -o
 ```
 

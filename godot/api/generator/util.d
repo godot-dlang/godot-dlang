@@ -119,7 +119,9 @@ class Type {
         return only("int", "bool", "real", "float", "void", "double", "real_t",
             "uint8_t", "int8_t", "uint16_t", "int16_t", "uint32_t", "int32_t", "uint64_t", "int64_t", // well...
             "uint8", "int8", "uint16", "int16", "uint32", "int32", "uint64", "int64" // hope they will merge it or smth
+
             
+
         ).canFind(unqual.godotType);
     }
 
@@ -241,7 +243,8 @@ class Type {
         string innerName = splitEnumName(godotType)[1];
 
         // FIXME why it's always parent.original?
-        auto searchInParent = parent.godotType == "CoreConstants" ? parent.original : parent.original;
+        auto searchInParent = parent.godotType == "CoreConstants" ? parent.original
+            : parent.original;
 
         // HACK: core types not available here
         // if (searchInParent is null && parent.isCoreType) {
@@ -540,7 +543,9 @@ string escapeD(string s) {
         "init",
         "version",
         "body", // for now at least...
+
         
+
     );
     switch (s) {
     case "Object":
