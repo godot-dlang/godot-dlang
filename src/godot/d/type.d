@@ -12,9 +12,8 @@ import std.meta;
 import sumtype;
 
 /// 
-struct BuiltInClass
-{
-	String name;
+struct BuiltInClass {
+    String name;
 }
 
 /// 
@@ -35,16 +34,14 @@ alias GodotType = SumType!(TypeCategories);
 /// Returns: `type` as a `T` if it is actually in type category `T`,
 /// otherwise `defaultValue`
 @nogc nothrow
-T get(T)(in GodotType type, T defaultValue = T.init)
-{
-	return type.match!((T t) => t, _ => defaultValue);
+T get(T)(in GodotType type, T defaultValue = T.init) {
+    return type.match!((T t) => t, _ => defaultValue);
 }
 
 /// Is `type` in type category `T`?
 @nogc nothrow
-bool isCategory(T)(in GodotType type)
-{
-	return type.match!((T t) => true, _ => false);
+bool isCategory(T)(in GodotType type) {
+    return type.match!((T t) => true, _ => false);
 }
 
 /// FIXME: GodotType can't currently work with String or Ref!Script at compile
@@ -53,14 +50,14 @@ bool isCategory(T)(in GodotType type)
 /// GodotType of a compile-time D type.
 /// If T is indirectly compatible with Godot, this returns the Godot type T would
 /// be converted to when passed to Godot.
-template GodotTypeOf(T)
-{
-	version(none)
-	{
-	static if(extendsGodotBaseClass!T) enum GodotTypeOf = GodotType(NativeScriptTemplate!T.as!Script);
-	else static if(isGodotBaseClass!T) enum GodotTypeOf = GodotType(BuiltInClass(String(T._GODOT_internal_name)));
-	}
-	else enum GodotTypeOf = GodotType(Variant.variantTypeOf!T);
+template GodotTypeOf(T) {
+    version (none) {
+        static if (extendsGodotBaseClass!T)
+            enum GodotTypeOf = GodotType(NativeScriptTemplate!T.as!Script);
+        else static if (isGodotBaseClass!T)
+            enum GodotTypeOf = GodotType(BuiltInClass(String(T._GODOT_internal_name)));
+    } else
+        enum GodotTypeOf = GodotType(Variant.variantTypeOf!T);
 }
 
 // TODO: fix me
@@ -69,17 +66,16 @@ template GodotTypeOf(T)
 //static assert(GodotTypeOf!(int[4]) == GodotType(Variant.Type.array));
 
 /// D type of a compile-time GodotType
-template DTypeOf(GodotType t)
-{
-	static if(t.isCategory!(Variant.Type))
-	{
-		alias DTypeOf = Variant.DType[get!(Variant.Type)(t)];
-	}
-	else static assert(0, "Class types aren't known at compile time because the Godot API is not yet loaded");
+template DTypeOf(GodotType t) {
+    static if (t.isCategory!(Variant.Type)) {
+        alias DTypeOf = Variant.DType[get!(Variant.Type)(t)];
+    } else
+        static assert(0, "Class types aren't known at compile time because the Godot API is not yet loaded");
 }
-static foreach(alias C; TypeCategories) alias DTypeOf(C t) = DTypeOf!(GodotType(t));
+
+static foreach (alias C; TypeCategories)
+    alias DTypeOf(C t) = DTypeOf!(GodotType(t));
 
 // TODO: fix me
 //static assert(is(DTypeOf!(Variant.Type.int_) == long));
 //static assert(is(DTypeOf!(Variant.Type.array) == Array));
-
