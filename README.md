@@ -1,4 +1,4 @@
-[<img src="/logo.svg" alt="Godot-DLang Logo" width="600"/>](https://github.com/godot-dlang/godot-dlang)
+[<img src="logo.svg" alt="Godot-DLang Logo" width="600"/>](https://github.com/godot-dlang/godot-dlang)
 
 Godot-DLang
 =======
@@ -24,14 +24,16 @@ In order to proceed you will need D compiler (`dmd` or `ldc2`) with `dub`, `git`
 - step into that directory and open terminal
 - clone git repo `git clone https://github.com/godot-dlang/godot-dlang.git`
 - switch it to master branch `git checkout master`
-- add local dub package `dub add-local . ~master`, `dub add-override godot-dlang ~master .`  
+- add local dub package `dub add-local . ~master`, or if you have package from dub `dub add-override godot-dlang ~master .`  
 - you should see that dub package version "~master" is registered
 - now go to an editor location in terminal and generate script API information `godot.windows.editor.x86_64.exe --dump-extension-api`
+- move `extension_api.json` into `godot-dlang` folder
 - step inside godot-dlang in terminal `cd godot-dlang`
-- build binding generator (-j tells where to look for script api and -o tells to overwrite any existing bindings) `dub run :api-binding-generator -- -j ..\extension_api.json -o`
+- build binding generator (-j tells where to look for script api and -o tells to overwrite any existing bindings) `dub run :api-binding-generator -- -j extension_api.json -o` or run `generate-api.sh`
 
 > This step is one time process, though you would need to re-generate API and bindings for every godot release
-> Note that if you have strange errors in `dub run` you might have godot-dlang cached in dub, you might need to remove it by using `dub remove godot-dlang`
+> Note that if you have strange errors in `dub run` you might have godot-dlang cached in dub, you might need to remove it by using `dub remove godot-dlang`  
+> Also note that `dub add-local` might sometimes not works and how `Non-optional dependency not found` error ([dlang/dub#986](https://github.com/dlang/dub/issues/986)). In that case do `dub remove-local .` in "godot-dlang" folder and then `dub add-path .` instead.
 
 ## 2) Creating godot project
 - open godot editor, and create a new project in some known location like `C:\godot\mycoolgame`

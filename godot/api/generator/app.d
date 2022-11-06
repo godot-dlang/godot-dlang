@@ -1,11 +1,12 @@
+// module godot.api.generator;
 
-import api.util;
-import api.c;
-import api.classes, api.methods, api.enums;
-import api.doc;
-import api;
-// import language;
-import language.d;
+import godot.api.generator.util;
+import godot.api.generator.c;
+import godot.api.generator.classes, godot.api.generator.methods, godot.api.generator.enums;
+import godot.api.generator.doc;
+import godot.api.generator.api;
+
+import godot.api.generator.d;
 
 import asdf;
 

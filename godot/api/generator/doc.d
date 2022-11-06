@@ -1,7 +1,7 @@
-module api.doc;
+module godot.api.generator.doc;
 
-import api.classes, api.methods, api.util;
-import godotutil.string;
+import godot.api.generator.classes, godot.api.generator.methods, godot.api.generator.util;
+import godot.api.util.string;
 
 import std.stdio : writeln, writefln;
 import std.string, std.range;
@@ -17,7 +17,7 @@ void parseClassDoc(GodotClass c, string xml)
 	auto dom = parseDOM!simpleXML(xml);
 	
 	enforce(dom.children.length == 1 && dom.children[0].name == "class",
-		"Expected a single <class name=\""~c.name.d~"\"> in the doc XML");
+		"Expected a single <class name=\""~c.name.dType~"\"> in the doc XML");
 	auto cDoc = dom.children[0];
 	
 	if(cDoc.hasChild("brief_description"))
@@ -60,7 +60,7 @@ void parseClassDoc(GodotClass c, string xml)
 			{
 				parseMethodDoc(c.methods[index], mDoc);
 			}
-			else writefln("No method %s.%s", c.name.godot, mDoc.attribute("name"));
+			else writefln("No method %s.%s", c.name.godotType, mDoc.attribute("name"));
 		}
 	}
 	
@@ -74,7 +74,7 @@ void parseClassDoc(GodotClass c, string xml)
 			{
 				parsePropertyDoc(c.properties[index], mDoc);
 			}
-			else writefln("No property %s.%s", c.name.godot, mDoc.attribute("name"));
+			else writefln("No property %s.%s", c.name.godotType, mDoc.attribute("name"));
 		}
 	}
 	

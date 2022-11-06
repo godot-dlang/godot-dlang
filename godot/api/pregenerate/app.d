@@ -1,6 +1,8 @@
-import classfinder;
+module godot.api.pregenerate;
 
-import godotutil.classes;
+import godot.api.classfinder;
+
+import godot.api.util.classes;
 
 import std.process;
 import std.stdio;

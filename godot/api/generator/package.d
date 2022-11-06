@@ -1,4 +1,4 @@
-module api;
+module godot.api.generator.api;
 
 
 import std.range;
@@ -8,10 +8,10 @@ import std.conv;
 import std.string;
 import std.stdio;
 
-import api.util;
-import api.classes, api.methods, api.enums;
+import godot.api.generator.util;
+import godot.api.generator.classes, godot.api.generator.methods, godot.api.generator.enums;
 
-import godotutil.string;
+import godot.api.util.string;
 
 import asdf;
 
@@ -63,10 +63,10 @@ struct NativeStructure
 	void addUsedClass(in Type c)
 	{
 		auto u = c.unqual();
-		if(u.isNativeStruct || u.isPrimitive || u.isCoreType || u.godot == "Object") return;
+		if(u.isNativeStruct || u.isPrimitive || u.isCoreType || u.godotType == "Object") return;
 		if(u.isEnum) u = u.enumParent;
 		// aww this sucks
-		else if (u.godot.canFind('.')) u = Type.get(u.godot[0..u.godot.indexOf('.')]);
+		else if (u.godotType.canFind('.')) u = Type.get(u.godotType[0..u.godotType.indexOf('.')]);
 		if(!used_classes.canFind(u)) used_classes ~= u;
 	}
 
@@ -158,13 +158,13 @@ struct ExtensionsApi
 		// update native structs before binding classes
 		foreach(s; native_structures)
 		{
-			Type.get(s.name.godot).isNativeStruct = true;
+			Type.get(s.name.godotType).isNativeStruct = true;
 		}
 
 		// mark singletons before writing class bindings
 		foreach(s; singletons)
 		{
-			auto cls = classes.find!(c => c.name.godot == s.name.godot);
+			auto cls = classes.find!(c => c.name.godotType == s.name.godotType);
 			if (!cls.empty)
 				cls.front.singleton = true;
 		}
@@ -172,9 +172,9 @@ struct ExtensionsApi
 		// 
 		foreach(c; classes)
 		{
-			if (c.name.godot != "Object") 
+			if (c.name.godotType != "Object") 
 			{
-				c.base_class = Type.get(c.base_class.godot);
+				c.base_class = Type.get(c.base_class.godotType);
 				//c.base_class.original = Type.get(c.base_class.godot).original;
 				//c.base_class.objectClass = Type.get(c.base_class.godot).objectClass;
 			}
@@ -290,7 +290,7 @@ void writeStructs(ref ExtensionsApi api, string dirPath)
 		foreach(imp; st.used_classes)
 			s ~= "import godot." ~ imp.moduleName ~ ";\n";
 
-		s ~= "struct " ~ st.name.d ~ "\n{\n";
+		s ~= "struct " ~ st.name.dType ~ "\n{\n";
 
 		// quick hack to indent fields
 		string[dchar] transTable = ['\n' : "\n    "]; 

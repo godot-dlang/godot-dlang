@@ -5,10 +5,10 @@ It does not attempt to limit the search to Godot-related classes or expand
 mixins; a completely accurate class list would require its own compiler or a
 compiler plugin system for D to list the classes as they're compiled.
 +/
-module classfinder;
+module godot.api.classfinder;
 
-import godotutil.string;
-import godotutil.classes;
+import godot.api.util.string;
+import godot.api.util.classes;
 
 import dparse.parser, dparse.lexer;
 import dparse.ast;

@@ -1,7 +1,7 @@
 /++
 String manipulation utilities needed by Godot-D
 +/
-module godotutil.string;
+module godot.api.util.string;
 
 import std.string, std.uni, std.utf;
 import std.range, std.traits;

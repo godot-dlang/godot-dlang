@@ -1,32 +1,14 @@
-module language.d;
+module godot.api.generator.d;
 
-import godotutil.string;
-import api.util;
-import api.classes, api.methods;
-
-// import language;
+import godot.api.util.string;
+import godot.api.generator.util;
+import godot.api.generator.classes, godot.api.generator.methods;
 
 import std.algorithm.iteration;
 import std.range;
 import std.path;
 import std.conv : text;
 import std.string;
-
-// Language getDLanguage()
-// {
-// 	Language ret;
-// 	ret.classOutputFiles = [
-// 		Language.ClassOutputFile(&generateClass),
-// 		Language.ClassOutputFile(&generateGlobalConstants),
-// 		Language.ClassOutputFile(&generateGlobalEnums),
-// 		Language.ClassOutputFile(&generatePackage)
-// 	];
-// 	return ret;
-// }
-
-
-
-
 
 private:
 
@@ -38,7 +20,7 @@ Copyright (c) 2022-2022 Godot-DLang contributors`;
 
 string[2] generatePackage(GodotClass c)
 {
-	if(c.name.godot == "CoreConstants") return [null, null];
+	if(c.name.godotType == "CoreConstants") return [null, null];
 	
 	if(c.descendant_ptrs.length == 0) return [null, null];
 	
@@ -73,7 +55,7 @@ string[2] generatePackage(GodotClass c)
 
 string[2] generateClass(GodotClass c)
 {
-	if(c.name.godot == "CoreConstants") return [null, null];
+	if(c.name.godotType == "CoreConstants") return [null, null];
 	
 	string folder = "godot";
 	string filename = (c.descendant_ptrs.length == 0) ?
@@ -97,7 +79,7 @@ string[2] generateClass(GodotClass c)
 	ret ~= "import godot.d.bind;\n";
 	ret ~= "import godot.d.reference;\n";
 	ret ~= "import godot.globalenums;\n";
-	if(c.name.godot != "Object") ret ~= "import godot.object;\n";
+	if(c.name.godotType != "Object") ret ~= "import godot.object;\n";
 	
 	if(c.instanciable)
 	{
@@ -118,7 +100,7 @@ string[2] generateGlobalConstants(GodotClass c)
 	import std.algorithm.iteration, std.algorithm.searching, std.algorithm.sorting;
 	import std.range : array;
 	
-	if(c.name.godot != "CoreConstants") return [null, null];
+	if(c.name.godotType != "CoreConstants") return [null, null];
 	
 	string filename = buildPath("godot", "globalconstants.d");
 	string ret;
@@ -144,7 +126,7 @@ string[2] generateGlobalEnums(GodotClass c)
 	import std.algorithm.iteration, std.algorithm.searching, std.algorithm.sorting;
 	import std.range : array;
 
-	if(c.name.godot != "CoreConstants") return [null, null];
+	if(c.name.godotType != "CoreConstants") return [null, null];
 
 	string filename = buildPath("godot", "globalenums.d");
 	string ret;
@@ -169,7 +151,7 @@ string[2] generateGlobalEnums(GodotClass c)
 		Group("InlineAlign", "INLINE_ALIGN_"),
 	);
 
-	import api.enums;
+	import godot.api.generator.enums;
 
 	foreach(g; c.enums)
 	{
