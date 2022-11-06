@@ -4,9 +4,33 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Generate API",
+            "label": "Build Generate API",
             "type": "shell",
-            "command": "./generate-api.sh",
+            "command": "dub build :generator",
+            "problemMatcher": [
+                "$dmd"
+            ],
+        },
+        {
+            "label": "Build Pregenerator",
+            "type": "shell",
+            "command": "dub build :pregenerate",
+            "problemMatcher": [
+                "$dmd"
+            ],
+        },
+        {
+            "label": "Build ClassFinder",
+            "type": "shell",
+            "command": "dub build :classfinder",
+            "problemMatcher": [
+                "$dmd"
+            ],
+        },
+        {
+            "label": "Build Godot-DLang",
+            "type": "shell",
+            "command": "dub build",
             "problemMatcher": [
                 "$dmd"
             ],

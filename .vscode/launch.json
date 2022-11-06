@@ -11,6 +11,7 @@
             "program": "godot-dlang_generator.exe",
             "args": ["-j", "extension_api.json", "-o"],
             "cwd": "${workspaceRoot}",
-        }
+            "preLaunchTask": "Build Generate API"
+        },
     ]
 }
