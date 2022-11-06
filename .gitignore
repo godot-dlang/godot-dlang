@@ -1,13 +1,10 @@
-.directory
+# D Specific
 .dub
 dub.selections.json
-.settings
 dub.userprefs
-godot-dlang.dlangidews
-godot-dlang.dlangidews.wssettings
-godot-dlang.settings
-docs.json
-__dummy.html
+
+# Binaries
+bin/
 *.o
 *.obj
 *.a
@@ -16,11 +13,30 @@ __dummy.html
 *.dll
 *.exe
 *.pdb
-__test__*__
-godot-dlang_generator
+
+# Generated
 extension_api.json
+docs.json
+classes/
+
+#
+
+.directory
+.settings
+
+#
+
+godot-dlang.dlangidews
+godot-dlang.dlangidews.wssettings
+godot-dlang.settings
+
+#
+
+__dummy.html
+__test__*__
+examples/dlangtest/
+
+# Godot
 examples/*/project/.import/*
 examples/*/project/logs/*
 examples/**/.godot
-examples/dlangtest/
-classes
