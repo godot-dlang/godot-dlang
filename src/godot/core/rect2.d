@@ -11,11 +11,11 @@ License: $(LINK2 https://opensource.org/licenses/MIT, MIT License)
 
 
 */
-module godot.core.rect2;
+module godot.rect2;
 
-import godot.c.core;
-import godot.core.defs;
-import godot.core.vector2, godot.core.transform2d;
+import godot.abi.core;
+import godot.api.types;
+import godot.vector2, godot.transform2d;
 
 // import godot.globalenums;  // enum Side, but tbh it is bad idea to rely on this
 

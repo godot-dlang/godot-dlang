@@ -11,11 +11,11 @@ License: $(LINK2 https://opensource.org/licenses/MIT, MIT License)
 
 
 */
-module godot.core.basis;
+module godot.basis;
 
-import godot.core.defs;
-import godot.core.vector3;
-import godot.core.quat;
+import godot.api.types;
+import godot.vector3;
+import godot.quat;
 
 import std.math;
 import std.algorithm.mutation : swap;

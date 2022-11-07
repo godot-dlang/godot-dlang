@@ -1,6 +1,6 @@
-module godot.core.signal;
+module godot.signal;
 
-import godot.c;
+import godot.abi;
 
 struct GodotSignal {
     package(godot) godot_signal _signal;

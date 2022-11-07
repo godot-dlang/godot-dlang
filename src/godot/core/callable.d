@@ -1,6 +1,6 @@
-module godot.core.callable;
+module godot.callable;
 
-import godot.c;
+import godot.abi;
 import godot.builtins;
 
 struct GodotCallable {

@@ -11,10 +11,10 @@ License: $(LINK2 https://opensource.org/licenses/MIT, MIT License)
 
 
 */
-module godot.core.dictionary;
+module godot.dictionary;
 
-import godot.c;
-import godot.core;
+import godot.abi;
+import godot;
 import godot.builtins;
 
 import std.meta;
@@ -96,7 +96,7 @@ struct Dictionary {
             cast(GDNativeTypePtr)&ret._godot_dictionary, null);
         /+
 		BUG: wtf? when using static foreach(i; 0..Args.length/2):
-		Error: cannot use operator ~= in @nogc delegate godot.core.dictionary.Dictionary.make!(GodotStringLiteral!"name", String, GodotStringLiteral!"type", int).make.__lambda6
+		Error: cannot use operator ~= in @nogc delegate godot.dictionary.Dictionary.make!(GodotStringLiteral!"name", String, GodotStringLiteral!"type", int).make.__lambda6
 		+/
         static foreach (i, Arg; Args) {
             static if (i % 2 == 0) {
@@ -183,7 +183,7 @@ struct Dictionary {
 
     String toJson() const {
         import godot.json;
-        import godot.d;
+        import godot.api;
 
         Variant v = void;
         v._godot_variant = *cast(godot_variant*)&this;

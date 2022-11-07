@@ -11,11 +11,11 @@ License: $(LINK2 https://opensource.org/licenses/MIT, MIT License)
 
 
 */
-module godot.core.transform2d;
+module godot.transform2d;
 
-import godot.core.defs;
-import godot.core.vector2;
-import godot.core.rect2;
+import godot.api.types;
+import godot.vector2;
+import godot.rect2;
 
 import std.math;
 import std.algorithm.comparison;

@@ -11,12 +11,12 @@ License: $(LINK2 https://opensource.org/licenses/MIT, MIT License)
 
 
 */
-module godot.core.nodepath;
+module godot.nodepath;
 
 import core.lifetime : emplace;
 
-import godot.core.string;
-import godot.c;
+import godot.string;
+import godot.abi;
 import godot.builtins;
 
 /**
@@ -165,7 +165,7 @@ struct NodePath {
         _node_path = other._node_path;
         //godot_node_path_copy(&_node_path, &other._node_path);
         if (other._node_path._opaque.ptr) {
-            import godot.d;
+            import godot.api;
 
             print(other);
             return _bind.new1(other);
@@ -180,12 +180,12 @@ struct NodePath {
         _node_path = other._node_path;
         //godot_node_path_copy(&_node_path, &other._node_path);
         if (other._node_path._opaque.ptr) {
-            import godot.d;
+            import godot.api;
 
             print(other);
             return _bind.new1(other);
         }
-        //import godot.d;
+        //import godot.api;
         //print(other);
         //print(this);
 

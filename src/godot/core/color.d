@@ -11,10 +11,10 @@ License: $(LINK2 https://opensource.org/licenses/MIT, MIT License)
 
 
 */
-module godot.core.color;
+module godot.color;
 
-import godot.core.defs;
-import godot.core.string;
+import godot.api.types;
+import godot.string;
 
 import std.math;
 import std.algorithm.comparison;

@@ -11,11 +11,11 @@ License: $(LINK2 https://opensource.org/licenses/MIT, MIT License)
 
 
 */
-module godot.core.quat;
+module godot.quat;
 
-import godot.core.defs;
-import godot.core.vector3;
-import godot.core.basis;
+import godot.api.types;
+import godot.vector3;
+import godot.basis;
 
 import std.math;
 

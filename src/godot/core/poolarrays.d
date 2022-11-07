@@ -11,15 +11,15 @@ License: $(LINK2 https://opensource.org/licenses/MIT, MIT License)
 
 
 */
-module godot.core.poolarrays;
+module godot.poolarrays;
 
-import godot.c;
-import godot.core.array;
-import godot.core.defs;
-import godot.core.string;
-import godot.core.color;
-import godot.core.vector2;
-import godot.core.vector3;
+import godot.abi;
+import godot.array;
+import godot.api.types;
+import godot.string;
+import godot.color;
+import godot.vector2;
+import godot.vector3;
 import godot.builtins;
 
 import std.range.primitives;

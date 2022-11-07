@@ -13,7 +13,7 @@
 	"sourcePaths": [ "src", "classes" ],
 
 	"dependencies": {
-		"godot-dlang:util": "*",
+		"godot-dlang:tools": "*",
 		"utf_bc": "~>0.2.1",
         "sumtype": "~>1.2.7"
 	},
@@ -28,25 +28,25 @@
 
 	"subPackages": [
 		{
-            "name": "util",
+            "name": "tools",
             "targetType": "library",
-            "sourcePaths": [ "godot/api/util" ],
-            "importPaths": [ "godot/api/util" ]
+            "sourcePaths": [ "godot/util/tools" ],
+            "importPaths": [ "godot/util/tools" ]
         },
 		{
             "name": "generator",
             "description": "Godot API binder for use with godot-dlang",
             "dflags-windows-ldc": ["--link-internally"],
+            "targetType": "executable",
             "dependencies":
             {
-                "godot-dlang:util": "*",
+                "godot-dlang:tools": "*",
                 "asdf": "~>0.7.15",
                 "dxml": "~>0.4.3",
                 "libdparse": "~>0.20.0",
                 "sumtype": "~>1.2.7"
             },
-            "sourcePaths": [ "godot/api/generator" ],
-            "targetPath": "bin",
+            "sourcePaths": [ "godot/util/generator" ],
             "targetName": "godot-dlang-generator"
         },
 		{
@@ -55,13 +55,13 @@
             "targetType": "library",
             "dependencies":
             {
-                "godot-dlang:util": "*",
+                "godot-dlang:tools": "*",
                 "emsi_containers": "~>0.8.0",
                 "dsymbol": "~>0.14.1",
                 "libdparse": "~>0.20.0"
             },
-            "sourcePaths": [ "godot/api/classfinder" ],
-            "importPaths": [ "godot/api/classfinder" ]
+            "sourcePaths": [ "godot/util/classfinder" ],
+            "importPaths": [ "godot/util/classfinder" ]
         },
         {
             "name": "pregenerate",
@@ -69,12 +69,11 @@
             "targetType": "executable",
             "dependencies":
             {
-                "godot-dlang:util": "*",
+                "godot-dlang:tools": "*",
                 "godot-dlang:classfinder": "*"
             },
-            "sourcePaths": [ "godot/api/pregenerate" ],
-            "importPaths": [ "godot/api/pregenerate" ],
-            "targetPath": "bin",
+            "sourcePaths": [ "godot/util/pregenerate" ],
+            "importPaths": [ "godot/util/pregenerate" ],
             "targetName": "godot-dlang-pregenerate"
         }
 	]

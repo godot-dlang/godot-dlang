@@ -11,14 +11,14 @@ License: $(LINK2 https://opensource.org/licenses/MIT, MIT License)
 
 
 */
-module godot.core.transform;
+module godot.transform;
 
-import godot.core.defs;
-import godot.core.vector3;
-import godot.core.quat;
-import godot.core.basis;
-import godot.core.aabb;
-import godot.core.plane;
+import godot.api.types;
+import godot.vector3;
+import godot.quat;
+import godot.basis;
+import godot.aabb;
+import godot.plane;
 
 /**
 Represents one or many transformations in 3D space such as translation, rotation, or scaling. It is similar to a 3x4 matrix.

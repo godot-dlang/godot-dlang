@@ -4,12 +4,12 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Build Generate API",
+            "label": "Build API Generator",
             "type": "shell",
             "command": "dub build :generator",
             "problemMatcher": [
                 "$dmd"
-            ],
+            ]
         },
         {
             "label": "Build Pregenerator",
@@ -17,7 +17,7 @@
             "command": "dub build :pregenerate",
             "problemMatcher": [
                 "$dmd"
-            ],
+            ]
         },
         {
             "label": "Build ClassFinder",
@@ -25,19 +25,35 @@
             "command": "dub build :classfinder",
             "problemMatcher": [
                 "$dmd"
-            ],
+            ]
         },
         {
             "label": "Build Godot-DLang",
             "type": "shell",
-            "command": "dub build",
+            "command": "dub build --compiler dmd",
             "problemMatcher": [
                 "$dmd"
+            ]
+        },
+        {
+            "label": "Run API Generator",
+            "type": "shell",
+            "command": "dub",
+            "args": [
+                "run",
+                ":generator",
+                "--",
+                "-j",
+                "extension_api.json",
+                "-o"
             ],
+            "problemMatcher": [
+                "$dmd"
+            ]
         },
         {
             "type": "dub",
-            "run": false,
+            "run": "false",
             "cwd": "g:/godot-dlang",
             "compiler": "$current",
             "archType": "$current",

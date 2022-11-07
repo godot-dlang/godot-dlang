@@ -11,15 +11,15 @@ License: $(LINK2 https://opensource.org/licenses/MIT, MIT License)
 
 
 */
-module godot.core.array;
+module godot.array;
 
-import godot.c;
-import godot.core.variant;
-import godot.core.poolarrays;
+import godot.abi;
+import godot.variant;
+import godot.poolarrays;
 
 // generated raw bindings
 import godot.builtins;
-import godot.d.bind;
+import godot.api.bind;
 
 import std.meta;
 import std.traits, std.range;
@@ -232,7 +232,7 @@ struct Array {
     /// Array, *not* concatenated to this Array. Use `appendRange` or
     /// `appendArray` to concatenate/chain ranges or Arrays into one.
     void append(T)(auto ref T t) if (is(T : Variant) || Variant.compatibleToGodot!T) {
-        import godot.core.string;
+        import godot.string;
 
         Variant v = Variant(t);
         //_godot_api.array_append(&_godot_array, &v._godot_variant);
@@ -240,7 +240,7 @@ struct Array {
     }
 
     void append(const(void)* nativeObjectPtr) {
-        import godot.core.string;
+        import godot.string;
 
         Array a = void;
         a._godot_array = _godot_array;
