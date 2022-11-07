@@ -1,7 +1,5 @@
 [![DLang Logo](logo.png)](https://github.com/godot-dlang/godot-dlang)
 
-# CURRENTLY BINDINGS NOT WORKING DUE TO DLANG BUG. [USE THESE BINDINGS INSTEAD](https://github.com/godot-dlang/godot-d/tree/godot4) UNTIL WE'RE ABLE TO FIX IT.
-
 # Godot-DLang
 
 D language bindings for the [Godot Engine](https://godotengine.org/)'s

@@ -14,7 +14,7 @@ License: $(LINK2 https://opensource.org/licenses/MIT, MIT License)
 module godot.vector3;
 
 import godot.abi.core;
-import godot.api.types;
+import godot.abi.types;
 import godot.basis;
 import godot.string;
 

@@ -14,7 +14,7 @@ License: $(LINK2 https://opensource.org/licenses/MIT, MIT License)
 module godot.rect2;
 
 import godot.abi.core;
-import godot.api.types;
+import godot.abi.types;
 import godot.vector2, godot.transform2d;
 
 // import godot.globalenums;  // enum Side, but tbh it is bad idea to rely on this
