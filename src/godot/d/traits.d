@@ -9,7 +9,7 @@ import godot.d.reference;
 
 import std.meta, std.traits;
 
-import godot.core, godot.abi;
+import godot, godot.abi;
 import godot.object;
 
 /// https://p0nce.github.io/d-idioms/#Bypassing-@nogc
@@ -119,7 +119,7 @@ template GodotClass(R) {
 
 /++
 Determine if T is any Godot class (base C++ class or D native script, but NOT
-a godot.core struct)
+a godot struct)
 +/
 enum bool isGodotClass(T) = extendsGodotBaseClass!T || isGodotBaseClass!T;
 

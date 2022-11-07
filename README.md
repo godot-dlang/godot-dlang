@@ -147,7 +147,7 @@ Enjoy your new game!
 
 ### Godot API
 Godot's full [script API](http://docs.godotengine.org/) can be used from D:  
-- `godot.core` submodules contain container, math, and engine structs like
+- `godot` submodules contain container, math, and engine structs like
   `Vector3` and `String`.
 - Other submodules of `godot` contain bindings to Godot classes, auto-generated
   from the engine's API. These are the C++ classes scripts can be attached to.

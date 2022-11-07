@@ -16,7 +16,7 @@ import godot.d.wrap;
 import godot.d.udas;
 import godot.d.reference;
 
-import godot.core, godot.abi;
+import godot, godot.abi;
 
 import godot.abi.gdextension;
 

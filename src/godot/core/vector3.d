@@ -11,12 +11,12 @@ License: $(LINK2 https://opensource.org/licenses/MIT, MIT License)
 
 
 */
-module godot.core.vector3;
+module godot.vector3;
 
 import godot.abi.core;
-import godot.core.defs;
-import godot.core.basis;
-import godot.core.string;
+import godot.defs;
+import godot.basis;
+import godot.string;
 
 import std.math;
 
@@ -65,7 +65,7 @@ struct Vector3 {
 	+/
     auto opDispatch(string swizzle, size_t nArgCount)(float[nArgCount] nArgs...) const
             if (swizzle.isValidSwizzle && nArgCount <= swizzle.count('n')) {
-        import godot.core.vector3;
+        import godot.vector3;
         import std.algorithm : min, count;
 
         static if (swizzle.length == 2)

@@ -11,17 +11,17 @@ License: $(LINK2 https://opensource.org/licenses/MIT, MIT License)
 
 
 */
-module godot.core.projection;
+module godot.projection;
 
-import godot.core.defs;
-import godot.core.vector4;
-import godot.core.vector2;
-import godot.core.vector3;
-import godot.core.rect2;
-import godot.core.plane;
-import godot.core.aabb;
-import godot.core.array;
-import godot.core.transform;
+import godot.defs;
+import godot.vector4;
+import godot.vector2;
+import godot.vector3;
+import godot.rect2;
+import godot.plane;
+import godot.aabb;
+import godot.array;
+import godot.transform;
 import godot.abi.core;
 
 import std.math;

@@ -11,11 +11,11 @@ License: $(LINK2 https://opensource.org/licenses/MIT, MIT License)
 
 
 */
-module godot.core.nodepath;
+module godot.nodepath;
 
 import core.lifetime : emplace;
 
-import godot.core.string;
+import godot.string;
 import godot.abi;
 import godot.builtins;
 

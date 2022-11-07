@@ -11,10 +11,10 @@ License: $(LINK2 https://opensource.org/licenses/MIT, MIT License)
 
 
 */
-module godot.core.plane;
+module godot.plane;
 
-import godot.core.defs;
-import godot.core.vector3;
+import godot.defs;
+import godot.vector3;
 
 import std.math;
 

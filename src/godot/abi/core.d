@@ -2,7 +2,7 @@ module godot.abi.core;
 
 public import core.stdc.stddef : wchar_t;
 public import godot.abi.gdextension;
-import godot.core.defs;
+import godot.defs;
 
 //import godot.abi.api;
 
@@ -111,7 +111,7 @@ alias int8_t = int8;
 
 // AFAIK this is not related to godot_float and always has fixed size
 //alias real_t = double;
-alias real_t = godot.core.defs.real_t;
+alias real_t = godot.defs.real_t;
 
 // internal godot id
 struct ObjectID {

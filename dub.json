@@ -37,6 +37,7 @@
             "name": "generator",
             "description": "Godot API binder for use with godot-dlang",
             "dflags-windows-ldc": ["--link-internally"],
+            "targetType": "executable",
             "dependencies":
             {
                 "godot-dlang:util": "*",
@@ -46,7 +47,7 @@
                 "sumtype": "~>1.2.7"
             },
             "sourcePaths": [ "godot/api/generator" ],
-            "targetPath": "bin",
+            "targetPath": ".",
             "targetName": "godot-dlang-generator"
         },
 		{
@@ -74,7 +75,7 @@
             },
             "sourcePaths": [ "godot/api/pregenerate" ],
             "importPaths": [ "godot/api/pregenerate" ],
-            "targetPath": "bin",
+            "targetPath": ".",
             "targetName": "godot-dlang-pregenerate"
         }
 	]

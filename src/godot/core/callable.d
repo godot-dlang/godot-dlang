@@ -1,4 +1,4 @@
-module godot.core.callable;
+module godot.callable;
 
 import godot.abi;
 import godot.builtins;

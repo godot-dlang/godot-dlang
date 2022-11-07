@@ -100,8 +100,8 @@ class GodotMethod {
 
             ret ~= " " ~ a.name.escapeD;
 
-            // FIXME no more has_default_value
-            if (a.default_value.length != 0) {
+            // HACK: look at GodotArgument
+            if (a.default_value != "\0\0") {
                 ret ~= " = " ~ escapeDefault(a.type, a.default_value);
             }
         }
@@ -361,11 +361,13 @@ class GodotMethod {
 struct GodotArgument {
     string name;
     Type type;
-    // FIXME remove as not used anymore
+    
+    // HACK: when godot doesn't want to specifically
+    // tell you default it leaves it empty ("default_value": "")
+    // so when asdf hits it sets default_value to []
+    // which is the same as if it's undefined
     @serdeOptional
-    bool has_default_value;
-    @serdeOptional
-    string default_value;
+    string default_value = "\0\0";
 
 @serdeIgnore:
 

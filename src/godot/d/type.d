@@ -23,7 +23,7 @@ alias TypeCategories = AliasSeq!(VariantType, BuiltInClass, Ref!Script);
 A specific Godot type in one of these type categories:
 * A built-in class derived from GodotObject
 * A Script extending GodotObject (either in D or another Godot scripting language)
-* A Godot core type from the `godot.core` modules or a primitive (represented as a Variant.Type)
+* A Godot core type from the `godot` modules or a primitive (represented as a Variant.Type)
 
 These are all the types that can be directly stored in a Godot Variant. D types
 that are indirectly compatible with Variant are converted to one of these when
