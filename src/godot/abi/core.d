@@ -1,10 +1,10 @@
-module godot.c.core;
+module godot.abi.core;
 
 public import core.stdc.stddef : wchar_t;
-public import godot.c.gdnative_interface;
+public import godot.abi.gdextension;
 import godot.core.defs;
 
-//import godot.c.api;
+//import godot.abi.api;
 
 @nogc nothrow:
 extern (C):

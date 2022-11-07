@@ -27,12 +27,12 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
-module godot.c.nativescript;
+module godot.abi.nativescript;
 
 @nogc nothrow:
 extern (C):
 
-import godot.c.core;
+import godot.abi.core;
 
 enum godot_nativescript_method_rpc_mode {
     GODOT_METHOD_RPC_MODE_DISABLED,

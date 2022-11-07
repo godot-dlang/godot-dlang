@@ -186,7 +186,7 @@ string generateBuiltins(ref ExtensionsApi ap) {
 import std.traits : Unqual;
 import godot.d.traits;
 import godot.core;
-import godot.c;
+import godot.abi;
 import godot.d.bind;
 import godot.d.reference;
 import godot.globalenums;
@@ -253,7 +253,7 @@ void writeStructs(ref ExtensionsApi api, string dirPath) {
     auto s = appender(buf);
     s ~= "module godot.structs;\n\n";
     s ~= "import godot.core;\n";
-    s ~= "import godot.c;\n\n";
+    s ~= "import godot.abi;\n\n";
 
     foreach (st; api.native_structures) {
         auto source = st.parseMembers();

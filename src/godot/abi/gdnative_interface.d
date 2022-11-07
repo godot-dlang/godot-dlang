@@ -32,9 +32,9 @@
  * Together with the JSON file, you should be able to generate any binder.
  */
 
-module godot.c.gdnative_interface;
+module godot.abi.gdextension;
 
-import godot.c.core;
+import godot.abi.core;
 import core.stdc.config;
 
 extern (C):

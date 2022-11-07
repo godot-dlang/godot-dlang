@@ -1,6 +1,6 @@
-module godot.c.arvr;
+module godot.abi.arvr;
 
-import godot.c.core;
+import godot.abi.core;
 
 version (none)  : @nogc nothrow:
 extern (C):

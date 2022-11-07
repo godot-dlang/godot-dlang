@@ -1,7 +1,7 @@
 /// Aliases used by other core types
 module godot.core.defs;
 
-import godot.c;
+import godot.abi;
 
 enum GodotError {
     ok,

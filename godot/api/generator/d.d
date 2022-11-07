@@ -77,7 +77,7 @@ string[2] generateClass(GodotClass c) {
     ret ~= ";\n";
     ret ~= "import std.meta : AliasSeq, staticIndexOf;\n";
     ret ~= "import std.traits : Unqual;\n";
-    ret ~= "import godot.d.traits;\nimport godot.core;\nimport godot.c;\n";
+    ret ~= "import godot.d.traits;\nimport godot.core;\nimport godot.abi;\n";
     ret ~= "import godot.d.bind;\n";
     ret ~= "import godot.d.reference;\n";
     ret ~= "import godot.globalenums;\n";

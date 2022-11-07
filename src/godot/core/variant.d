@@ -13,7 +13,7 @@ License: $(LINK2 https://opensource.org/licenses/MIT, MIT License)
 */
 module godot.core.variant;
 
-import godot.c;
+import godot.abi;
 import godot.core;
 import godot.object;
 import godot.d.traits;

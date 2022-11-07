@@ -27,15 +27,18 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
-module godot.c;
+module godot.abi;
 
 @nogc nothrow:
 extern (C):
 
-public import  //godot.c.api,
-godot.c.core,
-godot.c.gdnative_interface,
-godot.c.nativescript,
-godot.c.arvr,
-godot.c.pluginscript,
-godot.c.android;
+public import  //godot.abi.api,
+godot.abi.core,
+godot.abi.gdextension,
+godot.abi.nativescript,
+godot.abi.arvr,
+godot.abi.pluginscript,
+godot.abi.android;
+
+// TODO expose these in some other module
+// user doesn't need full ABI access

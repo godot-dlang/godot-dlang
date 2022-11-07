@@ -1,6 +1,6 @@
-module godot.c.android;
+module godot.abi.android;
 
-import godot.c.core;
+import godot.abi.core;
 
 @nogc nothrow:
 extern (C):

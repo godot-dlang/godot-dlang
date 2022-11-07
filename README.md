@@ -84,7 +84,7 @@ __dub.json__:
 __source/greeter.d__:
 ```d
 import godot;
-import godot.c;
+import godot.abi;
 
 import godot.node;
 

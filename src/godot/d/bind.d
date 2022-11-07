@@ -9,7 +9,7 @@ module godot.d.bind;
 import std.meta, std.traits;
 import std.conv : text;
 
-import godot.core, godot.c;
+import godot.core, godot.abi;
 public import godot.refcounted;
 import godot.d.traits;
 

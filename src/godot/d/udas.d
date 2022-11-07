@@ -4,7 +4,7 @@ properties, methods, and signals into Godot.
 +/
 module godot.d.udas;
 
-import godot.core, godot.c;
+import godot.core, godot.abi;
 import godot.d.traits;
 
 import std.meta, std.traits;

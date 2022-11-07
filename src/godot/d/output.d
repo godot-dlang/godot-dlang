@@ -3,7 +3,7 @@ Integration with Godot editor's output and debugger tabs
 +/
 module godot.d.output;
 
-import godot.c, godot.core;
+import godot.abi, godot.core;
 
 /++
 The release-mode Godot-D assert handler redirects assert messages to the Godot

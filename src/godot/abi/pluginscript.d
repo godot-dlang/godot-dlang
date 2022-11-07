@@ -1,6 +1,6 @@
-module godot.c.pluginscript;
+module godot.abi.pluginscript;
 
-import godot.c.core, godot.c.nativescript;
+import godot.abi.core, godot.abi.nativescript;
 
 @nogc nothrow:
 extern (C):

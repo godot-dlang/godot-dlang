@@ -1,6 +1,6 @@
-module godot.c.videodecoder;
+module godot.abi.videodecoder;
 
-import godot.c.core;
+import godot.abi.core;
 
 @nogc nothrow:
 extern (C):

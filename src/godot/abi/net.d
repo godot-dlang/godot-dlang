@@ -1,6 +1,6 @@
-module godot.c.net;
+module godot.abi.net;
 
-import godot.c.core;
+import godot.abi.core;
 
 import core.stdc.stdint;
 

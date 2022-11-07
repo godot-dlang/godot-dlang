@@ -16,7 +16,7 @@ module godot.core.nodepath;
 import core.lifetime : emplace;
 
 import godot.core.string;
-import godot.c;
+import godot.abi;
 import godot.builtins;
 
 /**

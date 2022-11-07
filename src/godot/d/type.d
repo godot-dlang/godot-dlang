@@ -2,7 +2,7 @@
 module godot.d.type;
 
 import godot;
-import godot.c.core;
+import godot.abi.core;
 import godot.d.traits;
 import godot.d.reference;
 import godot.script, godot.object;

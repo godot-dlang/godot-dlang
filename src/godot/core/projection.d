@@ -22,7 +22,7 @@ import godot.core.plane;
 import godot.core.aabb;
 import godot.core.array;
 import godot.core.transform;
-import godot.c.core;
+import godot.abi.core;
 
 import std.math;
 import std.algorithm.comparison;

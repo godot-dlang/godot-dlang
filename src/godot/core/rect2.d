@@ -13,7 +13,7 @@ License: $(LINK2 https://opensource.org/licenses/MIT, MIT License)
 */
 module godot.core.rect2;
 
-import godot.c.core;
+import godot.abi.core;
 import godot.core.defs;
 import godot.core.vector2, godot.core.transform2d;
 

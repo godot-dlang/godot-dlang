@@ -13,7 +13,7 @@ License: $(LINK2 https://opensource.org/licenses/MIT, MIT License)
 */
 module godot.core.poolarrays;
 
-import godot.c;
+import godot.abi;
 import godot.core.array;
 import godot.core.defs;
 import godot.core.string;

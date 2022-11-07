@@ -9,7 +9,7 @@ import godot.d.reference;
 
 import std.meta, std.traits;
 
-import godot.core, godot.c;
+import godot.core, godot.abi;
 import godot.object;
 
 /// https://p0nce.github.io/d-idioms/#Bypassing-@nogc

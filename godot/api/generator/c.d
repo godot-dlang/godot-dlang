@@ -38,10 +38,10 @@ struct Api {
 @serdeIgnore:
 
     string source() {
-        string ret = "module godot.c.api;\n\n";
-        ret ~= "import godot.c.core;\n\n";
+        string ret = "module godot.abi.api;\n\n";
+        ret ~= "import godot.abi.core;\n\n";
         foreach (v; extensions)
-            ret ~= "import godot.c." ~ v.name ~ ";\n";
+            ret ~= "import godot.abi." ~ v.name ~ ";\n";
 
         ret ~= "import std.meta : AliasSeq, staticIndexOf;\n";
         ret ~= "import std.format : format;\nimport std.string : capitalize, toLower;\nimport std.conv : text;\n";

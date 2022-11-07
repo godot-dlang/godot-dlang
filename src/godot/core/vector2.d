@@ -14,7 +14,7 @@ License: $(LINK2 https://opensource.org/licenses/MIT, MIT License)
 module godot.core.vector2;
 
 import godot.core.defs;
-import godot.c.core;
+import godot.abi.core;
 
 import std.math;
 

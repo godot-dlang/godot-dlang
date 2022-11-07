@@ -16,8 +16,8 @@ module godot.core.string;
 import core.stdc.stddef : wchar_t;
 import std.traits;
 import std.exception : assumeWontThrow;
-import godot.c;
-import godot.c.gdnative_interface;
+import godot.abi;
+import godot.abi.gdextension;
 import godot.builtins;
 import godot.core.poolarrays;
 

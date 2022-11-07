@@ -16,9 +16,9 @@ import godot.d.wrap;
 import godot.d.udas;
 import godot.d.reference;
 
-import godot.core, godot.c;
+import godot.core, godot.abi;
 
-import godot.c.gdnative_interface;
+import godot.abi.gdextension;
 
 // global instance for current library
 __gshared GDNativeExtensionClassLibraryPtr _GODOT_library;
@@ -69,9 +69,9 @@ mixin GodotNativeLibrary!(
 ---
 +/
 mixin template GodotNativeLibrary(string symbolPrefix, Args...) {
-    private static import godot.c;
+    private static import godot.abi;
 
-    private static import godot.c.gdnative_interface;
+    private static import godot.abi.gdextension;
 
     private static import godot.api.util.classes;
     private import godot.d.reference;
@@ -101,7 +101,7 @@ mixin template GodotNativeLibrary(string symbolPrefix, Args...) {
     pragma(mangle, symbolPrefix ~ "_gdextension_entry")
     export extern (C) static GDNativeBool godot_gdextension_entry(GDNativeInterface* p_interface,
         GDNativeExtensionClassLibraryPtr p_library, GDNativeInitialization* r_initialization) {
-        import godot.c.gdnative_interface;
+        import godot.abi.gdextension;
         import godot.d.reference;
         import std.meta, std.traits;
         import core.runtime : Runtime;
@@ -185,7 +185,7 @@ mixin template GodotNativeLibrary(string symbolPrefix, Args...) {
 
     /*
 	pragma(mangle, symbolPrefix~"gdnative_terminate")
-	export extern(C) static void godot_gdnative_terminate(godot.c.godot_gdnative_terminate_options* options)
+	export extern(C) static void godot_gdnative_terminate(godot.abi.godot_gdnative_terminate_options* options)
 	{
 		import std.meta, std.traits;
 		import godot.d.script : NativeScriptTemplate;
@@ -248,7 +248,7 @@ Register a class and all its $(D @GodotMethod) member functions into Godot.
 +/
 void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
     import std.array;
-    import godot.c;
+    import godot.abi;
     import godot.object, godot.resource;
     import godot.d;
 

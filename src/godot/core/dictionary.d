@@ -13,7 +13,7 @@ License: $(LINK2 https://opensource.org/licenses/MIT, MIT License)
 */
 module godot.core.dictionary;
 
-import godot.c;
+import godot.abi;
 import godot.core;
 import godot.builtins;
 

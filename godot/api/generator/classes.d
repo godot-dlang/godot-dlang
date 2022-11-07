@@ -265,7 +265,7 @@ final class GodotClass {
 import std.traits : Unqual;
 import godot.d.traits;
 import godot.core;
-import godot.c;
+import godot.abi;
 import godot.d.bind;
 import godot.d.reference;
 import godot.globalenums;

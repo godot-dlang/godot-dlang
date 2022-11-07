@@ -1,4 +1,4 @@
-import godot.c;
+import godot.abi;
 
 import godot;
 import godot.core.defs;

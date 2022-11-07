@@ -13,7 +13,7 @@ import core.stdc.stdlib : malloc, free;
 import godot.d.udas;
 import godot.d.traits, godot.d.script;
 
-import godot.core, godot.c;
+import godot.core, godot.abi;
 import godot.node;
 
 private template staticCount(alias thing, seq...) {
