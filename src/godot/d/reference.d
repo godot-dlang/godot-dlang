@@ -3,7 +3,7 @@ module godot.d.reference;
 import std.meta, std.traits; // std.typecons;
 import std.algorithm : swap;
 
-import godot.core, godot.abi;
+import godot, godot.abi;
 import godot.refcounted, godot.object;
 import godot.d.traits, godot.d.script;
 

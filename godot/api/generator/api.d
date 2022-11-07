@@ -185,7 +185,7 @@ string generateBuiltins(ref ExtensionsApi ap) {
     s ~= `import std.meta : AliasSeq, staticIndexOf;
 import std.traits : Unqual;
 import godot.d.traits;
-import godot.core;
+import godot;
 import godot.abi;
 import godot.d.bind;
 import godot.d.reference;
@@ -252,7 +252,7 @@ void writeStructs(ref ExtensionsApi api, string dirPath) {
     string buf;
     auto s = appender(buf);
     s ~= "module godot.structs;\n\n";
-    s ~= "import godot.core;\n";
+    s ~= "import godot;\n";
     s ~= "import godot.abi;\n\n";
 
     foreach (st; api.native_structures) {

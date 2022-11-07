@@ -11,7 +11,7 @@ License: $(LINK2 https://opensource.org/licenses/MIT, MIT License)
 
 
 */
-module godot.core.rid;
+module godot.rid;
 
 import godot.abi;
 import godot.object;

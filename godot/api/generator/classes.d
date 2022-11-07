@@ -264,7 +264,7 @@ final class GodotClass {
             ret ~= `import std.meta : AliasSeq, staticIndexOf;
 import std.traits : Unqual;
 import godot.d.traits;
-import godot.core;
+import godot;
 import godot.abi;
 import godot.d.bind;
 import godot.d.reference;

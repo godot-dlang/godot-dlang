@@ -1,5 +1,5 @@
 /// Aliases used by other core types
-module godot.core.defs;
+module godot.defs;
 
 import godot.abi;
 

@@ -3,7 +3,7 @@ Integration with Godot editor's output and debugger tabs
 +/
 module godot.d.output;
 
-import godot.abi, godot.core;
+import godot.abi, godot;
 
 /++
 The release-mode Godot-D assert handler redirects assert messages to the Godot
@@ -80,7 +80,7 @@ Params:
 	args = any Godot-compatible types or strings
 */
 void print(Args...)(Args args, string fn = __FUNCTION__, string f = __FILE__, int l = __LINE__) {
-    import godot.core.string, godot.core.variant;
+    import godot.string, godot.variant;
 
     String str;
     static if (Args.length == 0)

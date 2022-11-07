@@ -13,7 +13,7 @@ import core.stdc.stdlib : malloc, free;
 import godot.d.udas;
 import godot.d.traits, godot.d.script;
 
-import godot.core, godot.abi;
+import godot, godot.abi;
 import godot.node;
 
 private template staticCount(alias thing, seq...) {
@@ -348,7 +348,7 @@ package(godot) struct MethodWrapperMeta(alias mf) {
     extern (C)
     static GDNativeVariantType getArgTypesFn(void* method, int32_t argument) {
         // fill array of argument types and use cached data
-        import godot.core.variant;
+        import godot.variant;
         import std.meta : staticMap;
 
         immutable __gshared static VariantType[A.length] argInfo = [

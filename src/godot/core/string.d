@@ -11,7 +11,7 @@ License: $(LINK2 https://opensource.org/licenses/MIT, MIT License)
 
 
 */
-module godot.core.string;
+module godot.string;
 
 import core.stdc.stddef : wchar_t;
 import std.traits;
@@ -19,9 +19,9 @@ import std.exception : assumeWontThrow;
 import godot.abi;
 import godot.abi.gdextension;
 import godot.builtins;
-import godot.core.poolarrays;
+import godot.poolarrays;
 
-import godot.core.variant;
+import godot.variant;
 
 struct CharString {
     const(char)* data;

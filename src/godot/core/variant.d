@@ -11,10 +11,10 @@ License: $(LINK2 https://opensource.org/licenses/MIT, MIT License)
 
 
 */
-module godot.core.variant;
+module godot.variant;
 
 import godot.abi;
-import godot.core;
+import godot;
 import godot.object;
 import godot.d.traits;
 import godot.d.reference;

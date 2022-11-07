@@ -1,11 +1,11 @@
 import godot.abi;
 
 import godot;
-import godot.core.defs;
-import godot.core.string;
-import godot.core.variant;
-import godot.core.vector2;
-import godot.core.array;
+import godot.defs;
+import godot.string;
+import godot.variant;
+import godot.vector2;
+import godot.array;
 
 import core.runtime;
 import std.stdio;

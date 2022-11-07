@@ -1,4 +1,4 @@
-module godot.core.signal;
+module godot.signal;
 
 import godot.abi;
 
