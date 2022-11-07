@@ -30,7 +30,7 @@
         {
             "label": "Build Godot-DLang",
             "type": "shell",
-            "command": "dub build",
+            "command": "dub build --compiler dmd",
             "problemMatcher": [
                 "$dmd"
             ]
@@ -53,7 +53,7 @@
         },
         {
             "type": "dub",
-            "run": false,
+            "run": "false",
             "cwd": "g:/godot-dlang",
             "compiler": "$current",
             "archType": "$current",

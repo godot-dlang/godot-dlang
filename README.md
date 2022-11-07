@@ -1,16 +1,17 @@
 [![DLang Logo](logo.png)](https://github.com/godot-dlang/godot-dlang)
 
+# CURRENTLY BINDINGS NOT WORKING DUE TO DLANG BUG. [USE THESE BINDINGS INSTEAD](https://github.com/godot-dlang/godot-d/tree/godot4) UNTIL WE'RE ABLE TO FIX IT.
+
 # Godot-DLang
 
 D language bindings for the [Godot Engine](https://godotengine.org/)'s
-[GDNative C interface](https://github.com/godotengine/godot-headers).
+[GDNative Extensions API](https://github.com/godotengine/godot-headers).
 
 Originally a fork of [godot-d](https://github.com/godot-d/godot-d)
 
 **WIP**: These bindings are still under development. Until v1.0.0, expect
 breaking changes, bugs, and missing documentation. Please report any issues and
 confusing or undocumented features on the GitHub page.
-
 
 ## Usage
 
@@ -84,7 +85,9 @@ __dub.json__:
 __source/greeter.d__:
 ```d
 import godot;
-import godot.abi;
+// import godot.api.script; // for GodotScript!
+// import godot.api.register; // for GodotNativeLibrary
+// import godot.string; // for gs!
 
 import godot.node;
 

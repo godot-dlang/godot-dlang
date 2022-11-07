@@ -8,7 +8,7 @@
             "name": "Debug Generator",
             "type": "code-d",
             "request": "launch",
-            "program": "bin/godot-dlang_generator.exe",
+            "program": "godot-dlang_generator.exe",
             "args": ["-j", "extension_api.json", "-o"],
             "cwd": "${workspaceRoot}",
             "preLaunchTask": "Build Generate API"

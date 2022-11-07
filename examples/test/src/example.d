@@ -1,7 +1,7 @@
 import godot.abi;
 
 import godot;
-import godot.defs;
+import godot.api.types;
 import godot.string;
 import godot.variant;
 import godot.vector2;
