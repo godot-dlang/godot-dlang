@@ -1,6 +1,7 @@
 module godot.abi.net;
 
-import godot.abi.core;
+// import godot.abi.core;
+import godot.abi.types;
 
 import core.stdc.stdint;
 

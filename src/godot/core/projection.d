@@ -13,7 +13,7 @@ License: $(LINK2 https://opensource.org/licenses/MIT, MIT License)
 */
 module godot.projection;
 
-import godot.api.types;
+import godot.abi.types;
 import godot.vector4;
 import godot.vector2;
 import godot.vector3;

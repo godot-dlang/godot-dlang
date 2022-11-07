@@ -1,6 +1,5 @@
 module godot.abi.core;
 
-// public import core.stdc.stddef : wchar_t;
 public import godot.abi.gdextension;
 import godot.api.types;
 

@@ -101,9 +101,10 @@ class GodotMethod {
             ret ~= " " ~ a.name.escapeD;
 
             // HACK: look at GodotArgument
-            if (a.default_value != "\0") {
-                ret ~= " = " ~ escapeDefault(a.type, a.default_value);
-            }
+            // FIXME: Causes forward reference
+            // if (a.default_value != "\0") {
+            //     ret ~= " = " ~ escapeDefault(a.type, a.default_value);
+            // }
         }
         if (has_varargs) {
             if (arguments.length != 0)

@@ -53,7 +53,6 @@
         },
         {
             "type": "dub",
-            "run": "false",
             "cwd": "g:/godot-dlang",
             "compiler": "$current",
             "archType": "$current",
@@ -64,7 +63,7 @@
             ],
             "group": "build",
             "label": "dub: Build godot-dlang",
-            "detail": "dub build --compiler=dmd.EXE -a=x86_64 -b=debug -c=library"
+            "detail": "dub build --compiler=dmd.EXE -a=x86_64 -b=debug -c=library",
         }
     ]
 }
