@@ -15,7 +15,7 @@ module godot.poolarrays;
 
 import godot.abi;
 import godot.array;
-import godot.defs;
+import godot.api.types;
 import godot.string;
 import godot.color;
 import godot.vector2;

@@ -19,7 +19,7 @@ import godot.poolarrays;
 
 // generated raw bindings
 import godot.builtins;
-import godot.d.bind;
+import godot.api.bind;
 
 import std.meta;
 import std.traits, std.range;

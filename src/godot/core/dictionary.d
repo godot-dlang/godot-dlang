@@ -183,7 +183,7 @@ struct Dictionary {
 
     String toJson() const {
         import godot.json;
-        import godot.d;
+        import godot.api;
 
         Variant v = void;
         v._godot_variant = *cast(godot_variant*)&this;

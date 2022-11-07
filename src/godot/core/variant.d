@@ -16,10 +16,10 @@ module godot.variant;
 import godot.abi;
 import godot;
 import godot.object;
-import godot.d.traits;
-import godot.d.reference;
+import godot.api.traits;
+import godot.api.reference;
 import godot.script;
-import godot.d.type;
+import godot.api.types;
 
 import std.meta, std.traits;
 import std.conv : text;

@@ -13,7 +13,7 @@ License: $(LINK2 https://opensource.org/licenses/MIT, MIT License)
 */
 module godot.transform2d;
 
-import godot.defs;
+import godot.api.types;
 import godot.vector2;
 import godot.rect2;
 

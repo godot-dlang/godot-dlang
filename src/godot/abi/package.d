@@ -27,18 +27,27 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+/++
+Low level communication between Godot and D.
++/
 module godot.abi;
 
 @nogc nothrow:
 extern (C):
 
-public import  //godot.abi.api,
-godot.abi.core,
-godot.abi.gdextension,
-godot.abi.nativescript,
-godot.abi.arvr,
-godot.abi.pluginscript,
-godot.abi.android;
+public {
+    // import godot.abi.api,
+    import godot.abi.types;
+    import godot.abi.core;
+    import godot.abi.gdextension;
+    import godot.abi.nativescript;
+    import godot.abi.arvr;
+    import godot.abi.pluginscript;
+    import godot.abi.android;
+}
 
-// TODO expose these in some other module
-// user doesn't need full ABI access
+// TODO: expose these in some other module
+// user doesn't need full abi access
+// TODO: actually maybe make it so users
+// have no access to abi since there's
+// godot.api stuff (formerly godot.d)

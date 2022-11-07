@@ -13,7 +13,7 @@ License: $(LINK2 https://opensource.org/licenses/MIT, MIT License)
 */
 module godot.color;
 
-import godot.defs;
+import godot.api.types;
 import godot.string;
 
 import std.math;

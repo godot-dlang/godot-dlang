@@ -16,10 +16,10 @@ module godot.string;
 import core.stdc.stddef : wchar_t;
 import std.traits;
 import std.exception : assumeWontThrow;
-import godot.abi;
-import godot.abi.gdextension;
 import godot.builtins;
 import godot.poolarrays;
+import godot.abi;
+import godot.abi.gdextension;
 
 import godot.variant;
 

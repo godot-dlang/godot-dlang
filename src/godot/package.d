@@ -3,14 +3,13 @@
 +/
 module godot;
 
-
 public {
     import godot.aabb;
     import godot.array;
     import godot.basis;
     import godot.callable;
     import godot.color;
-    import godot.defs;
+    import godot.api;
     import godot.dictionary;
     import godot.nodepath;
     import godot.plane;
@@ -28,5 +27,3 @@ public {
     import godot.vector4;
     import godot.projection;
 }
-
-public import godot.d;

@@ -13,7 +13,7 @@ License: $(LINK2 https://opensource.org/licenses/MIT, MIT License)
 */
 module godot.plane;
 
-import godot.defs;
+import godot.api.types;
 import godot.vector3;
 
 import std.math;

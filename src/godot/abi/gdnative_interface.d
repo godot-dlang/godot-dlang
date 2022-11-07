@@ -34,8 +34,9 @@
 
 module godot.abi.gdextension;
 
-import godot.abi.core;
+import godot.abi.types;
 import core.stdc.config;
+import core.stdc.stddef : wchar_t;
 
 extern (C):
 //@nogc nothrow:

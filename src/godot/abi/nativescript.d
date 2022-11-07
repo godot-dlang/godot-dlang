@@ -32,7 +32,7 @@ module godot.abi.nativescript;
 @nogc nothrow:
 extern (C):
 
-import godot.abi.core;
+import godot.abi.types;
 
 enum godot_nativescript_method_rpc_mode {
     GODOT_METHOD_RPC_MODE_DISABLED,
