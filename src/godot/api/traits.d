@@ -3,7 +3,7 @@ Compile-time introspection of Godot types
 +/
 module godot.api.traits;
 
-import godot.util.tools.string;
+import godot.util.string;
 import godot.api.udas;
 import godot.api.reference;
 

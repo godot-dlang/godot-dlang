@@ -287,7 +287,8 @@ mixin template baseCasts() {
             if (_godot_object.ptr is null)
                 return typeof(return).init;
             String c = String(To._GODOT_internal_name);
-            if (isClass(c))
+            // HACK: string
+            if (isClass(godotStringToD(c)))
                 return inout(To)(_godot_object);
             return typeof(return).init;
         } else

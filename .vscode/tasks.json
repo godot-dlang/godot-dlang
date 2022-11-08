@@ -52,6 +52,14 @@
             ]
         },
         {
+            "label": "Build Asteroids",
+            "type": "shell",
+            "command": "dub build :asteroids",
+            "problemMatcher": [
+                "$dmd"
+            ]
+        },
+        {
             "type": "dub",
             "cwd": "g:/godot-dlang",
             "compiler": "$current",
