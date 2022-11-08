@@ -49,7 +49,7 @@ struct GodotEnum {
     string[string] ddoc;
 
     string source() const {
-        string ret = "\t/// \n\tenum " ~ name.escapeD ~ " : int\n\t{\n";
+        string ret = "\t/// \n\tenum " ~ name.escapeD ~ " : int {\n";
 
         foreach (n; values /*.sort!((a, b)=>(a.value < b.value))*/ ) {
             if (auto ptr = n.name in ddoc)

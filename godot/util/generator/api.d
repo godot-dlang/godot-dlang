@@ -261,7 +261,7 @@ void writeStructs(ref ExtensionsApi api, string dirPath) {
         foreach (imp; st.used_classes)
             s ~= "import godot." ~ imp.moduleName ~ ";\n";
 
-        s ~= "struct " ~ st.name.dType ~ "\n{\n";
+        s ~= "struct " ~ st.name.dType ~ " {\n";
 
         // quick hack to indent fields
         string[dchar] transTable = ['\n': "\n    "];

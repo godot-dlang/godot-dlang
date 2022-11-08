@@ -439,15 +439,24 @@ string escapeDefault(in Type type, string arg) {
         else
             return arg;
     case "String":
+        // HACK: hack in string, trying auto-convert?
         if (arg.canFind('"'))
             return "gs!" ~ arg;
         return "gs!\"" ~ arg ~ "\"";
+        // FIXME: causes forward reference error
+        // if (arg.canFind('"'))
+        //     return arg;
+        // return "\"" ~ arg ~ "\"";
     case "StringName":
         if (arg[0] == '&')
             arg = arg[1 .. $];
+        // HACK: hack in string, trying auto-convert?
         if (arg.canFind('"'))
             return "gn!" ~ arg;
         return "gn!\"" ~ arg ~ "\"";
+        // if (arg.canFind('"'))
+        //     return arg;
+        // return "\"" ~ arg ~ "\"";
     default: // all Object types
     {
             if (arg == "Null" || arg == "null")
@@ -543,9 +552,6 @@ string escapeD(string s) {
         "init",
         "version",
         "body", // for now at least...
-
-        
-
     );
     switch (s) {
     case "Object":
@@ -556,9 +562,7 @@ string escapeD(string s) {
         return "GodotSignal";
     case "Callable":
         return "GodotCallable";
-        foreach (kw; keywords) {
-    case kw:
-        }
+    foreach (kw; keywords) case kw:
         return "_" ~ s;
     default:
         return s;

@@ -90,6 +90,12 @@ struct String {
         //_godot_api.variant_new_copy(&_godot_string, &n._godot_string_name);
     }
 
+    this(string s) {
+        if (_godot_string == godot_string.init) {
+            _godot_api.string_new_with_utf8_chars_and_len(&_godot_string, s.ptr, cast(int) s.length);
+        }
+    }
+
     package(godot) this(in godot_string str) {
         _godot_string = str;
     }
@@ -274,6 +280,10 @@ struct StringName {
 
     this(String s) {
         this = _bind.new2(s);
+    }
+
+    this(string s) {
+        this = gn!s;
     }
 
     this(this) {
