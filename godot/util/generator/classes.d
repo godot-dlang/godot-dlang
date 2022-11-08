@@ -165,7 +165,7 @@ final class GodotClass {
 
     string bindingStruct() const {
         string ret = "\tpackage(godot) __gshared bool _classBindingInitialized = false;\n";
-        ret ~= "\tpackage(godot) static struct GDNativeClassBinding\n\t{\n";
+        ret ~= "\tpackage(godot) static struct GDNativeClassBinding {\n";
         ret ~= "\t\t__gshared:\n";
         if (singleton) {
             ret ~= "\t\tgodot_object _singleton;\n";
@@ -288,10 +288,9 @@ import godot.classdb;`;
         if (isBuiltinClass)
             className ~= "_Bind";
         ret ~= "/**\n" ~ ddoc ~ "\n*/\n";
-        ret ~= "@GodotBaseClass struct " ~ className;
-        ret ~= "\n{\n";
+        ret ~= "@GodotBaseClass struct " ~ className ~ " {\n";
         ret ~= "\tpackage(godot) enum string _GODOT_internal_name = \"" ~ name.godotType ~ "\";\n";
-        ret ~= "public:\n";
+        ret ~= "\tpublic:\n";
         // way to much PITA, ignore for now
         //ret ~= "@nogc nothrow:\n";
 
@@ -311,24 +310,24 @@ import godot.classdb;`;
 
         // equality
         ret ~= "\t/// \n";
-        ret ~= "\tpragma(inline, true) bool opEquals(in " ~ className ~ " other) const\n";
-        ret ~= "\t{ return _godot_object.ptr is other._godot_object.ptr; }\n";
+        ret ~= "\tpragma(inline, true) bool opEquals(in " ~ className ~ " other) const {\n";
+        ret ~= "\t\treturn _godot_object.ptr is other._godot_object.ptr; \n\t}\n";
         // null assignment to simulate D class references
         ret ~= "\t/// \n";
-        ret ~= "\tpragma(inline, true) typeof(null) opAssign(typeof(null) n)\n";
-        ret ~= "\t{ _godot_object.ptr = n; return null; }\n";
+        ret ~= "\tpragma(inline, true) typeof(null) opAssign(typeof(null) n) {\n";
+        ret ~= "\t\t_godot_object.ptr = n; return null; \n\t}\n";
         // equality with null; unfortunately `_godot_object is null` doesn't work with structs
         ret ~= "\t/// \n";
-        ret ~= "\tpragma(inline, true) bool opEquals(typeof(null) n) const\n";
-        ret ~= "\t{ return _godot_object.ptr is n; }\n";
+        ret ~= "\tpragma(inline, true) bool opEquals(typeof(null) n) const {\n";
+        ret ~= "\t\treturn _godot_object.ptr is n; \n\t}\n";
         // comparison operator
         if (name.godotType == "Object") {
             ret ~= "\t/// \n";
-            ret ~= "\tpragma(inline, true) int opCmp(in GodotObject other) const\n";
-            ret ~= "\t{ const void* a = _godot_object.ptr, b = other._godot_object.ptr; return a is b ? 0 : a < b ? -1 : 1; }\n";
+            ret ~= "\tpragma(inline, true) int opCmp(in GodotObject other) const {\n";
+            ret ~= "\t\tconst void* a = _godot_object.ptr, b = other._godot_object.ptr; return a is b ? 0 : a < b ? -1 : 1; \n\t}\n";
             ret ~= "\t/// \n";
-            ret ~= "\tpragma(inline, true) int opCmp(T)(in T other) const if(extendsGodotBaseClass!T)\n";
-            ret ~= "\t{ const void* a = _godot_object.ptr, b = other.owner._godot_object.ptr; return a is b ? 0 : a < b ? -1 : 1; }\n";
+            ret ~= "\tpragma(inline, true) int opCmp(T)(in T other) const if(extendsGodotBaseClass!T) {\n";
+            ret ~= "\t\tconst void* a = _godot_object.ptr, b = other.owner._godot_object.ptr; return a is b ? 0 : a < b ? -1 : 1; \n\t}\n";
         }
         // hash function
         ret ~= "\t/// \n";
@@ -339,14 +338,14 @@ import godot.classdb;`;
         // Godot constructor.
         ret ~= "\t/// Construct a new instance of " ~ className ~ ".\n";
         ret ~= "\t/// Note: use `memnew!" ~ className ~ "` instead.\n";
-        ret ~= "\tstatic " ~ className ~ " _new()\n\t{\n";
+        ret ~= "\tstatic " ~ className ~ " _new() {\n";
         ret ~= "\t\tif(auto obj = _godot_api.classdb_construct_object(\"" ~ name.godotType ~ "\"))\n";
         ret ~= "\t\t\treturn " ~ className ~ "(godot_object(obj));\n";
         ret ~= "\t\treturn typeof(this).init;\n";
         ret ~= "\t}\n";
 
         foreach (ct; constructors) {
-            //ret ~= "\tstatic "~name.d~" "~ ct.name ~ ct.templateArgsString ~ ct.argsString ~ "\n\t{\n";
+            //ret ~= "\tstatic "~name.d~" "~ ct.name ~ ct.templateArgsString ~ ct.argsString ~ " {\n";
             //ret ~= "\t\tif(auto fn = _godot_api.variant_get_ptr_constructor(GDNATIVE_VARIANT_TYPE_"~name.godotType.snakeToCamel.toUpper ~ ", " ~ text(ct.index) ~"))\n";
             //ret ~= "\t\t\treturn "~name.d~"(godot_object(fn(...)));\n";
             //ret ~= "\t\treturn typeof(this).init;\n";
@@ -356,8 +355,7 @@ import godot.classdb;`;
 
         // currently only core types can have destructor
         if (has_destructor) {
-            ret ~= "\tvoid _destructor()\n";
-            ret ~= "\t{\n";
+            ret ~= "\tvoid _destructor() {\n";
             ret ~= "\t\tif (!GDNativeClassBinding.destructor)\n";
             ret ~= "\t\t\tGDNativeClassBinding.destructor = _godot_api.variant_get_ptr_destructor(GDNATIVE_VARIANT_TYPE_" ~ name
                 .godotType.camelToSnake.toUpper ~ ");\n";
@@ -384,7 +382,7 @@ import godot.classdb;`;
 
         if (!isBuiltinClass && constants.length) {
             ret ~= "\t/// \n";
-            ret ~= "\tenum Constants : int\n\t{\n";
+            ret ~= "\tenum Constants : int {\n";
             foreach (constant; constants.sort!((a, b) => (a.value < b.value))) {
                 if (!constantsInEnums.canFind(constant.name)) // don't document enums here; they have their own ddoc
                 {
@@ -426,6 +424,7 @@ import godot.classdb;`;
                 if (getterMethod && setterMethod)
                     break;
 
+                // TODO: add hide Warning: property flag
                 if (c.base_class is null) {
                     if (!getterMethod)
                         writeln("Warning: property ", name.godotType, ".", p.name, " specifies a getter that doesn't exist: ", p
@@ -451,8 +450,7 @@ import godot.classdb;`;
             ret ~= "/// Returns: the " ~ className ~ "\n";
             //ret ~= "@property @nogc nothrow pragma(inline, true)\n";
             ret ~= "@property pragma(inline, true)\n";
-            ret ~= className ~ " " ~ name.dType;
-            ret ~= "()\n{\n";
+            ret ~= className ~ " " ~ name.dType ~ "() {\n";
             ret ~= "\tcheckClassBinding!" ~ className ~ "();\n";
             ret ~= "\treturn " ~ className ~ "(" ~ className ~ ".GDNativeClassBinding._singleton);\n";
             ret ~= "}\n";

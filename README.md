@@ -28,10 +28,11 @@ In order to proceed you will need D compiler (`dmd` or `ldc2`) with `dub`, `git`
 ### Manually building
 - clone git repo `git clone https://github.com/godot-dlang/godot-dlang.git`
 - switch it to master branch `git checkout master`
-- add local package `dub add-local .`, or if you have package from dub `dub add-override godot-dlang ~master .`  
+- add local package `dub add-local .`, or if you have package from dub `dub add-override godot-dlang ~master .`
 - you should see that dub package version "~master" is registered
 
-> Note that if you have strange errors in `dub run` you might have godot-dlang cached in dub, you might need to remove it by using `dub remove godot-dlang`  
+> Note that if you have strange errors in `dub run` you might have godot-dlang cached in dub, you might need to remove it by using `dub remove godot-dlang`
+>
 > Also note that `dub add-local` might sometimes not works and throws `Non-optional dependency not found` error ([dlang/dub#986](https://github.com/dlang/dub/issues/986)). In that case do `dub remove-local .` in "godot-dlang" folder and then `dub add-path .` instead.
 
 ### Using dub
@@ -60,18 +61,18 @@ your dub.json file should look like this now:
 __dub.json__:
 ```json
 {
-	"authors": [
-		"Godot-DLang"
-	],
-	"targetType": "dynamicLibrary",
+    "authors": [
+        "Godot-DLang"
+    ],
+    "targetType": "dynamicLibrary",
     "dflags-windows-ldc": ["-link-defaultlib-shared=false"],
-	"copyright": "Copyright © 2022, Godot-DLang",
-	"dependencies": {
-		"godot-dlang": "~master",
-	},
-	"description": "A minimal D application.",
-	"license": "proprietary",
-	"name": "mydplugin"
+    "copyright": "Copyright © 2022, Godot-DLang",
+    "dependencies": {
+        "godot-dlang": "~master",
+    },
+    "description": "A minimal D application.",
+    "license": "proprietary",
+    "name": "mydplugin"
 }
 ```
 - do a test build `dub build`, you might see some warnings but that's ok
@@ -91,22 +92,22 @@ import godot.node;
 
 // minimal class example with _ready method that will be invoked on creation
 class Greeter : GodotScript!Node {
-	// this method is a special godot entry point when object is added to the scene
-	@Method 
+    // this method is a special godot entry point when object is added to the scene
+    @Method 
     void _ready() {
-		print(gs!"Hello from D");
-	}
+        print(gs!"Hello from D");
+    }
 }
 
 // register classes, initialize and terminate D runtime, only one per plugin
 mixin GodotNativeLibrary!(
-	// this is a name prefix of the plugin to be acessible inside godot
-	// it must match the prefix in .gdextension file:
-	//     entry_symbol = "mydplugin_gdextension_entry"
-	"mydplugin", 
+    // this is a name prefix of the plugin to be acessible inside godot
+    // it must match the prefix in .gdextension file:
+    //     entry_symbol = "mydplugin_gdextension_entry"
+    "mydplugin", 
 
-	// here goes the list of classes you would like to expose in godot
-	Greeter,
+    // here goes the list of classes you would like to expose in godot
+    Greeter,
 );
 ```
 - build plugin again `dub build`, in some rare cases you might do a full rebuild by adding `--force` switch, build should be ok
@@ -148,25 +149,19 @@ Enjoy your new game!
 
 ### Godot API
 Godot's full [script API](http://docs.godotengine.org/) can be used from D:  
-- `godot` submodules contain container, math, and engine structs like
-  `Vector3` and `String`.
-- Other submodules of `godot` contain bindings to Godot classes, auto-generated
-  from the engine's API. These are the C++ classes scripts can be attached to.
+- `godot` submodules contain container, math, and engine structs like `Vector3` and `String`.
+- Other submodules of `godot` contain bindings to Godot classes, auto-generated from the engine's API. These are the C++ classes scripts can be attached to.
 - These bindings use camelCase instead of snake_case.
+    ```D
+    // Change window to fullscreen example:
+    // GDScript
+    OS.set_window_fullscreen(false)
 
-  Change window to fullscreen example:
-  ```GDSCRIPT
-  # GDScript
-  OS.set_window_fullscreen(false)
-  ```
-  Would be:
-  ```D
-  // D
-  OS.setWindowFullscreen(false);
-  ```
-
-- D code should use D naming conventions (PascalCase for classes, camelCase for
-  properties and methods). 
+    // Would be:
+    // D
+    OS.setWindowFullscreen(false);
+    ```
+- D code should use D naming conventions (PascalCase for classes, camelCase for properties and methods). 
 
 ## Versioning
 
@@ -185,20 +180,23 @@ else doNothing();
 A D library can also specify minimum required extensions using a compiler flag
 or the `versions` property in their DUB project. The format of the version flag
 is `GDNativeRequire<Extension name or "Core">_<major version>_<minor version>`.
+
 For example, with `"versions": [ "GDNativeRequireNativescript_1_1" ]` in
 `dub.json`, runtime checks and non-1.1 code such as the example above can be
 safely optimized out in both library code and binding-internal code.
 
 License
 -------
-MIT - <https://opensource.org/licenses/MIT>  
+MIT - <https://opensource.org/licenses/MIT>
+
+Github Links
+-----
+- GitHub repository - <https://github.com/godot-dlang/godot-dlang>
+- GDNative repository - <https://github.com/godotengine/godot-headers>
+- C++ bindings these are based on - <https://github.com/godotengine/godot-cpp>
+- D bindings these are based on - <https://github.com/godot-d/godot-d>
 
 Links
 -----
-GitHub repository - <https://github.com/godot-dlang/godot-dlang>  
-C++ bindings these are based on - <https://github.com/godotengine/godot-cpp>  
-D bindings these are based on - <https://github.com/godot-d/godot-d>  
-GDNative repository - <https://github.com/godotengine/godot-headers>  
-
-Godot Engine - <https://godotengine.org>  
-D programming language - <https://dlang.org>  
+- Godot Engine - <https://godotengine.org>
+- D programming language - <https://dlang.org>

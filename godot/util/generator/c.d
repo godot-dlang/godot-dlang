@@ -8,6 +8,8 @@ import std.algorithm.iteration, std.algorithm.comparison;
 
 import asdf;
 
+// FIXME there's a lot of @nogc
+
 struct Function {
     string name;
     string return_type;
@@ -78,13 +80,13 @@ struct Api {
             ret ~= "\t" ~ part.type.toLower ~ ",\n";
         ret ~= "}\n";
 
-        ret ~= "private\n{\n";
+        ret ~= "private {\n";
         ret ~= core.versionSource;
         foreach (part; extensions)
             ret ~= part.versionSource;
         ret ~= "}\n";
 
-        ret ~= "struct GDNativeVersion\n{\n";
+        ret ~= "struct GDNativeVersion {\n";
         ret ~= core.versionGetterSource;
         foreach (part; extensions)
             ret ~= part.versionGetterSource;
@@ -222,7 +224,7 @@ class ApiPart {
         }
         ret ~= format!"\t@property @nogc nothrow static bool has%s(int major, int minor)()"(
             type.capitalize);
-        ret ~= " if(!supports" ~ type.capitalize ~ "!(major, minor))\n\t{\n";
+        ret ~= " if(!supports" ~ type.capitalize ~ "!(major, minor)) {\n";
         ret ~= "\t\tstatic assert(0, versionError(\"" ~ type.capitalize ~ "\", major, minor));\n\t}\n";
         return ret;
     }
@@ -232,7 +234,7 @@ class ApiPart {
 
         string ret;
 
-        ret ~= "private extern(C) @nogc nothrow\n{\n";
+        ret ~= "private extern(C) @nogc nothrow {\n";
         foreach (const ref f; api) {
             ret ~= "\talias da_" ~ f.name ~ " = " ~ f.return_type.escapeCType ~ " function(";
             foreach (ai, const ref a; f.arguments) {
@@ -244,7 +246,7 @@ class ApiPart {
         }
         ret ~= "}\n";
 
-        ret ~= "public extern(C) struct " ~ name.structName(ver) ~ "\n{\n";
+        ret ~= "public extern(C) struct " ~ name.structName(ver) ~ " {\n";
         ret ~= "@nogc nothrow:\n";
 
         if (core && ver == ApiVersion(4, 0))

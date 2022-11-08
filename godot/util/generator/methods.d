@@ -166,7 +166,7 @@ class GodotMethod {
 
         ret ~= signature();
 
-        ret ~= "\n\t{\n";
+        ret ~= " {\n";
 
         ret ~= body_();
 
@@ -221,20 +221,17 @@ class GodotMethod {
                     ret ~= `		Variant[varArgs.length+2] _GODOT_args;
 	_GODOT_args[0] = String("emit_signal");
 	_GODOT_args[1] = signal;
-	foreach(vai, VA; VarArgs)
-	{
+	foreach(vai, VA; VarArgs) {
 		_GODOT_args[vai+2] = Variant(varArgs[vai]);
 	}
 	Variant*[varArgs.length+2] _args;
-	foreach(i; 0.._GODOT_args.length)
-	{
+	foreach(i; 0.._GODOT_args.length) {
 		_args[i] = &_GODOT_args[i];
 	}
 	Variant ret;
 	GDNativeCallError err;
 	_godot_api.object_method_bind_call(GDNativeClassBinding.method_emitSignal.mb, _godot_object.ptr, cast(void**) _args.ptr, _GODOT_args.length, cast(void*) &ret, &err);
-	debug if (int code = ret.as!int())
-	{
+	debug if (int code = ret.as!int()) {
 		import godot.api;
 		print("signal error: ", signal, " code: ", code);
 	}
@@ -261,16 +258,14 @@ class GodotMethod {
 
             if (has_varargs) {
                 // copy varargs after regular args
-                ret ~= "\t\tforeach(vai, VA; VarArgs)\n";
-                ret ~= "\t\t{\n";
+                ret ~= "\t\tforeach(vai, VA; VarArgs) {\n";
                 ret ~= "\t\t\t_GODOT_args[vai+" ~ text(
                     cast(int) arguments.length) ~ "] = Variant(varArgs[vai]);\n";
                 ret ~= "\t\t}\n";
             }
 
             // make pointer array
-            ret ~= "\t\tforeach(i; 0.._GODOT_args.length)\n";
-            ret ~= "\t\t{\n";
+            ret ~= "\t\tforeach(i; 0.._GODOT_args.length) {\n";
             ret ~= "\t\t\t_args[i] = &_GODOT_args[i];\n";
             ret ~= "\t\t}\n";
 
@@ -288,19 +283,19 @@ class GodotMethod {
                     ret ~= "ret";
                 ret ~= ";\n";
             }
-        }  // end varargs/virtual impl
-        else {
-            // add temp variable for static ctor
+        } else { // end varargs/virtual impl
+            // adds temp variable for static ctor
             if (isConstructor) {
-                if (parent.name.canBeCopied)
-                    ret ~= parent.name.dType;
-                else
-                    ret ~= parent.name.opaqueType;
-                ret ~= " _godot_object;\n\t\t";
+                ret ~= "\t\t";
+                ret ~= parent.name.canBeCopied ? parent.name.dType : parent.name.opaqueType;
+                ret ~= " _godot_object;\n";
             }
             // omit return for constructors, it will be wrapped and returned later
-            if (return_type.dType != "void" && !(isConstructor && parent.name.isCoreType))
-                ret ~= "return ";
+            if (return_type.dType != "void" && !(isConstructor && parent.name.isCoreType)) {
+                ret ~= "\t\treturn ";
+            } else {
+                ret ~= "\t\t";
+            }
             ret ~= callType() ~ "!(" ~ return_type.dType ~ ")(";
             if (parent.isBuiltinClass)
                 ret ~= "cast(GDNativePtrBuiltInMethod) ";
@@ -313,7 +308,9 @@ class GodotMethod {
             else
                 ret ~= "_godot_object";
             foreach (ai, const a; arguments) {
-                ret ~= ", cast() " ~ a.name.escapeD; // FIXME: const cast hack
+                // FIXME: const cast hack
+                // FIXME: make auto-cast in escapeD?
+                ret ~= ", cast() " ~ a.name.escapeD; 
             }
             ret ~= ");\n";
             // wrap temporary object
@@ -390,7 +387,7 @@ class GodotProperty {
         string ret;
         ret ~= "\t/**\n\t" ~ ddoc.replace("\n", "\n\t") ~ "\n\t*/\n";
         ret ~= "\t@property " ~ m.return_type.dType ~ " " ~ name.replace("/", "_")
-            .snakeToCamel.escapeD ~ "()\n\t{\n"; /// TODO: const?
+            .snakeToCamel.escapeD ~ "() {\n"; /// TODO: const?
         ret ~= "\t\treturn " ~ getter.snakeToCamel.escapeD ~ "(";
         if (index != -1) {
             // add cast to enum types
@@ -407,7 +404,7 @@ class GodotProperty {
         string ret;
         ret ~= "\t/// ditto\n";
         ret ~= "\t@property void " ~ name.replace("/", "_")
-            .snakeToCamel.escapeD ~ "(" ~ m.arguments[$ - 1].type.dType ~ " v)\n\t{\n";
+            .snakeToCamel.escapeD ~ "(" ~ m.arguments[$ - 1].type.dType ~ " v) {\n";
         ret ~= "\t\t" ~ setter.snakeToCamel.escapeD ~ "(";
         if (index != -1) {
             // add cast to enum types

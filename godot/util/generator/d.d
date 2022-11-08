@@ -159,7 +159,7 @@ string[2] generateGlobalEnums(GodotClass c) {
         if (g.name.startsWith("Variant.") || g.name == "PropertyUsageFlags")
             continue;
 
-        ret ~= "enum " ~ g.name ~ " : int\n{\n";
+        ret ~= "enum " ~ g.name ~ " : int {\n";
 
         foreach (e; g.values) {
             ret ~= "\t" ~ e.name.snakeToCamel.escapeD
