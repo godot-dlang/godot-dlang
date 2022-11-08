@@ -1,17 +1,19 @@
 {
 	"name": "asteroids",
 	"authors": [
-		"sheepandshepherd"
+		"Godot-DLang"
 	],
 	"description": "Example of a complete Godot-D project",
 	"copyright": "Copyright © 2018, sheepandshepherd",
 	"license": "MIT",
+    
+    "dflags-windows-ldc": ["-link-defaultlib-shared=false"],
 	
 	"targetType": "dynamicLibrary",
 	"targetPath": "project",
 	
 	"dependencies":
 	{
-		"godot-d": { "path": "../../"}
+		"godot-dlang": { "path": "../../"}
 	}
 }

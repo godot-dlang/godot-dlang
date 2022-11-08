@@ -33,7 +33,7 @@ class Player : GodotScript!Area3D {
             lookAt(intersect, Vector3(0f, 1f, 0f));
         }
 
-        if (Input.isActionPressed(gn!"fly", false)) {
+        if (Input.isActionPressed("fly", false)) {
             translateObjectLocal(Vector3(0f, 0f, -delta * speed));
             if (position.length > 50f)
                 position = 50f * position.normalized;
