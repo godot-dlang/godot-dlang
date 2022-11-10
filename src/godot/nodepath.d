@@ -54,7 +54,7 @@ struct NodePath {
     }
 
     this(in String from) {
-        string name = godotStringToD(from);
+        string name = toDString(from);
         emplace(&this, _bind.new2(name));
         // emplace(&this, _bind.new2(from));
         // //_godot_api.node_path_new(&_node_path, &from._godot_string);

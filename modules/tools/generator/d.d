@@ -2,7 +2,8 @@ module godot.tools.generator.d;
 
 import godot.util.string;
 import godot.tools.generator.util;
-import godot.tools.generator.classes, godot.tools.generator.methods;
+import godot.tools.generator.classes;
+import godot.tools.generator.methods;
 
 import std.algorithm.iteration;
 import std.range;
@@ -25,14 +26,14 @@ string[2] generatePackage(GodotClass c) {
     if (c.descendant_ptrs.length == 0)
         return [null, null];
 
-    string filename = buildPath("godot", c.name.moduleName, "all.d");
+    string filename = buildPath("godot", c.name.asModuleName, "all.d");
     string ret;
 
     ret ~= "module godot.";
-    ret ~= c.name.moduleName;
+    ret ~= c.name.asModuleName;
     ret ~= ".all;\n\n";
 
-    ret ~= "public import\n\tgodot." ~ c.name.moduleName;
+    ret ~= "public import\n\tgodot." ~ c.name.asModuleName;
 
     const(GodotClass)[] recursiveDescendants;
     void addDescendant(GodotClass d) {
@@ -48,7 +49,7 @@ string[2] generatePackage(GodotClass c) {
         addDescendant(d);
 
     foreach (di, d; recursiveDescendants[]) {
-        ret ~= ",\n\tgodot." ~ d.name.moduleName;
+        ret ~= ",\n\tgodot." ~ d.name.asModuleName;
     }
     ret ~= ";\n";
 
@@ -62,7 +63,7 @@ string[2] generateClass(GodotClass c) {
 
     string folder = "godot";
     string filename = (c.descendant_ptrs.length == 0) ?
-        buildPath(folder, c.name.moduleName ~ ".d") : buildPath(folder, c.name.moduleName, "package.d");
+        buildPath(folder, c.name.asModuleName ~ ".d") : buildPath(folder, c.name.asModuleName, "package.d");
     string ret;
 
     ret ~= "/**\n" ~ c.ddocBrief ~ "\n\n";
@@ -73,7 +74,7 @@ string[2] generateClass(GodotClass c) {
     // module names should be all lowercase in D
     // https://dlang.org/dstyle.html
     ret ~= "module godot.";
-    ret ~= c.name.moduleName;
+    ret ~= c.name.asModuleName;
     ret ~= ";\n";
     ret ~= "import std.meta : AliasSeq, staticIndexOf;\n";
     ret ~= "import std.traits : Unqual;\n";
@@ -81,8 +82,10 @@ string[2] generateClass(GodotClass c) {
     ret ~= "import godot.api.bind;\n";
     ret ~= "import godot.api.reference;\n";
     ret ~= "import godot.globalenums;\n";
-    if (c.name.godotType != "Object")
+
+    if (c.name.godotType != "Object") {
         ret ~= "import godot.object;\n";
+    }
 
     if (c.instanciable) {
         ret ~= "import godot.classdb;\n";
@@ -112,7 +115,7 @@ string[2] generateGlobalConstants(GodotClass c) {
     ret ~= "public import godot.globalenums;\n";
 
     foreach (constant; c.constants) {
-        ret ~= "enum int " ~ constant.name.snakeToCamel.escapeD ~ " = " ~ text(
+        ret ~= "enum int " ~ constant.name.snakeToCamel.escapeDType ~ " = " ~ text(
             constant.value) ~ ";\n";
     }
 
@@ -162,7 +165,7 @@ string[2] generateGlobalEnums(GodotClass c) {
         ret ~= "enum " ~ g.name ~ " : int {\n";
 
         foreach (e; g.values) {
-            ret ~= "\t" ~ e.name.snakeToCamel.escapeD
+            ret ~= "\t" ~ e.name.snakeToCamel.escapeDType
                 ~ " = " ~ text(e.value) ~ ",\n";
         }
 

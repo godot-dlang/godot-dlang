@@ -30,6 +30,9 @@ private bool isValidSwizzle(dstring s) {
     return true;
 }
 
+alias vec2 = Vector2;
+alias ivec2 = Vector2i;
+
 /**
 2-element structure that can be used to represent positions in 2d-space, or any other pair of numeric values.
 */

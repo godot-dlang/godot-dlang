@@ -20,59 +20,16 @@ import godot.builtins;
 import godot.poolarrays;
 import godot.abi;
 import godot.abi.gdextension;
+import godot.stringname;
+import godot.charstring;
 
 import godot.variant;
 
-struct CharString {
-    const(char)* data;
-    int length;
-
-    ~this() {
-        if (data)
-            _godot_api.mem_free(cast(void*) data);
-        data = null;
-        length = 0;
-    }
-}
-
-struct Char16String {
-    const(char16_t)* data;
-    int length;
-
-    ~this() {
-        if (data)
-            _godot_api.mem_free(cast(void*) data);
-        data = null;
-        length = 0;
-    }
-}
-
-struct Char32String {
-    const(char32_t)* data;
-    int length;
-
-    ~this() {
-        if (data)
-            _godot_api.mem_free(cast(void*) data);
-        data = null;
-        length = 0;
-    }
-}
-
-struct CharWideString {
-    const(wchar_t)* data;
-    int length;
-
-    ~this() {
-        if (data)
-            _godot_api.mem_free(cast(void*) data);
-        data = null;
-        length = 0;
-    }
-}
-
 /**
-This is the built-in string class (and the one used by GDScript). It supports Unicode and provides all necessary means for string handling. Strings are reference counted and use a copy-on-write approach, so passing them around is cheap in resources.
+This is the built-in string class (and the one used by GDScript). 
+It supports Unicode and provides all necessary means for string handling. 
+Strings are reference counted and use a copy-on-write approach, 
+so passing them around is cheap in resources.
 */
 struct String {
     //@nogc nothrow:
@@ -87,9 +44,9 @@ struct String {
 
     this(StringName n) {
         // this = _bind.new2(n);
-        // HACK: 
+        // HACK: since godot StringBind accepts string as args we do this
         // FIXME: ARE YOU SERIOUS?
-        this = _bind.new2(godotNameToD(n));
+        this = _bind.new2(toDStringName(n));
         //_godot_api.variant_new_copy(&_godot_string, &n._godot_string_name);
     }
 
@@ -97,39 +54,35 @@ struct String {
         _godot_string = str;
     }
 
-    this(string s) {
-        this = dstringToGodotString(s);
-    }
+    // this one is supposedly not needed because of this(S)(in S str) constructors
+    // this(string s) {
+    //     this = toGodotString(s);
+    // }
 
     /++
 	wchar_t constructor. S can be a slice or a null-terminated pointer.
 	+/
-    this(S)(in S str)
-            if (isImplicitlyConvertible!(S, const(wchar_t)[]) ||
-            isImplicitlyConvertible!(S, const(wchar_t)*)) {
+    this(S)(in S str) if (isImplicitlyConvertible!(S, const(wchar_t)[]) ||
+                          isImplicitlyConvertible!(S, const(wchar_t)*)) {
         static if (isImplicitlyConvertible!(S, const(wchar_t)[])) {
             const(wchar_t)[] contents = str;
-            _godot_api.string_new_with_wide_chars_and_len(&_godot_string, contents.ptr, cast(int) contents
-                    .length);
+            _godot_api.string_new_with_wide_chars_and_len(&_godot_string, contents.ptr, cast(int) contents.length);
         } else {
             import core.stdc.wchar_ : wcslen;
 
             const(wchar_t)* contents = str;
-            _godot_api.string_new_with_wide_chars_and_len(&_godot_string, contents, cast(int) wcslen(
-                    contents));
+            _godot_api.string_new_with_wide_chars_and_len(&_godot_string, contents, cast(int) wcslen(contents));
         }
     }
 
     /++
 	UTF-8 constructor. S can be a slice (like `string`) or a null-terminated pointer.
 	+/
-    this(S)(in S str)
-            if (isImplicitlyConvertible!(S, const(char)[]) ||
-            isImplicitlyConvertible!(S, const(char)*)) {
+    this(S)(in S str) if (isImplicitlyConvertible!(S, const(char)[]) ||
+                          isImplicitlyConvertible!(S, const(char)*)) {
         static if (isImplicitlyConvertible!(S, const(char)[])) {
             const(char)[] contents = str;
-            _godot_api.string_new_with_utf8_chars_and_len(&_godot_string, contents.ptr, cast(int) contents
-                    .length);
+            _godot_api.string_new_with_utf8_chars_and_len(&_godot_string, contents.ptr, cast(int) contents.length);
         } else {
             const(char)* contents = str;
             _godot_api.string_new_with_utf8_chars(&_godot_string, contents);
@@ -150,11 +103,17 @@ struct String {
         // other still owns the string, double free possible?
     }
 
+    // TODO rewrite it with constructor?
     void opAssign(in string other) {
         //_bind._destructor();
-        godot_string gs;
-        _godot_api.string_new_with_utf8_chars_and_len(&gs, other.ptr, cast(int) other.length);
-        _godot_string = gs;
+
+        // godot_string gs;
+        // _godot_api.string_new_with_utf8_chars_and_len(&gs, other.ptr, cast(int) other.length);
+        // _godot_string = gs;
+
+        // FIXME: might allocate mem?
+        this = String(other);
+        
         // other still owns the string, double free possible?
     }
 
@@ -260,8 +219,7 @@ struct String {
         return CharString(cstr, size);
     }
 
-    String format(V)(V values) const 
-            if (is(V : Variant) || Variant.compatibleToGodot!V) {
+    String format(V)(V values) const if (is(V : Variant) || Variant.compatibleToGodot!V) {
         const Variant v = values;
         String new_string = void;
         new_string._godot_string = _godot_api.string_format(&_godot_string, cast(godot_variant*)&v);
@@ -269,8 +227,7 @@ struct String {
         return new_string;
     }
 
-    String format(V)(V values, String placeholder) const 
-            if (is(V : Variant) || Variant.compatibleToGodot!V) {
+    String format(V)(V values, String placeholder) const if (is(V : Variant) || Variant.compatibleToGodot!V) {
         const Variant v = values;
         String new_string = void;
         CharString contents = placeholder.utf8;
@@ -288,127 +245,32 @@ struct String {
     }
 }
 
-struct StringName {
-    //@nogc nothrow:
+/** 
+ * Constructs Godot String from str
+ * Params:
+ *   str = string to convert from
+ * Returns: Godot String
+ */
+String toGodotString(string str) {
+    // FIXME: this is going to be slow as hell
+    godot_string gs;
+    _godot_api.string_new_with_utf8_chars_and_len(&gs, str.ptr, cast(int) str.length);
+    return String(gs);
+}
 
-    package(godot) union _StringName {
-        godot_string _godot_string_name;
-        StringName_Bind _bind;
-    }
+/** 
+ * Constructs string from str
+ * Params:
+ *   str = Godot String
+ * Returns: D string
+ */
+string toDString(String str) {
+    // FIXME: check memaloc
+    import std.conv: to;
+    return str.data.to!string;
 
-    package(godot) _StringName _stringName;
-    alias _stringName this;
-
-    this(String s) {
-    // this(string s) {
-        // this = _bind.new2(s);
-        this = _bind.new2(godotStringToD(s));
-    }
-
-    this(this) {
-
-    }
-
-    this(string s) {
-        this = dstringToGodotName(s);
-    }
-
-    //this(ref const StringName s)
-    //{
-    //	this = _bind.new1(s);
-    //}
-
-    void _defaultCtor() {
-        this = StringName_Bind.new0();
-    }
-
-    /// Returns the length of the wchar_t array, minus the zero terminator.
-    size_t length() const {
-        // FIXME: burn this before it spreads
-        String str = String(this);
-        size_t len = str.length;
-        return len;
-        //return _godot_api.string_length(&_godot_string);
-    }
-
-    /// Returns: $(D true) if length is 0
-    bool empty() const {
-        return length == 0;
-    }
-
-    /// Returns a pointer to the wchar_t data. Always zero-terminated.
-    immutable(char32_t)* ptr() const {
-        return cast(immutable(char32_t)*) _godot_api.string_operator_index_const(
-            &_godot_string_name, 0);
-    }
-
-    /// Returns a slice of the wchar_t data without the zero terminator.
-    immutable(wchar_t)[] data() const {
-        return cast(typeof(return)) ptr[0 .. length];
-    }
-
-    package(godot) this(in godot_string strname) {
-        _godot_string_name = strname;
-    }
-
-    /++
-	char constructor. S can be a slice (like `string`) or a null-terminated pointer.
-	+/
-    this(S)(in S str)
-            if (isImplicitlyConvertible!(S, const(char)[]) ||
-            isImplicitlyConvertible!(S, const(char)*)) {
-        static if (isImplicitlyConvertible!(S, const(char)[])) {
-            const(char)[] contents = str;
-            _godot_api.string_new_with_latin1_chars_and_len(&_godot_string_name, contents.ptr, cast(
-                    int) contents.length);
-        } else {
-            import core.stdc.string : strlen;
-
-            const(char)* contents = str;
-            _godot_api.string_new_with_latin1_chars_and_len(&_godot_string_name, contents, cast(int) strlen(
-                    contents));
-        }
-    }
-
-    ~this() {
-        //_bind._destructor();
-        _godot_string_name = _godot_string_name.init;
-    }
-
-    void opAssign(in StringName other) {
-        if (&_godot_string_name)
-            _bind._destructor();
-
-        _godot_string_name = other._godot_string_name;
-    }
-
-    void opAssign(in string other) {
-        if (&_godot_string_name)
-            _bind._destructor();
-        godot_string gs;
-        _godot_api.string_new_with_utf8_chars_and_len(&gs, other.ptr, cast(int) other.length);
-        _godot_string_name = gs;
-    }
-
-    bool opEquals(in StringName other) const {
-        if (_godot_string_name == other._godot_string_name)
-            return true;
-        // FIXME: no idea if there is actually such thing
-        //return _godot_api.string_name_operator_equal(&_godot_string_name, &other._godot_string_name);
-        return false;
-    }
-
-    String opCast(String)() const {
-        return String(_godot_string_name);
-    }
-
-    @trusted
-    hash_t toHash() const nothrow {
-        return cast(hash_t) assumeWontThrow(_bind.hash());
-        //static if(hash_t.sizeof == uint.sizeof) return _godot_api.string_hash(&_godot_string);
-        //else return _godot_api.string_hash64(&_godot_string);
-    }
-
+    // Another unsafer way to do that would be (converts to wstring)
+    // return str.data.idup;
 }
 
 struct GodotStringLiteral(string data) {
@@ -436,19 +298,6 @@ struct GodotStringLiteral(string data) {
     alias str this;
 }
 
-String dstringToGodotString(string str) {
-    // FIXME: this is going to be slow as hell
-    godot_string gs;
-    _godot_api.string_new_with_utf8_chars_and_len(&gs, str.ptr, cast(int) str.length);
-    return String(gs);
-}
-
-string godotStringToD(String str) {
-    // FIXME: this is going to be slow as hell
-    import std.conv: to;
-    return str.data.to!string;
-}
-
 /++
 Create a GodotStringLiteral.
 
@@ -458,54 +307,3 @@ needed, then caches the String, allowing it to implicitly convert to String at
 no run time cost.
 +/
 enum gs(string str) = GodotStringLiteral!str.init;
-
-struct GodotStringNameLiteral(string data) {
-    private __gshared godot_string gs;
-    StringName str() const {
-        static if (data.length)
-            if (gs == godot_string.init) {
-                synchronized {
-                    if (gs == godot_string.init)
-                        _godot_api.string_new_with_utf8_chars_and_len(&gs, data.ptr, cast(int) data
-                                .length);
-                }
-            }
-        // a pointer so it won't destroy itself ahead of time
-        String* p = cast(String*)&gs;
-        //String ret = void;
-        //_godot_api.variant_new_copy(&ret._godot_string, &gs);
-        //return ret;
-        return StringName(*p);
-    }
-
-    static if (data.length) {
-        shared static ~this() {
-            //if(gs != godot_string.init) _godot_api.variant_destroy(&gs);
-        }
-    }
-    alias str this;
-}
-
-StringName dstringToGodotName(string str) {
-    // FIXME: this is going to be slow as hell
-    godot_string gs;
-    _godot_api.string_new_with_utf8_chars_and_len(&gs, str.ptr, cast(int) str.length);
-    String* p = cast(String*)&gs;
-    return StringName(*p);
-}
-
-string godotNameToD(StringName str) {
-    // FIXME: this is going to be slow as hell
-    import std.conv: to;
-    return str.data.to!string;
-}
-
-/++
-Create a GodotStringNameLiteral.
-
-D $(D string) to Godot $(D StringName) conversion is expensive and cannot be done
-at compile time. This literal does the conversion once the first time it's
-needed, then caches the StringName, allowing it to implicitly convert to StringName at
-no run time cost.
-+/
-enum gn(string str) = GodotStringNameLiteral!str.init;

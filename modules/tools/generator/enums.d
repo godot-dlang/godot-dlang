@@ -1,12 +1,15 @@
 module godot.tools.generator.enums;
 
 import godot.util.string;
-import godot.tools.generator.classes, godot.tools.generator.util;
+import godot.tools.generator.classes;
+import godot.tools.generator.util;
 
 import asdf;
 
 import std.range;
-import std.algorithm.searching, std.algorithm.iteration, std.algorithm.sorting;
+import std.algorithm.searching;
+import std.algorithm.iteration;
+import std.algorithm.sorting;
 import std.path;
 import std.conv : text;
 import std.string;
@@ -26,11 +29,11 @@ string[2] splitEnumName(string type) {
 }
 
 /// format the enum type for D.
-string qualifyEnumName(string type) {
+string asEnumName(string type) {
     string[2] split = type.splitEnumName;
     if (!split[0])
-        return split[1].escapeD;
-    return Type.get(split[0]).dType ~ "." ~ split[1].escapeD;
+        return split[1].escapeDType;
+    return Type.get(split[0]).dType ~ "." ~ split[1].escapeDType;
 }
 
 struct EnumValues {
@@ -49,14 +52,14 @@ struct GodotEnum {
     string[string] ddoc;
 
     string source() const {
-        string ret = "\t/// \n\tenum " ~ name.escapeD ~ " : int {\n";
+        string ret = "\t/// \n\tenum " ~ name.escapeDType ~ " : int {\n";
 
         foreach (n; values /*.sort!((a, b)=>(a.value < b.value))*/ ) {
             if (auto ptr = n.name in ddoc)
                 ret ~= "\t\t/**\n\t\t" ~ (*ptr).replace("\n", "\n\t\t") ~ "\n\t\t*/\n";
             else
                 ret ~= "\t\t/** */\n";
-            ret ~= "\t\t" ~ n.name.snakeToCamel.escapeD ~ " = " ~ n.value.text ~ ",\n";
+            ret ~= "\t\t" ~ n.name.snakeToCamel.escapeDType ~ " = " ~ n.value.text ~ ",\n";
         }
 
         ret ~= "\t}\n";

@@ -147,7 +147,7 @@ struct Variant {
     // having it inside variant creates annoying recursive alias issue
     alias Type = VariantType;
 
-    /// GDNative type that gets passed to the C functions
+    /// GDExtension type that gets passed to the C functions
     // NOTE: godot 4 now uses default int as int32 and double precision by default
     // TODO: verify this
     alias InternalType = AliasSeq!(
@@ -706,7 +706,7 @@ struct Variant {
             if (o == null)
                 return false;
             // return o.isClass(object.name);
-            return o.isClass(godotStringToD(object.name));
+            return o.isClass(toDString(object.name));
         },
             (Type vt) => this.type == vt
         );
@@ -724,7 +724,7 @@ struct Variant {
                 return GodotType(s);
             else
                 // return GodotType(BuiltInClass(o.getClass()));
-                return GodotType(BuiltInClass(dstringToGodotString(o.getClass())));
+                return GodotType(BuiltInClass(toGodotString(o.getClass())));
         } else
             return GodotType(this.type);
     }

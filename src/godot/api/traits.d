@@ -154,7 +154,7 @@ package(godot) godot_object getGDNativeObject(R)(auto ref R r) if (is(R : Ref!U,
 Alias to default-constructed T, as an expression.
 
 A few Godot core types can't use D's `init` because they need to call a C++
-constructor through GDNative.
+constructor through GDExtension.
 +/
 template godotDefaultInit(T) {
     static if (is(T : Array))

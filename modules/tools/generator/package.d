@@ -27,7 +27,7 @@ void usage(GetoptResult opt) {
 
 int main(string[] args) {
     string extensionsJson = "extension_api.json";
-    string godotSource;
+    string godotSource; // TODO: ddoc
     bool overwrite = false;
     auto opt = args.getopt(
         "json|j", "Extensions API JSON (default: extensions_api.json)", &extensionsJson,

@@ -9,6 +9,7 @@ import godot.api.traits;
 
 import std.meta, std.traits;
 
+// FIXME: something's not working with it
 /++
 A UDA to enable a script class to run in the Godot editor even without the game
 running. Required for $(D EditorPlugin)s and other tools used in the editor.
@@ -53,6 +54,8 @@ struct OnReady(alias arg) {
 
 }
 
+// TODO: rename to @Export
+// FIXME: doens't show in editor
 /++
 A UDA to mark a public variable OR accessor methods as a property in Godot.
 

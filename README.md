@@ -3,7 +3,7 @@
 # Godot-DLang
 
 D language bindings for the [Godot Engine](https://godotengine.org/)'s
-[GDNative Extensions API](https://github.com/godotengine/godot-headers).
+[GDExtension API](https://github.com/godotengine/godot-headers).
 
 Originally a fork of [godot-d](https://github.com/godot-d/godot-d)
 
@@ -165,9 +165,9 @@ Godot's full [script API](http://docs.godotengine.org/) can be used from D:
 
 ## Versioning
 
-The GDNative API is binary-compatible between Godot versions, so a D library
+The GDExtension API is binary-compatible between Godot versions, so a D library
 can be used with a Godot build older or newer than the one used to generate the
-bindings. D bindings must still be generated with the most recent GDNative API
+bindings. D bindings must still be generated with the most recent GDExtension API
 (`godot.exe --dump-extension-api`) even if an older Godot binary will be used.
 
 Extension version properties can be checked to prevent newer functions from
@@ -192,7 +192,7 @@ MIT - <https://opensource.org/licenses/MIT>
 Github Links
 -----
 - GitHub repository - <https://github.com/godot-dlang/godot-dlang>
-- GDNative repository - <https://github.com/godotengine/godot-headers>
+- GDExtension repository - <https://github.com/godotengine/godot-headers>
 - C++ bindings these are based on - <https://github.com/godotengine/godot-cpp>
 - D bindings these are based on - <https://github.com/godot-d/godot-d>
 
