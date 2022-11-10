@@ -3,7 +3,8 @@ module godot.tools.generator.util;
 import godot.tools.generator.classes;
 
 import std.range;
-import std.algorithm.searching, std.algorithm.iteration;
+import std.algorithm.searching;
+import std.algorithm.iteration;
 import std.path;
 import std.conv : text;
 import std.string;
@@ -53,7 +54,7 @@ class Type {
 
     //alias dType this;
 
-    string moduleName() const {
+    string asModuleName() const {
         if (isPrimitive || isCoreType)
             return null;
         if (isNativeStruct)
@@ -62,7 +63,7 @@ class Type {
     }
 
     /// Backing opaque type to use instead of raw GDNativeTypePtr
-    string opaqueType() const {
+    string asOpaqueType() const {
         switch (godotType) {
         case "TypedArray":
         case "Array":
@@ -122,7 +123,7 @@ class Type {
 
             
 
-        ).canFind(unqual.godotType);
+        ).canFind(stripConstPointer.godotType);
     }
 
     // types that have simple value semantics and doesn't require special wrappers
@@ -130,7 +131,7 @@ class Type {
         return only("Vector2", "Vector2i", "Vector3", "Vector3i", "Vector4", "Vector4i",
             "Transform2D", "Transform3D", "Projection", "Rect2", "Rect2i",
             "Color", "Plane", "AABB", "Quaternion", "Basis", "RID"
-        ).canFind(unqual.godotType);
+        ).canFind(stripConstPointer.godotType);
     }
 
     bool isCoreType() const {
@@ -178,7 +179,7 @@ class Type {
     }
 
     /// Get variant type name for method calls
-    string toNativeVariantType() const {
+    string asNativeVariantType() const {
         import godot.util.string;
 
         // useless but ok
@@ -263,7 +264,7 @@ class Type {
     }
 
     /// strip constness, also strips indirections (despite the name)
-    Type unqual() const {
+    Type stripConstPointer() const {
         char[] unqualified = cast(char[]) godotType.replace("const ", "").dup;
         while (unqualified[$ - 1] == '*') {
             unqualified[$ - 1] = '\0';
@@ -273,7 +274,7 @@ class Type {
         return Type.get(cast(string) unqualified);
     }
 
-    // same as unqual() but only strips constness, useful for return types and template params
+    // same as stripConstPointer() but only strips constness, useful for return types and template params
     Type stripConst() const {
         char[] unqualified = cast(char[]) godotType.replace("const ", "").dup;
         unqualified = unqualified.stripRight; // strip whitespace leftovers
@@ -282,7 +283,7 @@ class Type {
 
     this(string godotName) {
         godotType = godotName;
-        dType = godotName.escapeType;
+        dType = godotName.escapeGodotType;
     }
 
     this(TypeStruct t) {
@@ -321,7 +322,7 @@ class Type {
             return exc;
 
         godotType = val;
-		dType = godotType.escapeType;
+		dType = godotType.escapeGodotType;
 
         return null;
     }
@@ -337,7 +338,7 @@ class Type {
 }
 
 /// the default value to use for an argument if none is provided
-string emptyDefault(in Type type) {
+string defaultTypeString(in Type type) {
     import std.string;
     import std.conv : text;
 
@@ -345,17 +346,18 @@ string emptyDefault(in Type type) {
 
     switch (type.dType) {
     case "String":
+        // FIXME: might cause some issues with auto-conversion?
         return `gs!""`;
     case "Dictionary":
         return type.dType ~ ".make()";
     case "Array":
         return type.dType ~ ".make()";
-    default: // all default-blittable types
-    {
-            if (isPointer)
+    default: { // all default-blittable types
+            if (isPointer) {
                 return "(" ~ type.dType ~ ").init";
-            else
+            } else {
                 return type.dType ~ ".init"; // D's default initializer
+            }
             ///return "null";
         }
     }
@@ -381,12 +383,12 @@ String
 Variant
 PoolStringArray
 +/
-string escapeDefault(in Type type, string arg) {
+string escapeDefaultType(in Type type, string arg) {
     import std.string;
     import std.conv : text;
 
     if (!arg || arg.length == 0)
-        return emptyDefault(type);
+        return defaultTypeString(type);
 
     // parse the defaults in api.json
     switch (type.dType) {
@@ -407,7 +409,7 @@ string escapeDefault(in Type type, string arg) {
     case "PackedVector3Array":
     case "PackedStringArray":
     case "PackedColorArray":
-        return emptyDefault(type);
+        return defaultTypeString(type);
     case "Transform3D": // "1, 0, 0, 0, 1, 0, 0, 0, 1 - 0, 0, 0" TODO: parse this
         if (arg.startsWith("Transform3D("))
             return arg;
@@ -421,7 +423,7 @@ string escapeDefault(in Type type, string arg) {
             return arg;
         return "Projection(" ~ arg ~ ")";
     case "RID": // always empty?
-        return emptyDefault(type); // D's default initializer
+        return defaultTypeString(type); // D's default initializer
     case "Vector2": // "(0, 0)"
     case "Vector2i": // "(0, 0)"
     case "Vector3":
@@ -443,7 +445,6 @@ string escapeDefault(in Type type, string arg) {
         // if (arg.canFind('"'))
         //     return "gs!" ~ arg;
         // return "gs!\"" ~ arg ~ "\"";
-        // FIXME: causes forward reference error
         if (arg.canFind('"'))
             return arg;
         return "\"" ~ arg ~ "\"";
@@ -460,9 +461,9 @@ string escapeDefault(in Type type, string arg) {
     default: // all Object types
     {
             if (arg == "Null" || arg == "null")
-                return emptyDefault(type);
+                return defaultTypeString(type);
             if (arg == "[Object:null]")
-                return emptyDefault(type);
+                return defaultTypeString(type);
             if (type.isEnum)
                 return type.getEnumValueStr(arg);
             return arg;
@@ -470,8 +471,8 @@ string escapeDefault(in Type type, string arg) {
     }
 }
 
-string escapeType(string t) {
-    import godot.tools.generator.enums : qualifyEnumName;
+string escapeGodotType(string t) {
+    import godot.tools.generator.enums : asEnumName;
 
     t = t.chompPrefix("_");
 
@@ -490,15 +491,15 @@ string escapeType(string t) {
     if (t == "Nil")
         return "GDNativeTypePtr";
     if (t.startsWith("enum::"))
-        return t.qualifyEnumName;
+        return t.asEnumName;
     if (t.startsWith("bitfield::"))
         return t["bitfield::".length .. $];
     if (t.startsWith("typedarray::"))
-        return t.qualifyTypedArray;
+        return t.asTypedArray;
     return t;
 }
 
-string escapeD(string s, string godotType = "") {
+string escapeDType(string s, string godotType = "") {
     import std.meta;
     import std.uni, std.utf;
 
@@ -566,12 +567,12 @@ string escapeD(string s, string godotType = "") {
         return "_" ~ s;
     default:
         // HACK: dirty way to make string auto-conversion
-        if (godotType == "String") return "dstringToGodotString(" ~ s ~ ")";
-        if (godotType == "StringName") return "dstringToGodotName(" ~ s ~ ")";
+        if (godotType == "String") return "toGodotString(" ~ s ~ ")";
+        if (godotType == "StringName") return "toGodotStringName(" ~ s ~ ")";
         return s;
     }
 }
 
-string qualifyTypedArray(string type) {
+string asTypedArray(string type) {
     return "TypedArray!(" ~ type["typedarray::".length .. $] ~ ")";
 }

@@ -4,7 +4,8 @@ import godot.tools.generator.util;
 
 import std.string;
 import std.format;
-import std.algorithm.iteration, std.algorithm.comparison;
+import std.algorithm.iteration;
+import std.algorithm.comparison;
 
 import asdf;
 
@@ -66,7 +67,7 @@ struct Api {
 			}
 			private string versionError(string name, int major, int minor)
 			{
-				string ret = "Bindings for GDNative extension "~name;
+				string ret = "Bindings for GDExtension extension "~name;
 				if((major == 1 && minor == 0)) ret ~= " do not exist. ";
 				else ret ~= format!" exist, but not for version %d.%d. "(major, minor);
 				ret ~= "Please provide a more recent gdnative_api.json to the binding generator to fix this.";
@@ -240,7 +241,7 @@ class ApiPart {
             foreach (ai, const ref a; f.arguments) {
                 if (ai != 0)
                     ret ~= ", ";
-                ret ~= a[0].escapeCType ~ " " ~ a[1].escapeD;
+                ret ~= a[0].escapeCType ~ " " ~ a[1].escapeDType;
             }
             ret ~= ");\n";
         }
@@ -261,7 +262,7 @@ class ApiPart {
 		};
 
         foreach (const ref f; api) {
-            ret ~= "\tda_" ~ f.name ~ " " ~ f.name.escapeD ~ ";\n";
+            ret ~= "\tda_" ~ f.name ~ " " ~ f.name.escapeDType ~ ";\n";
         }
 
         if (next) {

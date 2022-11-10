@@ -76,7 +76,7 @@ struct godot_net_webrtc_library {
     /* Called when the library is unset as default interface via godot_net_set_webrtc_library */
     void* function() unregistered;
 
-    /* Used by WebRTCPeerConnection create when GDNative is the default implementation. */
+    /* Used by WebRTCPeerConnection create when GDExtension is the default implementation. */
     /* Takes a pointer to WebRTCPeerConnectionGDNative, should bind and return OK, failure if binding was unsuccessful. */
     godot_error* function(godot_object*) create_peer_connection;
 

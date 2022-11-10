@@ -1,6 +1,8 @@
 module godot.tools.generator.doc;
 
-import godot.tools.generator.classes, godot.tools.generator.methods, godot.tools.generator.util;
+import godot.tools.generator.classes;
+import godot.tools.generator.methods;
+import godot.tools.generator.util;
 import godot.util.string;
 
 import std.stdio : writeln, writefln;
@@ -110,9 +112,9 @@ string godotToDdoc(string input) {
     ret = ret.replaceAll!((Captures!string s) {
         auto split = s[1].findSplit(".");
         if (split[1].empty)
-            return "$(D " ~ s[1].snakeToCamel.escapeD ~ ")";
+            return "$(D " ~ s[1].snakeToCamel.escapeDType ~ ")";
         else
-            return "$(D " ~ split[0].escapeType ~ "." ~ split[2].snakeToCamel.escapeD ~ ")";
+            return "$(D " ~ split[0].escapeGodotType ~ "." ~ split[2].snakeToCamel.escapeDType ~ ")";
     })(ctRegex!(`\[(?:method|member|signal|enum) (.+?)\]`));
 
     /// TODO: not D code, can't use --- blocks. Maybe the GDScript can be parsed and converted to D...
@@ -128,7 +130,7 @@ string godotToDdoc(string input) {
         ctRegex!`\[code\](.*?)\[/code\]`);
 
     // fallback for [Class]
-    ret = ret.replaceAll!((Captures!string s) => "$(D " ~ s[1].escapeType ~ ")")(
+    ret = ret.replaceAll!((Captures!string s) => "$(D " ~ s[1].escapeGodotType ~ ")")(
         ctRegex!`\[(.+?)\]`);
 
     return ret;

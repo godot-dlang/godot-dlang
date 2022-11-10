@@ -43,7 +43,7 @@ enum LoadDRuntime : bool {
 }
 
 /++
-This mixin will generate the GDNative C interface functions for this D library.
+This mixin will generate the GDExtension C interface functions for this D library.
 Pass to it a name string for the library, followed by the GodotScript types to
 register, functions to call, and other options to configure Godot-D.
 

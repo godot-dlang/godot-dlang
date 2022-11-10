@@ -32,6 +32,9 @@ private bool isValidSwizzle(dstring s) {
     return true;
 }
 
+alias vec3 = Vector3;
+alias ivec3 = Vector3i;
+
 /**
 Vector3 is one of the core classes of the engine, and includes several built-in helper functions to perform basic vector math operations.
 */

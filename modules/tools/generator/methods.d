@@ -8,7 +8,8 @@ import godot.tools.generator.util;
 import asdf;
 
 import std.range;
-import std.algorithm.searching, std.algorithm.iteration;
+import std.algorithm.searching;
+import std.algorithm.iteration;
 import std.path;
 import std.conv : text;
 import std.string;
@@ -42,6 +43,7 @@ class GodotMethod {
     GodotArgument[] arguments;
 
     void finalizeDeserialization(Asdf data) {
+        // FIXME: why data is here if it's not used?
         if (!return_type)
             return_type = Type.get("void");
         foreach (i, ref arg; arguments) {
@@ -111,15 +113,15 @@ class GodotMethod {
                 }
             }
 
-            ret ~= " " ~ arg.name.escapeD;
+            ret ~= " " ~ arg.name.escapeDType;
 
             // HACK: look at GodotArgument
             // FIXME: Causes forward reference
             if (arg.default_value != "\0") {
                 if (arg.type.isBitfield || arg.type.isEnum) {
-                    ret ~= " = cast(" ~ typeString ~ ") " ~ escapeDefault(arg.type, arg.default_value);
+                    ret ~= " = cast(" ~ typeString ~ ") " ~ escapeDefaultType(arg.type, arg.default_value);
                 } else {
-                    ret ~= " = " ~ escapeDefault(arg.type, arg.default_value);
+                    ret ~= " = " ~ escapeDefaultType(arg.type, arg.default_value);
                 }
             }
         }
@@ -155,24 +157,24 @@ class GodotMethod {
     /// Function pointer name for this method
     /// 	"constructor_new_0", "method_normalize", ...
     string wrapperIdentifier() const {
-        return funKindName ~ "_" ~ name.snakeToCamel.escapeD;
+        return functionKindName ~ "_" ~ name.snakeToCamel.escapeDType;
     }
 
     /// Function type name used in some cases: like "method", "ctor", "getter", etc...
-    string funKindName() const {
+    string functionKindName() const {
         return "method";
     }
 
     /++ 
 	Formats whole method including function signature and body with implementation.
 	e.g.:
-
-		Array slice(in long begin, in long end, in long step, in bool deep) const
-		{
-			if (!GDNativeGDNativeClassBinding.method_slice)
-				GDNativeClassBinding.slice = _godot_api.get_method_bind("Class", "Method", 42);
-			return callBuiltinMethod!(Array)(cast(GDNativePtrBuiltInMethod) GDNativeClassBinding.slice.mb, cast(void*) &_godot_object, cast() begin, cast() end, cast() step, cast() deep);
-		}
+    ```d
+    string getSlice(in string delimiter, in long slice) const {
+		if (!GDNativeClassBinding.method_getSlice.mb)
+			GDNativeClassBinding.method_getSlice.mb = _godot_api.variant_get_ptr_builtin_method(GDNATIVE_VARIANT_TYPE_STRING, "get_slice", 3535100402);
+		return toDString(callBuiltinMethod!(String)(cast(GDNativePtrBuiltInMethod) GDNativeClassBinding.method_getSlice.mb, cast(void*) &_godot_object, cast() toGodotString(delimiter), cast() slice));
+    }
+    ```
 	+/
     string source() const {
         string ret;
@@ -209,7 +211,7 @@ class GodotMethod {
         // ret ~= return_type.stripConst.dRef ~ " ";
         // none of the types (Classes/Core/Primitive) are pointers in D
         // Classes are reference types; the others are passed by value.
-        ret ~= name.snakeToCamel.escapeD;
+        ret ~= name.snakeToCamel.escapeDType;
 
         ret ~= templateArgsString;
         ret ~= argsString;
@@ -274,7 +276,7 @@ class GodotMethod {
             }
             foreach (i, const arg; arguments) {
                 // gathers normal parameters in variant array to be later used as pointers
-                ret ~= "\t\t_GODOT_args[" ~ text(cast(int) i) ~ "] = " ~ escapeD(arg.name) ~ ";\n";
+                ret ~= "\t\t_GODOT_args[" ~ text(cast(int) i) ~ "] = " ~ escapeDType(arg.name) ~ ";\n";
             }
 
             if (has_varargs) {
@@ -300,8 +302,8 @@ class GodotMethod {
                 ret ~= "\t\treturn ";
                 if (return_type.dType != "Variant") {
                     // HACK
-                    if (return_type.stripConst.dType == "String") ret ~= "godotStringToD(";
-                    if (return_type.stripConst.dType == "StringName") ret ~= "godotNameToD(";
+                    if (return_type.stripConst.dType == "String") ret ~= "toDString(";
+                    if (return_type.stripConst.dType == "StringName") ret ~= "toDStringName(";
                     ret ~= "ret.as!(RefOrT!(" ~ return_type.stripConst.dType ~ "))";
                     if (return_type.stripConst.dType == "String") ret ~= ")";
                     if (return_type.stripConst.dType == "StringName") ret ~= ")";
@@ -314,7 +316,7 @@ class GodotMethod {
             // adds temp variable for static ctor
             if (isConstructor) {
                 ret ~= "\t\t";
-                ret ~= parent.name.canBeCopied ? parent.name.dType : parent.name.opaqueType;
+                ret ~= parent.name.canBeCopied ? parent.name.dType : parent.name.asOpaqueType;
                 ret ~= " _godot_object;\n";
             }
             // omit return for constructors, it will be wrapped and returned later
@@ -324,8 +326,8 @@ class GodotMethod {
                 ret ~= "\t\t";
             }
             // HACK
-            if (return_type.dType == "String" && !isConstructor) ret ~= "godotStringToD(";
-            if (return_type.dType == "StringName" && !isConstructor) ret ~= "godotNameToD(";
+            if (return_type.dType == "String" && !isConstructor) ret ~= "toDString(";
+            if (return_type.dType == "StringName" && !isConstructor) ret ~= "toDStringName(";
 
             ret ~= callType() ~ "!(" ~ return_type.dType ~ ")(";
             if (parent.isBuiltinClass)
@@ -340,8 +342,8 @@ class GodotMethod {
                 ret ~= "_godot_object";
             foreach (ai, const arg; arguments) {
                 // FIXME: const cast hack
-                // FIXME: make auto-cast in escapeD?
-                ret ~= ", cast() " ~ arg.name.escapeD(arg.type.godotType); 
+                // FIXME: make auto-cast in escapeDType?
+                ret ~= ", cast() " ~ arg.name.escapeDType(arg.type.godotType); 
             }
             // HACK
             if ((return_type.dType == "String" || return_type.dType == "StringName") && !isConstructor) {
@@ -355,8 +357,8 @@ class GodotMethod {
                 } else {
                     ret ~= "\t\treturn ";
                     // HACK
-                    if (return_type.dType == "String") ret ~= "godotStringToD(";
-                    if (return_type.dType == "StringName") ret ~= "godotNameToD(";
+                    if (return_type.dType == "String") ret ~= "toDString(";
+                    if (return_type.dType == "StringName") ret ~= "toDStringName(";
                     // ret ~= "\t\treturn " ~ return_type.dType ~ "(_godot_object);\n";
                     ret ~= return_type.dType ~ "(_godot_object";
                     if (return_type.dType == "String") ret ~= ")";
@@ -385,7 +387,7 @@ class GodotMethod {
         if (parent.isBuiltinClass) {
             return format(`GDNativeClassBinding.%s.mb = _godot_api.variant_get_ptr_builtin_method(%s, "%s", %d);`,
                 wrapperIdentifier,
-                parent.name.toNativeVariantType,
+                parent.name.asNativeVariantType,
                 name,
                 hash
             );
@@ -438,8 +440,8 @@ class GodotProperty {
         ret ~= "\t/**\n\t" ~ ddoc.replace("\n", "\n\t") ~ "\n\t*/\n";
         ret ~= "\t@property " ~ retType ~ " " ~ name.replace("/", "_")
         // ret ~= "\t@property " ~ m.return_type.dType ~ " " ~ name.replace("/", "_")
-            .snakeToCamel.escapeD ~ "() {\n"; /// TODO: const?
-        ret ~= "\t\treturn " ~ getter.snakeToCamel.escapeD ~ "(";
+            .snakeToCamel.escapeDType ~ "() {\n"; /// TODO: const?
+        ret ~= "\t\treturn " ~ getter.snakeToCamel.escapeDType ~ "(";
         if (index != -1) {
             // add cast to enum types
             if (m.arguments[0].type.isEnum)
@@ -461,9 +463,9 @@ class GodotProperty {
         string ret;
         ret ~= "\t/// ditto\n";
         ret ~= "\t@property void " ~ name.replace("/", "_")
-            .snakeToCamel.escapeD ~ "(" ~ setType ~ " v) {\n";
-            // .snakeToCamel.escapeD ~ "(" ~ m.arguments[$ - 1].type.dType ~ " v) {\n";
-        ret ~= "\t\t" ~ setter.snakeToCamel.escapeD ~ "(";
+            .snakeToCamel.escapeDType ~ "(" ~ setType ~ " v) {\n";
+            // .snakeToCamel.escapeDType ~ "(" ~ m.arguments[$ - 1].type.dType ~ " v) {\n";
+        ret ~= "\t\t" ~ setter.snakeToCamel.escapeDType ~ "(";
         if (index != -1) {
             // add cast to enum types
             if (m.arguments[0].type.isEnum)

@@ -1,12 +1,16 @@
 module godot.tools.generator.classes;
 
 import godot.util.string;
-import godot.tools.generator.methods, godot.tools.generator.enums, godot.tools.generator.util;
+import godot.tools.generator.methods;
+import godot.tools.generator.enums;
+import godot.tools.generator.util;
 
 import asdf;
 
 import std.range;
-import std.algorithm.searching, std.algorithm.iteration, std.algorithm.sorting;
+import std.algorithm.searching;
+import std.algorithm.iteration;
+import std.algorithm.sorting;
 import std.path;
 import std.conv : text;
 import std.string;
@@ -66,14 +70,14 @@ class Constructor : GodotMethod {
         return cast() this;
     }
 
-    override string funKindName() const {
+    override string functionKindName() const {
         return "ctor";
     }
 
     override string loader() const {
         return format(`GDNativeClassBinding.%s.mb = _godot_api.variant_get_ptr_constructor(%s, %d);`,
             wrapperIdentifier,
-            parent.name.toNativeVariantType(),
+            parent.name.asNativeVariantType(),
             index
         );
     }
@@ -113,7 +117,7 @@ final class GodotClass {
     // end built-in types only
 
     void addUsedClass(in Type c) {
-        auto u = c.unqual();
+        auto u = c.stripConstPointer();
         if (u.isPrimitive || u.isCoreType || u.godotType == "Object")
             return;
         if (u.isTypedArray)
@@ -259,7 +263,7 @@ final class GodotClass {
         assert(!used_classes.canFind!(c => c.godotType == "Object"));
 
         if (!isBuiltinClass) {
-            ret ~= "module godot." ~ name.moduleName ~ ";\n\n";
+            ret ~= "module godot." ~ name.asModuleName ~ ";\n\n";
 
             ret ~= `import std.meta : AliasSeq, staticIndexOf;
 import std.traits : Unqual;
@@ -275,10 +279,10 @@ import godot.classdb;`;
         }
 
         foreach (const u; used_classes) {
-            if (!u.moduleName)
+            if (!u.asModuleName)
                 continue;
             ret ~= "import godot.";
-            ret ~= u.moduleName;
+            ret ~= u.asModuleName;
             ret ~= ";\n";
         }
 
@@ -391,7 +395,7 @@ import godot.classdb;`;
                     else
                         ret ~= "\t\t/** */\n";
                 }
-                ret ~= "\t\t" ~ constant.name.snakeToCamel.escapeD ~ " = " ~ text(
+                ret ~= "\t\t" ~ constant.name.snakeToCamel.escapeDType ~ " = " ~ text(
                     constant.value) ~ ",\n";
             }
             ret ~= "\t}\n";

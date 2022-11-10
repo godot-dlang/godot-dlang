@@ -51,7 +51,7 @@ struct godot_signal {
 
 version (none)  : alias godot_class_constructor = godot_object function();
 
-////// GDNative procedure types
+////// GDExtension procedure types
 alias godot_gdnative_init_fn = void function(godot_gdnative_init_options*);
 alias godot_gdnative_terminate_fn = void function(godot_gdnative_terminate_options*);
 alias godot_gdnative_procedure_fn = godot_variant function(void*, godot_array*);

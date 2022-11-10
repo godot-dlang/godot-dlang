@@ -8,7 +8,9 @@ import std.string;
 import std.stdio;
 
 import godot.tools.generator.util;
-import godot.tools.generator.classes, godot.tools.generator.methods, godot.tools.generator.enums;
+import godot.tools.generator.classes;
+import godot.tools.generator.methods;
+import godot.tools.generator.enums;
 
 import godot.util.string;
 
@@ -54,7 +56,7 @@ struct NativeStructure {
     Type[] used_classes;
 
     void addUsedClass(in Type c) {
-        auto u = c.unqual();
+        auto u = c.stripConstPointer();
         if (u.isNativeStruct || u.isPrimitive || u.isCoreType || u.godotType == "Object")
             return;
         if (u.isEnum)
@@ -220,7 +222,7 @@ void writeBindings(ref ExtensionsApi ap, string dirPath) {
     writeGlobalEnums(ap, dirPath);
 
     foreach (cls; ap.classes) {
-        auto path = dirPath.buildPath(cls.name.moduleName ~ ".d");
+        auto path = dirPath.buildPath(cls.name.asModuleName ~ ".d");
 
         std.file.write(path, cls.source());
     }
@@ -259,7 +261,7 @@ void writeStructs(ref ExtensionsApi api, string dirPath) {
         auto source = st.parseMembers();
 
         foreach (imp; st.used_classes)
-            s ~= "import godot." ~ imp.moduleName ~ ";\n";
+            s ~= "import godot." ~ imp.asModuleName ~ ";\n";
 
         s ~= "struct " ~ st.name.dType ~ " {\n";
 
