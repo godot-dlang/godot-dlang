@@ -3,7 +3,7 @@ Initialization, termination, and registration of D libraries in Godot
 +/
 module godot.api.register;
 
-import godot.util.tools.classes;
+import godot.util.classes;
 
 import std.format;
 import std.meta, std.traits;
@@ -43,7 +43,7 @@ enum LoadDRuntime : bool {
 }
 
 /++
-This mixin will generate the GDNative C interface functions for this D library.
+This mixin will generate the GDExtension C interface functions for this D library.
 Pass to it a name string for the library, followed by the GodotScript types to
 register, functions to call, and other options to configure Godot-D.
 
@@ -71,16 +71,17 @@ mixin GodotNativeLibrary!(
 mixin template GodotNativeLibrary(string symbolPrefix, Args...) {
     private static import godot.abi;
 
-    private static import godot.abi.gdextension;
+    private import godot.abi.gdextension;
+    private import godot.abi.core;
 
-    private static import godot.util.tools.classes;
+    private static import godot.util.classes;
     private import godot.api.reference;
 
     static if (__traits(compiles, import("classes.csv"))) {
-        enum godotutil.classes.ProjectInfo _GODOT_projectInfo = godotutil.classes.ProjectInfo.fromCsv(
+        enum godot.util.classes.ProjectInfo _GODOT_projectInfo = godot.util.classes.ProjectInfo.fromCsv(
                 import("classes.csv"));
     } else {
-        enum godotutil.classes.ProjectInfo _GODOT_projectInfo = godotutil.classes.ProjectInfo.init;
+        enum godot.util.classes.ProjectInfo _GODOT_projectInfo = godot.util.classes.ProjectInfo.init;
     }
 
     /// HACK: empty main to force the compiler to add emulated TLS.

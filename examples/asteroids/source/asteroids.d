@@ -1,5 +1,3 @@
-import godot.abi;
-
 import godot;
 import godot.object;
 import godot.node;
@@ -55,7 +53,7 @@ class Asteroids : GodotScript!Node3D {
         RigidBody3D rock = recycled;
 
         if (!rock) {
-            Ref!PackedScene scene = ResourceLoader.load(gs!"res://Rock.tscn", gs!"", ResourceLoader
+            Ref!PackedScene scene = ResourceLoader.load("res://Rock.tscn", "", ResourceLoader
                     .CacheMode.cacheModeReplace).as!PackedScene;
             rock = scene.instantiate(PackedScene.GenEditState.genEditStateInstance).as!RigidBody3D;
             addChild(rock, false, Node.InternalMode.internalModeDisabled);

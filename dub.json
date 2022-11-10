@@ -13,7 +13,7 @@
 	"sourcePaths": [ "src", "classes" ],
 
 	"dependencies": {
-		"godot-dlang:tools": "*",
+		"godot-dlang:util": "*",
 		"utf_bc": "~>0.2.1",
         "sumtype": "~>1.2.7"
 	},
@@ -28,10 +28,10 @@
 
 	"subPackages": [
 		{
-            "name": "tools",
+            "name": "util",
             "targetType": "library",
-            "sourcePaths": [ "godot/util/tools" ],
-            "importPaths": [ "godot/util/tools" ]
+            "sourcePaths": [ "modules/util/" ],
+            "importPaths": [ "modules/util/" ]
         },
 		{
             "name": "generator",
@@ -40,13 +40,13 @@
             "targetType": "executable",
             "dependencies":
             {
-                "godot-dlang:tools": "*",
+                "godot-dlang:util": "*",
                 "asdf": "~>0.7.15",
                 "dxml": "~>0.4.3",
                 "libdparse": "~>0.20.0",
                 "sumtype": "~>1.2.7"
             },
-            "sourcePaths": [ "godot/util/generator" ],
+            "sourcePaths": [ "modules/tools/generator" ],
             "targetName": "godot-dlang-generator"
         },
 		{
@@ -55,13 +55,13 @@
             "targetType": "library",
             "dependencies":
             {
-                "godot-dlang:tools": "*",
+                "godot-dlang:util": "*",
                 "emsi_containers": "~>0.8.0",
                 "dsymbol": "~>0.14.1",
                 "libdparse": "~>0.20.0"
             },
-            "sourcePaths": [ "godot/util/classfinder" ],
-            "importPaths": [ "godot/util/classfinder" ]
+            "sourcePaths": [ "modules/tools/classfinder" ],
+            "importPaths": [ "modules/tools/classfinder" ]
         },
         {
             "name": "pregenerate",
@@ -69,12 +69,14 @@
             "targetType": "executable",
             "dependencies":
             {
-                "godot-dlang:tools": "*",
+                "godot-dlang:util": "*",
                 "godot-dlang:classfinder": "*"
             },
-            "sourcePaths": [ "godot/util/pregenerate" ],
-            "importPaths": [ "godot/util/pregenerate" ],
+            "sourcePaths": [ "modules/tools/pregenerate" ],
+            "importPaths": [ "modules/tools/pregenerate" ],
             "targetName": "godot-dlang-pregenerate"
-        }
+        }, 
+        "examples/asteroids",
+        "examples/test"
 	]
 }
