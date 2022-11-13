@@ -75,7 +75,17 @@
             "sourcePaths": [ "modules/tools/pregenerate" ],
             "importPaths": [ "modules/tools/pregenerate" ],
             "targetName": "godot-dlang-pregenerate"
-        }, 
+        },
+        {
+            "name": "reloader",
+            "description": "Simple package that tells godot editor to load/unload native extension",
+            "targetType": "executable",
+            "dependencies": {
+                "vibe-d": "~>0.9.5"
+            },
+            "sourcePaths": [ "modules/tools/reloader" ],
+            "importPaths": [ "modules/tools/reloader" ]
+        },
         "examples/asteroids",
         "examples/test"
 	]
