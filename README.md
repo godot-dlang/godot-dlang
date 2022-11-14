@@ -147,6 +147,18 @@ windows.64 = "mydplugin.dll"
 
 Enjoy your new game!
 
+### Automatic reloading of native extension
+
+Copy `addons/reload-d` editor plugin to your godot project `addons` folder and enable `reload-d` plugin in `Project -> Project Settings -> Plugins` menu.
+
+Next update your `dub.json` project and add following lines, this will automatically tells editor to unload library and then load it again after build.
+
+```json
+"preGenerateCommands": ["dub run godot-dlang:reloader -- --action unload -e $DUB_TARGET_NAME"],
+
+"postGenerateCommands": ["dub run godot-dlang:reloader -- --action load -e $DUB_TARGET_NAME"],
+```
+
 ### Godot API
 Godot's full [script API](http://docs.godotengine.org/) can be used from D:  
 - `godot` submodules contain container, math, and engine structs like `Vector3` and `String`.
