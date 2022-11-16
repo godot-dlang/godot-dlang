@@ -8,6 +8,6 @@
 	"libs-windows-release-dmd": ["libcmt"],
 	"dependencies":
 	{
-		"godot-d": { "path": "../../" }
+		"godot-dlang": { "path": "../../" }
 	}
 }

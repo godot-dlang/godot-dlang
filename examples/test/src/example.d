@@ -143,9 +143,9 @@ class Test : GodotScript!Label {
 
         // the node variables will have been set by OnReady
         colorRect.setColor(Color(0f, 1f, 0f));
-        longNode.setText(gs!"This node was set by OnReady");
+        longNode.setText("This node was set by OnReady");
 
-        owner.emitSignal(gn!"send_message", gs!"Some text sent by a signal");
+        owner.emitSignal("send_message", "Some text sent by a signal");
 
         writefln("owner: %x", cast(void*) owner);
         // print() will write into Godot's editor output, unlike writeln
@@ -295,7 +295,7 @@ class Test : GodotScript!Label {
 
             import godot.projectsettings;
 
-            String projectName = ProjectSettings.get(gn!"application/config/name").as!String;
+            String projectName = ProjectSettings.get("application/config/name").as!String;
             print("ProjectSettings property \"application/config/name\": ", projectName);
         }
 
@@ -309,7 +309,7 @@ class Test : GodotScript!Label {
 
             String oldText = getText();
             writefln("Old Label text: %s", oldText);
-            setText(gs!"New text set from D Test class");
+            setText("New text set from D Test class");
         }
 
         // test refcounting (also, run Godot with -v to see leaks)
@@ -337,11 +337,11 @@ class Test : GodotScript!Label {
             import godot.resource, godot.resourceloader;
             import std.string;
 
-            String iconPath = gs!"res://icon.png";
+            string iconPath = "res://icon.png";
             writefln("assert(!ResourceLoader.hasCached(%s))", iconPath);
             assert(!ResourceLoader.hasCached(iconPath));
 
-            Ref!Resource res = ResourceLoader.load(iconPath, gs!"", ResourceLoader
+            Ref!Resource res = ResourceLoader.load(iconPath, "", ResourceLoader
                     .CacheMode.cacheModeReplace);
             writefln("Loaded Resource %s at path %s", res.getName, res.getPath);
 
@@ -362,8 +362,8 @@ class Test : GodotScript!Label {
         // test properties
         // FIXME: D Object has "get" shadowing GodotObject.get
         {
-            StringName pn = gn!"property";
-            String someText = gs!"Some text.";
+            string pn = "property";
+            string someText = "Some text.";
             Variant someTextV = Variant(someText);
 
             writeln("setting property to \"Some text.\"...");
@@ -373,7 +373,7 @@ class Test : GodotScript!Label {
             writefln("getting property: <%s>", res);
         }
         {
-            StringName pn = gn!"number";
+            string pn = "number";
             long someNum = 42;
             Variant someNumV = Variant(someNum);
 
@@ -383,24 +383,24 @@ class Test : GodotScript!Label {
             auto res = owner.get(pn).as!long;
             writefln("getting number: <%d>", res);
         }
-        owner.set(gn!"only_setter", 5678);
-        print("onlyGetter: ", owner.get(gn!"only_getter"));
+        owner.set("only_setter", 5678);
+        print("onlyGetter: ", owner.get("only_getter"));
 
         // test array slicing and equality
         {
             import std.algorithm : equal;
 
-            Array a = Array.make(1, gs!"two", NodePath("three"), 4.01);
+            Array a = Array.make(1, "two", NodePath("three"), 4.01);
             print("Array a: ", a);
-            assert(a[1 .. $].equal(Array.make(gs!"two", NodePath("three"), 4.01)[]));
+            assert(a[1 .. $].equal(Array.make("two", NodePath("three"), 4.01)[]));
             // it seems slice operator changes, assert here has 2 elements, but since godot 4 slice now returns only one
             Array b = a.slice(1, a.length, 2);
             print("Array b (a.slice(1, a.length, 2)): ", b);
-            assert(b[].equal([Variant(gs!"two")]));
+            assert(b[].equal([Variant("two")]));
 
             Array c = a ~ b;
             print("Array c: ", c);
-            assert(c[].equal(Array.make(1, gs!"two", NodePath("three"), 4.01, gs!"two")[]));
+            assert(c[].equal(Array.make(1, "two", NodePath("three"), 4.01, "two")[]));
             Array d = Array.make(5);
             d.appendRange([6, 7]);
             print("Array d: ", d);
