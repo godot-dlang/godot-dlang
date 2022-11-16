@@ -4,5 +4,5 @@ entry_symbol = "test_gdextension_entry"
 
 [libraries]
 
-linux.64 = "libgodot-d_test.so"
-windows.64 = "godot-d_test.dll"
+linux.64 = "libgodot-dlang_test.so"
+windows.64 = "godot-dlang_test.dll"

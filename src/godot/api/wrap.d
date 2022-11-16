@@ -572,7 +572,7 @@ package(godot) struct VariableWrapper(T, alias var) {
                 ~ P.stringof ~ ")");
 
     alias getterType = P function();
-    alias setterType = void function(P val);
+    alias setterType = void function(P v); // ldc doesn't likes 'val' name here
 
     extern (C) // for calling convention
     static void callPropertyGet(void* methodData, void* instance,
