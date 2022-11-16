@@ -627,11 +627,16 @@ struct VirtualMethodsHelper(T) {
 
         return name[0] == '_' && name[1].isAlphaNum;
     }
+    import std.meta;
+    static bool isFunc(alias member)() {
+        return isFunction!(__traits(getMember, T, member));
+    }
 
     alias derivedMfs = Filter!(matchesNamingConv, __traits(derivedMembers, T));
+    alias onlyFuncs = Filter!(isFunc, derivedMfs);
 
     static GDNativeExtensionClassCallVirtual findVCall(in string func) {
-        static foreach (name; derivedMfs) {
+        static foreach (name; onlyFuncs) {
             if (func == name)
                 return &MethodWrapper!(T, __traits(getMember, T, name)).virtualCall;
         }

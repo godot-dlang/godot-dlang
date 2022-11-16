@@ -365,7 +365,7 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
         
         };
 
-        _godot_api.classdb_register_extension_class_method(lib, name.ptr, &mi);
+        _godot_api.classdb_register_extension_class_method(lib, name, &mi);
     }
 
     static foreach (mf; godotMethods!T) {
@@ -402,14 +402,14 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
                     prop[i].name = "arg" ~ i.stringof;
 
                 if (Variant.variantTypeOf!p == VariantType.object)
-                    prop[i].class_name = name.ptr;
+                    prop[i].class_name = name;
                 prop[i].type = Variant.variantTypeOf!p;
                 prop[i].hint = 0;
                 prop[i].hint_string = null;
                 prop[i].usage = GDNATIVE_EXTENSION_METHOD_FLAGS_DEFAULT;
             }
 
-            _godot_api.classdb_register_extension_class_signal(lib, name.ptr, (externalName).ptr, prop.ptr, Parameters!s
+            _godot_api.classdb_register_extension_class_signal(lib, name, (externalName).ptr, prop.ptr, Parameters!s
                     .length);
         }
     }
@@ -460,7 +460,7 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
             } else
                 enum set_prop = string.init;
 
-            _godot_api.classdb_register_extension_class_property(lib, name.ptr, &pinfo, set_prop.ptr, get_prop
+            _godot_api.classdb_register_extension_class_property(lib, name, &pinfo, set_prop.ptr, get_prop
                     .ptr);
         }
     }
@@ -494,7 +494,7 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
             static fnWrapper.setterType setterTmp; // dummy func for now because current registration code requires actual function, and there isn't one
             registerMemberAccessor!(fnWrapper.callPropertySet, setterTmp, set_prop);
 
-            _godot_api.classdb_register_extension_class_property(lib, name.ptr, &pinfo, set_prop.ptr, get_prop
+            _godot_api.classdb_register_extension_class_property(lib, name, &pinfo, set_prop.ptr, get_prop
                     .ptr);
         }
     }
@@ -503,7 +503,7 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
         {
             static foreach (ev; __traits(allMembers, E)) {
                 //pragma(msg, ev, ":", cast(int) __traits(getMember, E, ev));
-                _godot_api.classdb_register_extension_class_integer_constant(lib, name.ptr,
+                _godot_api.classdb_register_extension_class_integer_constant(lib, name,
                     __traits(identifier, E), ev, cast(int) __traits(getMember, E, ev), false);
             }
         }
@@ -513,7 +513,7 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
         {
             alias E = __traits(getMember, T, pName);
             //pragma(msg, pName, ":", cast(int) E);
-            _godot_api.classdb_register_extension_class_integer_constant(lib, name.ptr, null, pName, cast(
+            _godot_api.classdb_register_extension_class_integer_constant(lib, name, null, pName, cast(
                     int) E, false);
         }
     }
