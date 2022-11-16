@@ -44,12 +44,9 @@ struct StringName {
         this = StringName_Bind.new0();
     }
 
-    /// Returns the length of the wchar_t array, minus the zero terminator.
+    /// Returns the length of the char32_t array, minus the zero terminator.
     size_t length() const {
-        // FIXME: burn this before it spreads
-        // FIXME: acutally this must be quite inefficient
-        String str = String(this);
-        size_t len = str.length;
+        auto len = _godot_api.string_to_utf8_chars(&_godot_string_name, null, 0);
         return len;
         //return _godot_api.string_length(&_godot_string);
     }
@@ -65,8 +62,9 @@ struct StringName {
             &_godot_string_name, 0);
     }
 
-    /// Returns a slice of the wchar_t data without the zero terminator.
-    immutable(wchar_t)[] data() const {
+    /// Returns a slice of the char32_t data without the zero terminator.
+    dstring data() const {
+        // in godot-cpp there is actually no such things like data(), ptr() and length() for StringName
         return cast(typeof(return)) ptr[0 .. length];
     }
 

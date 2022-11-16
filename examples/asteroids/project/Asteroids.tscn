@@ -8,12 +8,6 @@ radius = 1.0
 height = 2.0
 
 [node name="Node" type="Asteroids"]
-_import_path = NodePath("")
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-editor_description = ""
-script = null
 
 [node name="Background@Moon1" type="MeshInstance3D" parent="."]
 transform = Transform3D(7.3996, 0, 0, 0, 7.3996, 0, 0, 0, 7.3996, 25.7582, -14.5153, -21.2188)
@@ -24,12 +18,6 @@ transform = Transform3D(3.6998, 0, 0, 0, 3.6998, 0, 0, 0, 3.6998, -42.79, -18.73
 mesh = SubResource("1")
 
 [node name="Player" parent="." instance=ExtResource("3")]
-_import_path = NodePath("")
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-editor_description = ""
-script = null
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.712102, 0.702076, 0, -0.702076, 0.712102, 0, -9.29272, 0)
