@@ -104,6 +104,7 @@ enum : GDNativeVariantOperator {
     GDNATIVE_VARIANT_OP_LESS_EQUAL,
     GDNATIVE_VARIANT_OP_GREATER,
     GDNATIVE_VARIANT_OP_GREATER_EQUAL,
+
     /* mathematic */
     GDNATIVE_VARIANT_OP_ADD,
     GDNATIVE_VARIANT_OP_SUBTRACT,
@@ -113,6 +114,7 @@ enum : GDNativeVariantOperator {
     GDNATIVE_VARIANT_OP_POSITIVE,
     GDNATIVE_VARIANT_OP_MODULE,
     GDNATIVE_VARIANT_OP_POWER,
+
     /* bitwise */
     GDNATIVE_VARIANT_OP_SHIFT_LEFT,
     GDNATIVE_VARIANT_OP_SHIFT_RIGHT,
@@ -120,11 +122,13 @@ enum : GDNativeVariantOperator {
     GDNATIVE_VARIANT_OP_BIT_OR,
     GDNATIVE_VARIANT_OP_BIT_XOR,
     GDNATIVE_VARIANT_OP_BIT_NEGATE,
+
     /* logic */
     GDNATIVE_VARIANT_OP_AND,
     GDNATIVE_VARIANT_OP_OR,
     GDNATIVE_VARIANT_OP_XOR,
     GDNATIVE_VARIANT_OP_NOT,
+
     /* containment */
     GDNATIVE_VARIANT_OP_IN,
     GDNATIVE_VARIANT_OP_MAX
@@ -148,11 +152,11 @@ alias GDNativeCallErrorType = int;
 enum : GDNativeCallErrorType {
     GDNATIVE_CALL_OK,
     GDNATIVE_CALL_ERROR_INVALID_METHOD,
-    GDNATIVE_CALL_ERROR_INVALID_ARGUMENT, /* expected is variant type */
-    GDNATIVE_CALL_ERROR_TOO_MANY_ARGUMENTS, /* expected is number of arguments */
-    GDNATIVE_CALL_ERROR_TOO_FEW_ARGUMENTS, /*  expected is number of arguments */
+    GDNATIVE_CALL_ERROR_INVALID_ARGUMENT, // Expected a different variant type.
+    GDNATIVE_CALL_ERROR_TOO_MANY_ARGUMENTS, // Expected lower number of arguments.
+    GDNATIVE_CALL_ERROR_TOO_FEW_ARGUMENTS, // Expected higher number of arguments.
     GDNATIVE_CALL_ERROR_INSTANCE_IS_NULL,
-    GDNATIVE_CALL_ERROR_METHOD_NOT_CONST, /* used for const call */
+    GDNATIVE_CALL_ERROR_METHOD_NOT_CONST, // Used for const call.
 
 }
 
@@ -203,22 +207,26 @@ alias GDNativeExtensionClassGetRID = uint64_t function(GDExtensionClassInstanceP
 struct GDNativePropertyInfo {
     //@nogc nothrow:
     GDNativeVariantType type;
-    const(char)* name;
-    const(char)* class_name;
-    uint32_t hint; // Bitfield of `PropertyHint` (defined in `extension_api.json`)
-    const(char)* hint_string;
-    uint32_t usage; // Bitfield of `PropertyUsageFlags` (defined in `extension_api.json`)
+    GDNativeStringNamePtr name;
+    GDNativeStringNamePtr class_name;
+    uint32_t hint; // Bitfield of `PropertyHint` (defined in `extension_api.json`).
+    GDNativeStringNamePtr hint_string;
+    uint32_t usage; // Bitfield of `PropertyUsageFlags` (defined in `extension_api.json`).
 }
 
 struct GDNativeMethodInfo {
     //@nogc nothrow:
-    const(char)* name;
+    GDNativeStringNamePtr name;
     GDNativePropertyInfo return_value;
-    uint32_t flags; // Bitfield of `GDNativeExtensionClassMethodFlags`
+    uint32_t flags; // Bitfield of `GDNativeExtensionClassMethodFlags`.
     int32_t id;
+
+    /* Arguments: `default_arguments` is an array of size `argument_count`. */
     GDNativePropertyInfo* arguments;
     uint32_t argument_count;
-    GDNativeVariantPtr default_arguments;
+
+    /* Default arguments: `default_arguments` is an array of size `default_argument_count`. */
+    GDNativeVariantPtr* default_arguments;
     uint32_t default_argument_count;
 }
 
@@ -233,14 +241,14 @@ alias GDNativeExtensionClassPropertyGetRevert = GDNativeBool function(
 alias GDNativeExtensionClassNotification = void function(
     GDExtensionClassInstancePtr p_instance, int32_t p_what);
 alias GDNativeExtensionClassToString = void function(
-    GDExtensionClassInstancePtr p_instance, GDNativeStringPtr p_out);
+    GDExtensionClassInstancePtr p_instance, GDNativeBool *r_is_valid, GDNativeStringPtr p_out);
 alias GDNativeExtensionClassReference = void function(GDExtensionClassInstancePtr p_instance);
 alias GDNativeExtensionClassUnreference = void function(GDExtensionClassInstancePtr p_instance);
 alias GDNativeExtensionClassCallVirtual = void function(GDExtensionClassInstancePtr p_instance, const GDNativeTypePtr* p_args, GDNativeTypePtr r_ret);
 alias GDNativeExtensionClassCreateInstance = GDNativeObjectPtr function(void* p_userdata);
 alias GDNativeExtensionClassFreeInstance = void function(void* p_userdata, GDExtensionClassInstancePtr p_instance);
 alias GDNativeExtensionClassGetVirtual = GDNativeExtensionClassCallVirtual function(
-    void* p_userdata, const char* p_name);
+    void* p_userdata, const GDNativeStringNamePtr p_name);
 
 struct GDNativeExtensionClassCreationInfo {
     //@nogc nothrow:
@@ -256,11 +264,11 @@ struct GDNativeExtensionClassCreationInfo {
     GDNativeExtensionClassToString to_string_func;
     GDNativeExtensionClassReference reference_func;
     GDNativeExtensionClassUnreference unreference_func;
-    GDNativeExtensionClassCreateInstance create_instance_func; /* this one is mandatory */
-    GDNativeExtensionClassFreeInstance free_instance_func; /* this one is mandatory */
-    GDNativeExtensionClassGetVirtual get_virtual_func;
+    GDNativeExtensionClassCreateInstance create_instance_func; // (Default) constructor; mandatory. If the class is not instantiable, consider making it virtual or abstract.
+    GDNativeExtensionClassFreeInstance free_instance_func; // Destructor; mandatory.
+    GDNativeExtensionClassGetVirtual get_virtual_func; // Queries a virtual function by name and returns a callback to invoke the requested virtual function.
     GDNativeExtensionClassGetRID get_rid_func;
-    void* class_userdata;
+    void* class_userdata; // Per-class user data, later accessible in instance bindings.
 }
 
 alias GDNativeExtensionClassLibraryPtr = void*;
@@ -306,23 +314,32 @@ alias GDNativeExtensionClassMethodGetArgumentMetadata = GDNativeExtensionClassMe
 
 struct GDNativeExtensionClassMethodInfo {
     //@nogc nothrow:
-    const char* name;
+    GDNativeStringNamePtr name;
     void* method_userdata;
     GDNativeExtensionClassMethodCall call_func;
     GDNativeExtensionClassMethodPtrCall ptrcall_func;
-    uint32_t method_flags; // Bitfield of `GDNativeExtensionClassMethodFlags`
-    uint32_t argument_count;
-    GDNativeBool has_return_value;
-    GDNativeExtensionClassMethodGetArgumentType get_argument_type_func;
-    GDNativeExtensionClassMethodGetArgumentInfo get_argument_info_func; /* name and hint information for the argument can be omitted in release builds. Class name should always be present if it applies. */
-    GDNativeExtensionClassMethodGetArgumentMetadata get_argument_metadata_func;
-    uint32_t default_argument_count;
-    GDNativeVariantPtr* default_arguments;
+    uint32_t method_flags; // Bitfield of `GDNativeExtensionClassMethodFlags`.
+
+	/* If `has_return_value` is false, `return_value_info` and `return_value_metadata` are ignored. */
+	GDNativeBool has_return_value;
+	GDNativePropertyInfo* return_value_info;
+	GDNativeExtensionClassMethodArgumentMetadata return_value_metadata;
+
+	/* Arguments: `arguments_info` and `arguments_metadata` are array of size `argument_count`.
+	 * Name and hint information for the argument can be omitted in release builds. Class name should always be present if it applies.
+	 */
+	uint32_t argument_count;
+	GDNativePropertyInfo* arguments_info;
+	GDNativeExtensionClassMethodArgumentMetadata* arguments_metadata;
+
+	/* Default arguments: `default_arguments` is an array of size `default_argument_count`. */
+	uint32_t default_argument_count;
+	GDNativeVariantPtr* default_arguments;
 }
 
 /* SCRIPT INSTANCE EXTENSION */
 
-alias GDNativeExtensionScriptInstanceDataPtr = void*; // Pointer to custom ScriptInstance native implementation
+alias GDNativeExtensionScriptInstanceDataPtr = void*; // Pointer to custom ScriptInstance native implementation.
 
 alias GDNativeExtensionScriptInstanceSet = GDNativeBool function(GDNativeExtensionScriptInstanceDataPtr p_instance, const GDNativeStringNamePtr p_name, const GDNativeVariantPtr p_value);
 alias GDNativeExtensionScriptInstanceGet = GDNativeBool function(GDNativeExtensionScriptInstanceDataPtr p_instance, const GDNativeStringNamePtr p_name, GDNativeVariantPtr r_ret);
@@ -356,8 +373,8 @@ alias GDNativeExtensionScriptInstanceCall = void function(
     GDNativeExtensionScriptInstanceDataPtr p_self, const GDNativeStringNamePtr p_method, const GDNativeVariantPtr* p_args, const GDNativeInt p_argument_count, GDNativeVariantPtr r_return, GDNativeCallError* r_error);
 alias GDNativeExtensionScriptInstanceNotification = void function(
     GDNativeExtensionScriptInstanceDataPtr p_instance, int32_t p_what);
-alias GDNativeExtensionScriptInstanceToString = const char* function(
-    GDNativeExtensionScriptInstanceDataPtr p_instance, GDNativeBool* r_is_valid);
+alias GDNativeExtensionScriptInstanceToString = void function(
+    GDNativeExtensionScriptInstanceDataPtr p_instance, GDNativeBool* r_is_valid, GDNativeStringPtr r_out);
 
 alias GDNativeExtensionScriptInstanceRefCountIncremented = void function(
     GDNativeExtensionScriptInstanceDataPtr p_instance);
@@ -385,7 +402,6 @@ struct GDNativeExtensionScriptInstanceInfo {
     GDNativeExtensionScriptInstanceGet get_func;
     GDNativeExtensionScriptInstanceGetPropertyList get_property_list_func;
     GDNativeExtensionScriptInstanceFreePropertyList free_property_list_func;
-    GDNativeExtensionScriptInstanceGetPropertyType get_property_type_func;
 
     GDNativeExtensionScriptInstancePropertyCanRevert property_can_revert_func;
     GDNativeExtensionScriptInstancePropertyGetRevert property_get_revert_func;
@@ -395,6 +411,7 @@ struct GDNativeExtensionScriptInstanceInfo {
 
     GDNativeExtensionScriptInstanceGetMethodList get_method_list_func;
     GDNativeExtensionScriptInstanceFreeMethodList free_method_list_func;
+    GDNativeExtensionScriptInstanceGetPropertyType get_property_type_func;
 
     GDNativeExtensionScriptInstanceHasMethod has_method_func;
 
@@ -428,6 +445,7 @@ struct GDNativeInterface {
     const(char)* version_string;
 
     /* GODOT CORE */
+
     void* function(size_t p_bytes) mem_alloc;
     void* function(void* p_ptr, size_t p_bytes) mem_realloc;
     void function(void* p_ptr) mem_free;
@@ -436,7 +454,7 @@ struct GDNativeInterface {
     nothrow void function(const(char)* p_description, const(char)* p_function, const(char)* p_file, int32_t p_line) print_warning;
     nothrow void function(const(char)* p_description, const(char)* p_function, const(char)* p_file, int32_t p_line) print_script_error;
 
-    uint64_t function(const(char)* p_name) get_native_struct_size;
+    uint64_t function(const GDNativeStringNamePtr p_name) get_native_struct_size;
 
     /* GODOT VARIANT */
 
@@ -479,22 +497,21 @@ struct GDNativeInterface {
     GDNativeVariantFromTypeConstructorFunc function(GDNativeVariantType p_type) get_variant_from_type_constructor;
     GDNativeTypeFromVariantConstructorFunc function(GDNativeVariantType p_type) get_variant_to_type_constructor;
     GDNativePtrOperatorEvaluator function(GDNativeVariantOperator p_operator, GDNativeVariantType p_type_a, GDNativeVariantType p_type_b) variant_get_ptr_operator_evaluator;
-    GDNativePtrBuiltInMethod function(GDNativeVariantType p_type, const(char)* p_method, GDNativeInt p_hash) variant_get_ptr_builtin_method;
+    GDNativePtrBuiltInMethod function(GDNativeVariantType p_type, const GDNativeStringNamePtr p_method, GDNativeInt p_hash) variant_get_ptr_builtin_method;
     GDNativePtrConstructor function(GDNativeVariantType p_type, int32_t p_constructor) variant_get_ptr_constructor;
     GDNativePtrDestructor function(GDNativeVariantType p_type) variant_get_ptr_destructor;
     void function(GDNativeVariantType p_type, GDNativeVariantPtr p_base, const(GDNativeVariantPtr)* p_args, int32_t p_argument_count, GDNativeCallError* r_error) variant_construct;
-    GDNativePtrSetter function(GDNativeVariantType p_type, const(char)* p_member) variant_get_ptr_setter;
-    GDNativePtrGetter function(GDNativeVariantType p_type, const(char)* p_member) variant_get_ptr_getter;
+    GDNativePtrSetter function(GDNativeVariantType p_type, const GDNativeStringNamePtr p_member) variant_get_ptr_setter;
+    GDNativePtrGetter function(GDNativeVariantType p_type, const GDNativeStringNamePtr p_member) variant_get_ptr_getter;
     GDNativePtrIndexedSetter function(GDNativeVariantType p_type) variant_get_ptr_indexed_setter;
     GDNativePtrIndexedGetter function(GDNativeVariantType p_type) variant_get_ptr_indexed_getter;
     GDNativePtrKeyedSetter function(GDNativeVariantType p_type) variant_get_ptr_keyed_setter;
     GDNativePtrKeyedGetter function(GDNativeVariantType p_type) variant_get_ptr_keyed_getter;
     GDNativePtrKeyedChecker function(GDNativeVariantType p_type) variant_get_ptr_keyed_checker;
-    void function(GDNativeVariantType p_type, const(char)* p_constant, GDNativeVariantPtr r_ret) variant_get_constant_value;
-    GDNativePtrUtilityFunction function(const(char)* p_function, GDNativeInt p_hash) variant_get_ptr_utility_function;
+    void function(GDNativeVariantType p_type, const GDNativeStringNamePtr p_constant, GDNativeVariantPtr r_ret) variant_get_constant_value;
+    GDNativePtrUtilityFunction function(const GDNativeStringNamePtr p_function, GDNativeInt p_hash) variant_get_ptr_utility_function;
 
     /*  extra utilities */
-
     void function(GDNativeStringPtr r_dest, const(char)* p_contents) string_new_with_latin1_chars;
     void function(GDNativeStringPtr r_dest, const(char)* p_contents) string_new_with_utf8_chars;
     void function(GDNativeStringPtr r_dest, const(char16_t)* p_contents) string_new_with_utf16_chars;
@@ -505,6 +522,7 @@ struct GDNativeInterface {
     void function(GDNativeStringPtr r_dest, const(char16_t)* p_contents, const GDNativeInt p_size) string_new_with_utf16_chars_and_len;
     void function(GDNativeStringPtr r_dest, const(char32_t)* p_contents, const GDNativeInt p_size) string_new_with_utf32_chars_and_len;
     void function(GDNativeStringPtr r_dest, const(wchar_t)* p_contents, const GDNativeInt p_size) string_new_with_wide_chars_and_len;
+
     /* Information about the following functions:
 	 * - The return value is the resulting encoded string length.
 	 * - The length returned is in characters, not in bytes. It also does not include a trailing zero.
@@ -560,12 +578,12 @@ struct GDNativeInterface {
     void function(const GDNativeMethodBindPtr p_method_bind, GDNativeObjectPtr p_instance, const GDNativeVariantPtr* p_args, GDNativeInt p_arg_count, GDNativeVariantPtr r_ret, GDNativeCallError* r_error) object_method_bind_call;
     void function(const GDNativeMethodBindPtr p_method_bind, GDNativeObjectPtr p_instance, const GDNativeTypePtr* p_args, GDNativeTypePtr r_ret) object_method_bind_ptrcall;
     void function(GDNativeObjectPtr p_o) object_destroy;
-    GDNativeObjectPtr function(const(char)* p_name) global_get_singleton;
+    GDNativeObjectPtr function(const GDNativeStringNamePtr p_name) global_get_singleton;
 
     void* function(GDNativeObjectPtr p_o, void* p_token, const GDNativeInstanceBindingCallbacks* p_callbacks) object_get_instance_binding;
     void function(GDNativeObjectPtr p_o, void* p_token, void* p_binding, const GDNativeInstanceBindingCallbacks* p_callbacks) object_set_instance_binding;
 
-    void function(GDNativeObjectPtr p_o, const char* p_classname, GDExtensionClassInstancePtr p_instance) object_set_instance; /* p_classname should be a registered extension class and should extend the p_o object's class. */
+    void function(GDNativeObjectPtr p_o, const GDNativeStringNamePtr p_classname, GDExtensionClassInstancePtr p_instance) object_set_instance; /* p_classname should be a registered extension class and should extend the p_o object's class. */
 
     GDNativeObjectPtr function(const GDNativeObjectPtr p_object, void* p_class_tag) object_cast_to;
     GDNativeObjectPtr function(GDObjectInstanceID p_instance_id) object_get_instance_from_id;
@@ -576,20 +594,22 @@ struct GDNativeInterface {
     GDNativeScriptInstancePtr function(const GDNativeExtensionScriptInstanceInfo* p_info, GDNativeExtensionScriptInstanceDataPtr p_instance_data) script_instance_create;
 
     /* CLASSDB */
-    GDNativeObjectPtr function(const char* p_classname) classdb_construct_object; /* The passed class must be a built-in godot class, or an already-registered extension class. In both case, object_set_instance should be called to fully initialize the object. */
-    GDNativeMethodBindPtr function(const char* p_classname, const char* p_methodname, GDNativeInt p_hash) classdb_get_method_bind;
-    void* function(const char* p_classname) classdb_get_class_tag;
+
+    GDNativeObjectPtr function(const GDNativeStringNamePtr p_classname) classdb_construct_object; /* The passed class must be a built-in godot class, or an already-registered extension class. In both case, object_set_instance should be called to fully initialize the object. */
+    GDNativeMethodBindPtr function(const GDNativeStringNamePtr p_classname, const GDNativeStringNamePtr p_methodname, GDNativeInt p_hash) classdb_get_method_bind;
+    void* function(const GDNativeStringNamePtr p_classname) classdb_get_class_tag;
 
     /* CLASSDB EXTENSION */
 
-    void function(const GDNativeExtensionClassLibraryPtr p_library, const char* p_class_name, const char* p_parent_class_name, const GDNativeExtensionClassCreationInfo* p_extension_funcs) classdb_register_extension_class;
-    void function(const GDNativeExtensionClassLibraryPtr p_library, const char* p_class_name, const GDNativeExtensionClassMethodInfo* p_method_info) classdb_register_extension_class_method;
-    void function(const GDNativeExtensionClassLibraryPtr p_library, const char* p_class_name, const char* p_enum_name, const char* p_constant_name, GDNativeInt p_constant_value, bool p_is_bitfield) classdb_register_extension_class_integer_constant;
-    void function(const GDNativeExtensionClassLibraryPtr p_library, const char* p_class_name, const GDNativePropertyInfo* p_info, const char* p_setter, const char* p_getter) classdb_register_extension_class_property;
-    void function(const GDNativeExtensionClassLibraryPtr p_library, const char* p_class_name, const char* p_group_name, const char* p_prefix) classdb_register_extension_class_property_group;
-    void function(const GDNativeExtensionClassLibraryPtr p_library, const char* p_class_name, const char* p_subgroup_name, const char* p_prefix) classdb_register_extension_class_property_subgroup;
-    void function(const GDNativeExtensionClassLibraryPtr p_library, const char* p_class_name, const char* p_signal_name, const GDNativePropertyInfo* p_argument_info, GDNativeInt p_argument_count) classdb_register_extension_class_signal;
-    void function(const GDNativeExtensionClassLibraryPtr p_library, const char* p_class_name) classdb_unregister_extension_class; /* Unregistering a parent class before a class that inherits it will result in failure. Inheritors must be unregistered first. */
+    /* Provided parameters for `classdb_register_extension_*` can be safely freed once the function returns. */
+	void function(const GDNativeExtensionClassLibraryPtr p_library, const GDNativeStringNamePtr p_class_name, const GDNativeStringNamePtr p_parent_class_name, const GDNativeExtensionClassCreationInfo* p_extension_funcs) classdb_register_extension_class;
+	void function(const GDNativeExtensionClassLibraryPtr p_library, const GDNativeStringNamePtr p_class_name, const GDNativeExtensionClassMethodInfo* p_method_info) classdb_register_extension_class_method;
+	void function(const GDNativeExtensionClassLibraryPtr p_library, const GDNativeStringNamePtr p_class_name, const GDNativeStringNamePtr p_enum_name, const GDNativeStringNamePtr p_constant_name, GDNativeInt p_constant_value, GDNativeBool p_is_bitfield) classdb_register_extension_class_integer_constant;
+	void function(const GDNativeExtensionClassLibraryPtr p_library, const GDNativeStringNamePtr p_class_name, const GDNativePropertyInfo* p_info, const GDNativeStringNamePtr p_setter, const GDNativeStringNamePtr p_getter) classdb_register_extension_class_property;
+	void function(const GDNativeExtensionClassLibraryPtr p_library, const GDNativeStringNamePtr p_class_name, const GDNativeStringPtr p_group_name, const GDNativeStringPtr p_prefix) classdb_register_extension_class_property_group;
+	void function(const GDNativeExtensionClassLibraryPtr p_library, const GDNativeStringNamePtr p_class_name, const GDNativeStringPtr p_subgroup_name, const GDNativeStringPtr p_prefix) classdb_register_extension_class_property_subgroup;
+	void function(const GDNativeExtensionClassLibraryPtr p_library, const GDNativeStringNamePtr p_class_name, const GDNativeStringNamePtr p_signal_name, const GDNativePropertyInfo* p_argument_info, GDNativeInt p_argument_count) classdb_register_extension_class_signal;
+	void function(const GDNativeExtensionClassLibraryPtr p_library, const GDNativeStringNamePtr p_class_name) classdb_unregister_extension_class; /* Unregistering a parent class before a class that inherits it will result in failure. Inheritors must be unregistered first. */
 
     void function(const GDNativeExtensionClassLibraryPtr p_library, GDNativeStringPtr r_path) get_library_path;
 
@@ -618,7 +638,8 @@ struct GDNativeInitialization {
 }
 
 /* Define a C function prototype that implements the function below and expose it to dlopen() (or similar).
- * It will be called on initialization. The name must be an unique one specified in the .gdextension config file.
+ * This is the entry point of the GDExtension library and will be called on initialization.
+ * It can be used to set up different init levels, which are called during various stages of initialization/shutdown.
+ * The function name must be a unique one specified in the .gdextension config file.
  */
-
 alias GDNativeInitializationFunction = GDNativeBool function(const GDNativeInterface* p_interface, const GDNativeExtensionClassLibraryPtr p_library, GDNativeInitialization* r_initialization);
