@@ -576,3 +576,8 @@ string escapeDType(string s, string godotType = "") {
 string asTypedArray(string type) {
     return "TypedArray!(" ~ type["typedarray::".length .. $] ~ ")";
 }
+
+string tab(string s, int tabs) {
+    import std.conv : to;
+    return repeat('\t', tabs).to!string ~ s;
+}

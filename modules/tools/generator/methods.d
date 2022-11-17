@@ -230,8 +230,10 @@ class GodotMethod {
         string ret;
 
         // load function pointer
-        ret ~= "\t\tif (!GDNativeClassBinding." ~ wrapperIdentifier ~ ".mb)\n";
-        ret ~= "\t\t\t" ~ loader() ~ "\n";
+        ret ~= "\t\tif (!GDNativeClassBinding." ~ wrapperIdentifier ~ ".mb) {\n";
+        // tab() will indent it correctly starting from first element
+        ret ~= loader().split('\n').map!(s => s.tab(3)).join('\n') ~ "\n";
+        ret ~= "\t\t}\n";
 
         if (is_virtual || has_varargs) {
             // keep it like this for now, serves as example.
@@ -383,20 +385,20 @@ class GodotMethod {
     /// formats function pointer loader, e.g.
     /// 	GDNativeClassBinding.method_append.mb = _godot_api.clasdb_get_methodbind("class", "method", hash);
     string loader() const {
+        char[] buf;
+        buf ~= "StringName classname = StringName(\"" ~ parent.name.godotType ~ "\");\n";
+        buf ~= "StringName methodname = StringName(\"" ~ name ~ "\");\n";
         // probably better to move in its own subclass
         if (parent.isBuiltinClass) {
-            return format(`GDNativeClassBinding.%s.mb = _godot_api.variant_get_ptr_builtin_method(%s, "%s", %d);`,
+            return cast(string) buf ~ format(`GDNativeClassBinding.%s.mb = _godot_api.variant_get_ptr_builtin_method(%s, cast(GDNativeStringNamePtr) methodname, %d);`,
                 wrapperIdentifier,
                 parent.name.asNativeVariantType,
-                name,
                 hash
             );
         }
 
-        return format(`GDNativeClassBinding.%s.mb = _godot_api.classdb_get_method_bind("%s", "%s", %d);`,
+        return cast(string) buf ~ format(`GDNativeClassBinding.%s.mb = _godot_api.classdb_get_method_bind(cast(GDNativeStringNamePtr) classname, cast(GDNativeStringNamePtr) methodname, %d);`,
             wrapperIdentifier,
-            parent.name.godotType,
-            name,
             hash,
         );
     }

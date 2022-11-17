@@ -346,7 +346,7 @@ package(godot) struct MethodWrapperMeta(alias mf) {
     // GDNativeExtensionClassMethodGetArgumentType signature:
     //   GDNativeVariantType function(void *p_method_userdata, int32_t p_argument)
     extern (C)
-    static GDNativeVariantType getArgTypesFn(void* method, int32_t argument) {
+    static GDNativeVariantType* getArgTypes() {
         // fill array of argument types and use cached data
         import godot.variant;
         import std.meta : staticMap;
@@ -354,72 +354,61 @@ package(godot) struct MethodWrapperMeta(alias mf) {
         immutable __gshared static VariantType[A.length] argInfo = [
             staticMap!(Variant.variantTypeOf, A)
         ];
-        immutable __gshared static VariantType retInfo = Variant.variantTypeOf!R;
-        //if (method != &mf)
-        //	return GDNATIVE_VARIANT_TYPE_NIL;
-        if (argument > A.length)
-            return GDNATIVE_VARIANT_TYPE_NIL;
-        if (argument == -1)
-            return retInfo;
-        return cast(GDNativeVariantType) argInfo[argument];
+        return cast(GDNativeVariantType*) argInfo.ptr;
     }
 
-    // GDNativeExtensionClassMethodGetArgumentInfo signature:
-    //   void function(void *p_method_userdata, int32_t p_argument, GDNativePropertyInfo *r_info)
+    // yeah, it says return types, godot goes brrr
     extern (C)
-    static void getArgInfoFn(void* method, int32_t argument, /*out*/ GDNativePropertyInfo* info) {
-        static GDNativePropertyInfo[] makeParamInfo() {
-            GDNativePropertyInfo[A.length + 1] argInfo;
-            static foreach (i; 0 .. A.length) {
+    static GDNativeVariantType* getReturnTypes() {
+        // fill array of argument types and use cached data
+        import godot.variant;
+        immutable __gshared static VariantType[2] retInfo = [Variant.variantTypeOf!R, VariantType.nil ];
+        return cast(GDNativeVariantType*) retInfo.ptr;
+    }
 
-                if (Variant.variantTypeOf!(A[i]) == VariantType.object)
-                    argInfo[i].class_name = A[i].stringof;
-                argInfo[i].name = (ParameterIdentifierTuple!mf)[i];
-                argInfo[i].type = Variant.variantTypeOf!(A[i]);
-                argInfo[i].usage = GDNATIVE_EXTENSION_METHOD_FLAGS_DEFAULT;
-
-            }
-            return argInfo.dup;
+    // function parameter type information
+    extern (C)
+    static GDNativePropertyInfo[A.length+1] getArgInfo() {
+        GDNativePropertyInfo[A.length + 1] argInfo;
+        static foreach (i; 0 .. A.length) {
+            if (Variant.variantTypeOf!(A[i]) == VariantType.object)
+                argInfo[i].class_name = cast(GDNativeStringNamePtr) StringName(A[i].stringof);
+            argInfo[i].name = cast(GDNativeStringNamePtr) StringName((ParameterIdentifierTuple!mf)[i]);
+            argInfo[i].type = Variant.variantTypeOf!(A[i]);
+            argInfo[i].usage = GDNATIVE_EXTENSION_METHOD_FLAGS_DEFAULT;
         }
+        return argInfo;
+    }
 
-        __gshared static GDNativePropertyInfo[A.length + 1] argInfo = makeParamInfo();
-        __gshared static GDNativePropertyInfo retInfo = GDNativePropertyInfo(
-            cast(uint32_t) Variant.variantTypeOf!R,
-            null,
-            (Variant.variantTypeOf!R == VariantType.object ? cast(char[]) null : R.stringof)
-                .ptr,
+    // return type information
+    extern (C)
+    static GDNativePropertyInfo[2] getReturnInfo() {
+        // FIXME: StringName makes it no longer CTFE-able
+        GDNativePropertyInfo[2] retInfo = [ 
+            GDNativePropertyInfo(
+                cast(uint32_t) Variant.variantTypeOf!R,
+                null,
+                (Variant.variantTypeOf!R == VariantType.object) ? null : cast(GDNativeStringNamePtr) StringName(R.stringof),
                 0,
                 null,
                 GDNATIVE_EXTENSION_METHOD_FLAGS_DEFAULT
-        );
-        // well... it doesn't go well with auto properties
-        //if (method != &mf)
-        //	return;
-        if (argument > cast(int) A.length) // ooof, implicit signed to unsigned cast...
-            return;
-        if (argument == -1) {
-            *info = retInfo;
-            return;
-        }
-
-        *info = argInfo[argument];
+            ), 
+            GDNativePropertyInfo.init 
+        ];
+        return retInfo;
     }
 
-    // GDNativeExtensionClassMethodGetArgumentMetadata signature:
-    //   GDNativeExtensionClassMethodArgumentMetadata function(void *p_method_userdata, int32_t p_argument)
+    // metadata array for argument types
     extern (C)
-    static GDNativeExtensionClassMethodArgumentMetadata getArgMetadataFn(void* method, int32_t argument) {
-        __gshared static GDNativeExtensionClassMethodArgumentMetadata[A.length] argInfo;
-        __gshared static GDNativeExtensionClassMethodArgumentMetadata retInfo;
-        if (method != &mf)
-            return GDNATIVE_EXTENSION_METHOD_ARGUMENT_METADATA_NONE;
-        if (argument > A.length)
-            return GDNATIVE_EXTENSION_METHOD_ARGUMENT_METADATA_NONE;
-        // TODO: implement me
+    static GDNativeExtensionClassMethodArgumentMetadata* getArgMetadata() {
+        __gshared static GDNativeExtensionClassMethodArgumentMetadata[A.length] argInfo = GDNATIVE_EXTENSION_METHOD_ARGUMENT_METADATA_NONE;
+        return argInfo.ptr;
+    }
+
+    // metadata for return type
+    extern (C)
+    static GDNativeExtensionClassMethodArgumentMetadata getReturnMetadata() {
         return GDNATIVE_EXTENSION_METHOD_ARGUMENT_METADATA_NONE;
-        //if (argument == -1)
-        //	return retInfo;
-        //return argInfo[argument];
     }
 
     import std.traits;

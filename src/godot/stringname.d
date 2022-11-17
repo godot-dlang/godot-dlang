@@ -119,8 +119,12 @@ struct StringName {
         return false;
     }
 
-    String opCast(String)() const {
+    String opCast(T : String)() const {
         return String(_godot_string_name);
+    }
+
+    GDNativeStringNamePtr opCast(T = GDNativeStringNamePtr)() const {
+        return cast(GDNativeStringNamePtr) &_godot_string_name;
     }
 
     @trusted

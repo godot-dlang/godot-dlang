@@ -134,8 +134,8 @@ struct String {
 
     /// Returns the length of the wchar_t array, minus the zero terminator.
     size_t length() const {
-        return _bind.length();
-        //return _godot_api.string_length(&_godot_string);
+        //return _bind.length(); // bug: infinite recursion
+        return _godot_api.string_to_utf8_chars(&_godot_string, null, 0);
     }
 
     /// Returns: $(D true) if length is 0

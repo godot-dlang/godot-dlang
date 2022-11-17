@@ -259,54 +259,56 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
     {
             alias Base = typeof(T.owner);
             alias baseName = Base._GODOT_internal_name;
-        }
+    }
     else // base class is another D script
     {
             alias Base = BaseClassesTuple!T[0];
             static if (hasUDA!(Base, Rename))
-                enum immutable(char*) baseName = godotName!Base ~ '\0';
+                enum string baseName = godotName!Base;
             else
-                enum immutable(char*) baseName = __traits(identifier, Base) ~ '\0';
-        }
+                enum string baseName = __traits(identifier, Base);
+    }
 
     static if (hasUDA!(T, Rename))
-        enum immutable(char*) name = godotName!T ~ '\0';
+        enum string name = godotName!T;
     else
-        enum immutable(char*) name = __traits(identifier, T) ~ '\0';
+        enum string name = __traits(identifier, T);
     enum fqn = fullyQualifiedName!T ~ '\0';
 
     __gshared static GDNativeExtensionClassCreationInfo class_info;
     class_info.create_instance_func = &createFunc!T;
     class_info.free_instance_func = &destroyFunc!T;
-    class_info.class_userdata = cast(void*) cast(const char*) name;
+    class_info.class_userdata = cast(void*) name.ptr;
 
-    extern (C) static GDNativeExtensionClassCallVirtual getVirtualFn(void* p_userdata, const char* p_name) {
+    extern (C) static GDNativeExtensionClassCallVirtual getVirtualFn(void* p_userdata, const GDNativeStringNamePtr p_name) {
         import core.stdc.stdio;
         import core.stdc.string;
+        import std.conv : to;
+
+        // FIXME: well... this is a problem as it will likely allocate a lot
+        string fnName = StringName(godot_string(cast(size_t)p_name)).data.to!string;
 
         //printf("requested method %s\n", p_name);
-        static if (__traits(compiles, __traits(getMember, T, "_ready")))
-            if (strcmp(p_name, "_ready") == 0) {
-                //puts("onready method found");
-                return cast(GDNativeExtensionClassCallVirtual)&OnReadyWrapper!(T, __traits(getMember, T, "_ready"))
-                    .callOnReady;
+        static if (__traits(compiles, __traits(getMember, T, "_ready"))) {
+            if (fnName == "_ready") {
+                return cast(GDNativeExtensionClassCallVirtual) 
+                    &OnReadyWrapper!(T, __traits(getMember, T, "_ready")).callOnReady;
             }
-        return VirtualMethodsHelper!T.findVCall(cast(string) p_name[0 .. p_name.strlen]);
+        }
+        return VirtualMethodsHelper!T.findVCall(fnName);
     }
 
     class_info.get_virtual_func = &getVirtualFn;
 
-    _godot_api.classdb_register_extension_class(lib, name, baseName, &class_info);
+    StringName snClass = StringName(name);
+    StringName snBase = StringName(baseName);
+    _godot_api.classdb_register_extension_class(lib, cast(GDNativeStringNamePtr) snClass, cast(GDNativeStringNamePtr) snBase, &class_info);
 
     void registerMethod(alias mf, string nameOverride = null)() {
         static if (nameOverride.length) {
-            char[nameOverride.length + 1] mfn = void;
-            mfn[0 .. nameOverride.length] = nameOverride;
-            mfn[$ - 1] = '\0';
+            string mfn = nameOverride;
         } else {
-            char[godotName!mf.length + 1] mfn = void;
-            mfn[0 .. godotName!mf.length] = godotName!mf[];
-            mfn[$ - 1] = '\0';
+            string mfn = godotName!mf;
         }
 
         uint flags = GDNATIVE_EXTENSION_METHOD_FLAGS_DEFAULT;
@@ -317,23 +319,29 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
 
         enum isOnReady = godotName!mf == "_ready" && onReadyFieldNames!T.length;
 
+        StringName snFunName = StringName(mfn);
         GDNativeExtensionClassMethodInfo mi = {
-            mfn.ptr, //const char *name;
-                &mf, //void *method_userdata;
-                &MethodWrapper!(T, mf).callMethod, //GDNativeExtensionClassMethodCall call_func;
-                &MethodWrapper!(T, mf).callPtrMethod, //GDNativeExtensionClassMethodPtrCall ptrcall_func;
-                flags, //uint32_t method_flags; /* GDNativeExtensionClassMethodFlags */
-                cast(uint32_t) arity!mf, //uint32_t argument_count;
-                cast(GDNativeBool) !is(ReturnType!mf == void), //GDNativeBool has_return_value;
-                &MethodWrapperMeta!mf.getArgTypesFn, //(GDNativeExtensionClassMethodGetArgumentType) get_argument_type_func;
-                &MethodWrapperMeta!mf.getArgInfoFn, //GDNativeExtensionClassMethodGetArgumentInfo get_argument_info_func; /* name and hint information for the argument can be omitted in release builds. Class name should always be present if it applies. */
-                &MethodWrapperMeta!mf.getArgMetadataFn, //GDNativeExtensionClassMethodGetArgumentMetadata get_argument_metadata_func;
-                MethodWrapperMeta!mf.getDefaultArgNum, //uint32_t default_argument_count;
-                MethodWrapperMeta!mf.getDefaultArgs(), //GDNativeVariantPtr *default_arguments;
+            cast(GDNativeStringNamePtr) snFunName , //const char *name;
+            &mf, //void *method_userdata;
+            &MethodWrapper!(T, mf).callMethod, //GDNativeExtensionClassMethodCall call_func;
+            &MethodWrapper!(T, mf).callPtrMethod, //GDNativeExtensionClassMethodPtrCall ptrcall_func;
+            flags, //uint32_t method_flags; /* GDNativeExtensionClassMethodFlags */
+
+            cast(GDNativeBool) !is(ReturnType!mf == void), //GDNativeBool has_return_value;
+            MethodWrapperMeta!mf.getReturnInfo().ptr, //GDNativePropertyInfo* return_value_info;
+            MethodWrapperMeta!mf.getReturnMetadata, //GDNativeExtensionClassMethodArgumentMetadata return_value_metadata;
+
+            cast(uint32_t) arity!mf, //uint32_t argument_count;
+            MethodWrapperMeta!mf.getArgInfo().ptr, //GDNativePropertyInfo* arguments_info;
+            MethodWrapperMeta!mf.getArgMetadata(), //GDNativeExtensionClassMethodArgumentMetadata* arguments_metadata;
+
+            MethodWrapperMeta!mf.getDefaultArgNum, //uint32_t default_argument_count;
+            MethodWrapperMeta!mf.getDefaultArgs(), //GDNativeVariantPtr *default_arguments;
         
         };
 
-        _godot_api.classdb_register_extension_class_method(lib, name, &mi);
+        StringName snName = StringName(mfn);
+        _godot_api.classdb_register_extension_class_method(lib, cast(GDNativeStringNamePtr) snName, &mi);
     }
 
     void registerMemberAccessor(alias mf, alias propType, string funcName)() {
@@ -341,31 +349,32 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
             "only getter or setter is allowed with exactly zero or one arguments");
 
         static if (funcName) {
-            char[funcName.length + 1] mfn = void;
-            mfn[0 .. funcName.length] = funcName;
-            mfn[$ - 1] = '\0';
+            StringName snName = StringName(funcName);
         } else
-            char[1] mfn = '\0';
+            StringName snName;
 
         uint flags = GDNATIVE_EXTENSION_METHOD_FLAGS_DEFAULT;
 
         GDNativeExtensionClassMethodInfo mi = {
-            mfn.ptr, //const char *name;
-                &mf, //void *method_userdata;
-                &mf, //GDNativeExtensionClassMethodCall call_func;
-                null, //GDNativeExtensionClassMethodPtrCall ptrcall_func;
-                flags, //uint32_t method_flags; /* GDNativeExtensionClassMethodFlags */
-                cast(uint32_t) arity!propType, //uint32_t argument_count;
-                cast(GDNativeBool) !is(ReturnType!mf == void), //GDNativeBool has_return_value;
-                &MethodWrapperMeta!propType.getArgTypesFn, //(GDNativeExtensionClassMethodGetArgumentType) get_argument_type_func;
-                &MethodWrapperMeta!propType.getArgInfoFn, //GDNativeExtensionClassMethodGetArgumentInfo get_argument_info_func; /* name and hint information for the argument can be omitted in release builds. Class name should always be present if it applies. */
-                &MethodWrapperMeta!propType.getArgMetadataFn, //GDNativeExtensionClassMethodGetArgumentMetadata get_argument_metadata_func;
-                MethodWrapperMeta!propType.getDefaultArgNum, //uint32_t default_argument_count;
-                MethodWrapperMeta!propType.getDefaultArgs(), //GDNativeVariantPtr *default_arguments;
-        
+            cast(GDNativeStringNamePtr) snName.ptr, //const char *name;
+            &mf, //void *method_userdata;
+            &mf, //GDNativeExtensionClassMethodCall call_func;
+            null, //GDNativeExtensionClassMethodPtrCall ptrcall_func;
+            flags, //uint32_t method_flags; /* GDNativeExtensionClassMethodFlags */
+
+            cast(GDNativeBool) !is(ReturnType!propType == void), //GDNativeBool has_return_value;
+            MethodWrapperMeta!propType.getReturnInfo.ptr,
+            MethodWrapperMeta!propType.getReturnMetadata,
+
+            cast(uint32_t) arity!propType, //uint32_t argument_count;
+            MethodWrapperMeta!propType.getArgInfo.ptr, //GDNativePropertyInfo* arguments_info;
+            MethodWrapperMeta!propType.getArgMetadata, //GDNativeExtensionClassMethodArgumentMetadata* arguments_metadata;
+
+            MethodWrapperMeta!propType.getDefaultArgNum, //uint32_t default_argument_count;
+            MethodWrapperMeta!propType.getDefaultArgs(), //GDNativeVariantPtr *default_arguments;
         };
 
-        _godot_api.classdb_register_extension_class_method(lib, name, &mi);
+        _godot_api.classdb_register_extension_class_method(lib, cast(GDNativeStringNamePtr) snName, &mi);
     }
 
     static foreach (mf; godotMethods!T) {
@@ -396,21 +405,30 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
                         ~ ParameterIdentifierTuple!s[i] ~ "\": type " ~ p.stringof ~ " is incompatible with Godot");
 
                 // get name or argN fallback placeholder in case of function pointers
-                static if (ParameterIdentifierTuple!s[i].length > 0)
-                    prop[i].name = ParameterIdentifierTuple!s[i];
-                else
-                    prop[i].name = "arg" ~ i.stringof;
+                static if (ParameterIdentifierTuple!s[i].length > 0) {
+                    StringName snArgName = StringName(ParameterIdentifierTuple!s[i]);
+                }
+                else {
+                    StringName snArgName = StringName("arg" ~ i.stringof);
+                }
+                prop[i].name = cast(GDNativeStringNamePtr) snArgName;
 
                 if (Variant.variantTypeOf!p == VariantType.object)
-                    prop[i].class_name = name;
+                    prop[i].class_name = cast(GDNativeStringNamePtr) snClass;
                 prop[i].type = Variant.variantTypeOf!p;
                 prop[i].hint = 0;
                 prop[i].hint_string = null;
                 prop[i].usage = GDNATIVE_EXTENSION_METHOD_FLAGS_DEFAULT;
             }
 
-            _godot_api.classdb_register_extension_class_signal(lib, name, (externalName).ptr, prop.ptr, Parameters!s
-                    .length);
+            StringName snExternalName = StringName(externalName);
+            _godot_api.classdb_register_extension_class_signal(
+                lib, 
+                cast(GDNativeStringNamePtr) snClass, 
+                cast(GDNativeStringNamePtr) snExternalName, 
+                prop.ptr, 
+                Parameters!s.length
+            );
         }
     }
 
@@ -419,8 +437,6 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
     enum bool matchName(string p, alias a) = (godotName!a == p);
     static foreach (pName; godotPropertyNames!T) {
         {
-            enum propName = pName ~ '\0';
-
             alias getterMatches = Filter!(ApplyLeft!(matchName, pName), godotPropertyGetters!T);
             static assert(getterMatches.length <= 1); /// TODO: error message
             alias setterMatches = Filter!(ApplyLeft!(matchName, pName), godotPropertySetters!T);
@@ -438,9 +454,9 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
             __gshared static GDNativePropertyInfo pinfo;
 
             static if (Variant.variantTypeOf!P == VariantType.object)
-                pinfo.class_name = godotName!(P).ptr;
+                pinfo.class_name = cast(GDNativeStringNamePtr) StringName(godotName!(P));
             pinfo.type = vt;
-            pinfo.name = propName.ptr;
+            pinfo.name = cast(GDNativeStringNamePtr) StringName(pName);
             pinfo.hint = GDNATIVE_EXTENSION_METHOD_ARGUMENT_METADATA_NONE;
             //pinfo.usage = GDNATIVE_EXTENSION_METHOD_FLAGS_DEFAULT | GDNATIVE_EXTENSION_METHOD_FLAG_EDITOR;
             pinfo.usage = 7; // godot-cpp uses 7 as value which is default|const|editor currently, doesn't shows up in inspector without const. WTF?
@@ -460,15 +476,21 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
             } else
                 enum set_prop = string.init;
 
-            _godot_api.classdb_register_extension_class_property(lib, name, &pinfo, set_prop.ptr, get_prop
-                    .ptr);
+            StringName snSetProp = StringName(set_prop);
+            StringName snGetProp = StringName(get_prop);
+            _godot_api.classdb_register_extension_class_property(
+                lib, 
+                cast(GDNativeStringNamePtr) snClass, 
+                &pinfo, 
+                cast(GDNativeStringNamePtr) snSetProp, 
+                cast(GDNativeStringNamePtr) snGetProp
+            );
         }
     }
     static foreach (pName; godotPropertyVariableNames!T) {
         {
             import std.string;
 
-            enum propName = pName ~ '\0';
             alias P = typeof(mixin("T." ~ pName));
             enum Variant.Type vt = Variant.variantTypeOf!P;
             alias udas = getUDAs!(mixin("T." ~ pName), Property);
@@ -476,10 +498,12 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
 
             __gshared static GDNativePropertyInfo pinfo;
 
-            static if (Variant.variantTypeOf!P == VariantType.object)
-                pinfo.class_name = godotName!(P).ptr,
-                pinfo.type = vt;
-            pinfo.name = propName.ptr;
+            static if (Variant.variantTypeOf!P == VariantType.object) {
+                StringName snPName = StringName(godotName!(P));
+                pinfo.class_name = cast(GDNativeStringNamePtr) snPName;
+            }
+            pinfo.type = vt;
+            pinfo.name = cast(GDNativeStringNamePtr) StringName(pName);
             pinfo.usage = GDNATIVE_EXTENSION_METHOD_FLAGS_DEFAULT | GDNATIVE_EXTENSION_METHOD_FLAG_EDITOR;
             static if (uda.hintString.length)
                 pinfo.hint_string = uda.hintString;
@@ -494,17 +518,33 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
             static fnWrapper.setterType setterTmp; // dummy func for now because current registration code requires actual function, and there isn't one
             registerMemberAccessor!(fnWrapper.callPropertySet, setterTmp, set_prop);
 
-            _godot_api.classdb_register_extension_class_property(lib, name, &pinfo, set_prop.ptr, get_prop
-                    .ptr);
+            StringName snSetProp = StringName(set_prop);
+            StringName snGetProp = StringName(get_prop);
+            _godot_api.classdb_register_extension_class_property(
+                lib, 
+                cast(GDNativeStringNamePtr) snClass, 
+                &pinfo, 
+                cast(GDNativeStringNamePtr) snSetProp, 
+                cast(GDNativeStringNamePtr) snGetProp 
+            );
         }
     }
 
     static foreach (E; godotEnums!T) {
         {
-            static foreach (ev; __traits(allMembers, E)) {
+            static foreach (int i, ev; __traits(allMembers, E)) {
                 //pragma(msg, ev, ":", cast(int) __traits(getMember, E, ev));
-                _godot_api.classdb_register_extension_class_integer_constant(lib, name,
-                    __traits(identifier, E), ev, cast(int) __traits(getMember, E, ev), false);
+                // FIXME: static foreach scope complains about duplicate names
+                mixin("StringName snEnum" ~ i.stringof ~ " = StringName(__traits(identifier, E));");
+                mixin("StringName snVal" ~ i.stringof ~ "= StringName(ev);");
+                _godot_api.classdb_register_extension_class_integer_constant(
+                    lib, 
+                    cast(GDNativeStringNamePtr) snClass, 
+                    cast(GDNativeStringNamePtr) mixin("snEnum"~i.stringof), 
+                    cast(GDNativeStringNamePtr) mixin("snVal"~i.stringof), 
+                    cast(int) __traits(getMember, E, ev), 
+                    false
+                );
             }
         }
     }
@@ -513,8 +553,16 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
         {
             alias E = __traits(getMember, T, pName);
             //pragma(msg, pName, ":", cast(int) E);
-            _godot_api.classdb_register_extension_class_integer_constant(lib, name, null, pName, cast(
-                    int) E, false);
+            // FIXME: static foreach scope complains about duplicate names
+            mixin("StringName snProp" ~ pName ~ " = StringName(pName);");
+            _godot_api.classdb_register_extension_class_integer_constant(
+                lib, 
+                cast(GDNativeStringNamePtr) snClass, 
+                null, 
+                cast(GDNativeStringNamePtr) mixin("snProp"~pName), 
+                cast(int) E, 
+                false
+            );
         }
     }
 
