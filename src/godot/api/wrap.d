@@ -631,8 +631,12 @@ struct VirtualMethodsHelper(T) {
     alias onlyFuncs = Filter!(isFunc, derivedMfs);
 
     static GDNativeExtensionClassCallVirtual findVCall(const GDNativeStringNamePtr func) {
+        // FIXME: StringName issues
+        auto v = Variant(*cast(StringName*) func);
+        wstring fname = v.as!String.data();
         static foreach (name; onlyFuncs) {
-            if (MethodWrapper!(T, __traits(getMember, T, name)).funName == func)
+            //if (MethodWrapper!(T, __traits(getMember, T, name)).funName == func)
+            if (__traits(identifier, __traits(getMember, T, name)) == fname)
                 return &MethodWrapper!(T, __traits(getMember, T, name)).virtualCall;
         }
         return null;

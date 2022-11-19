@@ -39,18 +39,18 @@ struct GodotMethod(Return, Args...) {
         enum bool hasVarArgs = false;
 
     /+package(godot)+/
-    void bind(in char* className, in char* methodName, in GDNativeInt hash = 0) {
+    void bind(in string className, in string methodName, in GDNativeInt hash = 0) {
         if (mb)
             return;
-        mb = _godot_api.classdb_get_method_bind(className, methodName, hash);
+        mb = _godot_api.classdb_get_method_bind(cast(GDNativeStringNamePtr) StringName(className), cast(GDNativeStringNamePtr) StringName(methodName), hash);
         name = String(methodName);
     }
 
     /+package(godot)+/
-    void bind(in GDNativeVariantType type, in char* methodName, in GDNativeInt hash = 0) {
+    void bind(in GDNativeVariantType type, in string methodName, in GDNativeInt hash = 0) {
         if (mb)
             return;
-        mb = _godot_api.variant_get_ptr_builtin_method(type, methodName, hash);
+        mb = _godot_api.variant_get_ptr_builtin_method(type, cast(GDNativeStringNamePtr) StringName(methodName), hash);
         name = String(methodName);
     }
 }
@@ -123,7 +123,7 @@ package(godot) void initializeClassBinding(C)() {
                 static if (n == "_singleton")
                     C.GDNativeClassBinding._singleton = godot_object(
                         _godot_api.global_get_singleton(
-                            cast(char*) C.GDNativeClassBinding._singletonName));
+                            cast(GDNativeStringNamePtr) StringName(C.GDNativeClassBinding._singletonName)));
                 else static if (n == "_singletonName") {
                 } else {
                     // core types require special registration for built-in types

@@ -286,8 +286,12 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
         import std.conv : to;
 
         //print("requested method ", *cast(StringName*) p_name);
+        // FIXME: StringName issues
+        auto v = Variant(*cast(StringName*) p_name);
+        wstring str = v.as!String.data();
         static if (__traits(compiles, __traits(getMember, T, "_ready"))) {
-            if (MethodWrapper!(T, __traits(getMember, T, "_ready")).funName == p_name) {
+            //if (MethodWrapper!(T, __traits(getMember, T, "_ready")).funName == p_name) {
+            if (str == "_ready") {
                 return cast(GDNativeExtensionClassCallVirtual) 
                     &OnReadyWrapper!(T, __traits(getMember, T, "_ready")).callOnReady;
             }
@@ -478,13 +482,13 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
             // register acessor methods for that property
             static if (getterMatches.length) {
                 enum get_prop = "get_" ~ pName ~ '\0';
-                registerMethod!(getterMatches[0], get_prop);
+                registerMethod!(getterMatches[0], cast(string) get_prop);
             } else
                 enum get_prop = string.init;
 
             static if (setterMatches.length) {
                 enum set_prop = "set_" ~ pName ~ '\0';
-                registerMethod!(setterMatches[0], set_prop);
+                registerMethod!(setterMatches[0], cast(string) set_prop);
             } else
                 enum set_prop = string.init;
 
@@ -530,11 +534,11 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
             enum get_prop = "get_" ~ pName ~ '\0';
             alias fnWrapper = VariableWrapper!(T, __traits(getMember, T, pName));
             static fnWrapper.getterType getterTmp; // dummy func for now because current registration code requires actual function, and there isn't one
-            registerMemberAccessor!(fnWrapper.callPropertyGet, getterTmp, get_prop);
+            registerMemberAccessor!(fnWrapper.callPropertyGet, getterTmp, cast(string) get_prop);
 
             enum set_prop = "set_" ~ pName ~ '\0';
             static fnWrapper.setterType setterTmp; // dummy func for now because current registration code requires actual function, and there isn't one
-            registerMemberAccessor!(fnWrapper.callPropertySet, setterTmp, set_prop);
+            registerMemberAccessor!(fnWrapper.callPropertySet, setterTmp, cast(string) set_prop);
 
             StringName snSetProp = StringName(set_prop);
             StringName snGetProp = StringName(get_prop);
