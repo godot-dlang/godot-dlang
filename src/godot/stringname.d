@@ -22,9 +22,7 @@ struct StringName {
     alias _stringName this;
 
     this(String s) {
-    // this(string s) {
-        // this = _bind.new2(s);
-        this = _bind.new2(toDString(s));
+        this = _bind.new2(s);
     }
 
     this(this) {
@@ -32,7 +30,8 @@ struct StringName {
     }
 
     this(string s) {
-        this = toGodotStringName(s);
+        auto str = String(s);
+        this(str);
     }
 
     //this(ref const StringName s)
@@ -119,8 +118,12 @@ struct StringName {
         return false;
     }
 
-    String opCast(String)() const {
+    String opCast(T : String)() const {
         return String(_godot_string_name);
+    }
+
+    GDNativeStringNamePtr opCast(T = GDNativeStringNamePtr)() const {
+        return cast(GDNativeStringNamePtr) &_godot_string_name;
     }
 
     @trusted

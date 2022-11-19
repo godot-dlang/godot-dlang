@@ -44,6 +44,7 @@ class GodotMethod {
 
     void finalizeDeserialization(Asdf data) {
         // FIXME: why data is here if it's not used?
+        // Superbelko: Because this is post-serialize event and we only doing some adjustments here
         if (!return_type)
             return_type = Type.get("void");
         foreach (i, ref arg; arguments) {
@@ -55,6 +56,10 @@ class GodotMethod {
 @serdeIgnore:
     GodotClass parent;
 
+    // indicates that this method is a helper methods that simply 
+    // redirectes all arguments to the specidied method, for example string types helpers
+    GodotMethod redirectsTo; 
+
     string ddoc;
 
     Constructor isConstructor() const {
@@ -65,6 +70,14 @@ class GodotMethod {
 
     bool same(in GodotMethod other) const {
         return name == other.name && is_const == other.is_const;
+    }
+
+    bool needsStringHelpers() const {
+        static bool anyString (GodotArgument a) { 
+            return a.type.stripConst.isGodotStringType; 
+        }
+        // const all the way...
+        return (cast(GodotArgument[]) arguments).canFind!anyString();
     }
 
     string templateArgsString() const {
@@ -102,15 +115,8 @@ class GodotMethod {
                 ret ~= text(arg.type.dCallParamPrefix, arg.type.godotType, "Arg", i);
                 typeString = text(arg.type.godotType, "Arg", i);
             } else {
-                if (arg.type.dType == "String" || arg.type.dType == "StringName") {
-                    // HACK: string auto-conversion
-                    // FIXME: make exception list
-                    ret ~= text(arg.type.dCallParamPrefix, "string");
-                    typeString = "string";
-                } else {
-                    ret ~= text(arg.type.dCallParamPrefix, arg.type.dType);
-                    typeString = arg.type.dType;
-                }
+                ret ~= text(arg.type.dCallParamPrefix, arg.type.dType);
+                typeString = arg.type.dType;
             }
 
             ret ~= " " ~ arg.name.escapeDType;
@@ -121,7 +127,13 @@ class GodotMethod {
                 if (arg.type.isBitfield || arg.type.isEnum) {
                     ret ~= " = cast(" ~ typeString ~ ") " ~ escapeDefaultType(arg.type, arg.default_value);
                 } else {
-                    ret ~= " = " ~ escapeDefaultType(arg.type, arg.default_value);
+                    // This probably should be in StringHelper method class
+                    if (redirectsTo && redirectsTo.arguments[i].type.isGodotStringType) {
+                        ret ~= " = " ~ stripStringDefaultValueType(redirectsTo.arguments[i].type, arg.default_value);
+                    }
+                    else {
+                        ret ~= " = " ~ escapeDefaultType(arg.type, arg.default_value);
+                    }
                 }
             }
         }
@@ -191,6 +203,37 @@ class GodotMethod {
 
         ret ~= "\t}\n";
 
+        if (needsStringHelpers && !isConstructor()) {
+            ret ~= "\n";
+
+            // copy-paste a method
+            auto m = new StringHelperGodotMethod(); {
+                m.name = this.name;
+                m.is_editor = this.is_editor;
+                m.is_noscript = this.is_noscript;
+                m.is_const = this.is_const;
+                m.is_virtual = this.is_virtual;
+                m.is_static = this.is_static;
+                m.category = this.category;
+                m.has_varargs = this.has_varargs;
+                m.is_from_script = this.is_from_script;
+                m.hash = this.hash;
+                m.parent = cast() this.parent;
+                m.return_type = cast() this.return_type;
+                m.redirectsTo = cast() this;
+            }
+            GodotArgument[] newargs;
+            foreach(a; arguments) {
+                // replace string types with plain D string
+                if (a.type.isGodotStringType)
+                    newargs ~= GodotArgument(a.name, Type.get("string"), a.default_value, a.index, m);
+                else
+                    newargs ~= GodotArgument(a.name, cast() a.type, a.default_value, a.index, m);
+            }
+            m.arguments = newargs;
+            ret ~= m.source();
+        }
+
         return ret;
     }
 
@@ -200,15 +243,12 @@ class GodotMethod {
         string ret;
 
         // optional static modifier
-        if (isConstructor)
+        if (isConstructor) {
             ret ~= "static ";
+        }
         // note that even though it strips constness of return type the method is still marked const
         // const in D is transitive, which means compiler should disallow modifying returned reference types
-        // HACK: so much String
-        string retType = return_type.stripConst.dRef;
-        if (retType == "String" || retType == "StringName") retType = "string";
-        ret ~= retType ~ " ";
-        // ret ~= return_type.stripConst.dRef ~ " ";
+        ret ~= return_type.stripConst.dRef ~ " ";
         // none of the types (Classes/Core/Primitive) are pointers in D
         // Classes are reference types; the others are passed by value.
         ret ~= name.snakeToCamel.escapeDType;
@@ -230,8 +270,10 @@ class GodotMethod {
         string ret;
 
         // load function pointer
-        ret ~= "\t\tif (!GDNativeClassBinding." ~ wrapperIdentifier ~ ".mb)\n";
-        ret ~= "\t\t\t" ~ loader() ~ "\n";
+        ret ~= "\t\tif (!GDNativeClassBinding." ~ wrapperIdentifier ~ ".mb) {\n";
+        // tab() will indent it correctly starting from first element
+        ret ~= loader().split('\n').map!(s => s.tab(3)).join('\n') ~ "\n";
+        ret ~= "\t\t}\n";
 
         if (is_virtual || has_varargs) {
             // keep it like this for now, serves as example.
@@ -301,12 +343,7 @@ class GodotMethod {
             if (return_type.dType != "void") {
                 ret ~= "\t\treturn ";
                 if (return_type.dType != "Variant") {
-                    // HACK
-                    if (return_type.stripConst.dType == "String") ret ~= "toDString(";
-                    if (return_type.stripConst.dType == "StringName") ret ~= "toDStringName(";
                     ret ~= "ret.as!(RefOrT!(" ~ return_type.stripConst.dType ~ "))";
-                    if (return_type.stripConst.dType == "String") ret ~= ")";
-                    if (return_type.stripConst.dType == "StringName") ret ~= ")";
                 } else {
                     ret ~= "ret";
                 }
@@ -325,9 +362,6 @@ class GodotMethod {
             } else {
                 ret ~= "\t\t";
             }
-            // HACK
-            if (return_type.dType == "String" && !isConstructor) ret ~= "toDString(";
-            if (return_type.dType == "StringName" && !isConstructor) ret ~= "toDStringName(";
 
             ret ~= callType() ~ "!(" ~ return_type.dType ~ ")(";
             if (parent.isBuiltinClass)
@@ -345,25 +379,13 @@ class GodotMethod {
                 // FIXME: make auto-cast in escapeDType?
                 ret ~= ", cast() " ~ arg.name.escapeDType(arg.type.godotType); 
             }
-            // HACK
-            if ((return_type.dType == "String" || return_type.dType == "StringName") && !isConstructor) {
-                ret ~= ")";
-            } 
             ret ~= ");\n";
             // wrap temporary object
             if (isConstructor) {
                 if (parent.name.canBeCopied) {
                     ret ~= "\t\treturn _godot_object;\n";
                 } else {
-                    ret ~= "\t\treturn ";
-                    // HACK
-                    if (return_type.dType == "String") ret ~= "toDString(";
-                    if (return_type.dType == "StringName") ret ~= "toDStringName(";
-                    // ret ~= "\t\treturn " ~ return_type.dType ~ "(_godot_object);\n";
-                    ret ~= return_type.dType ~ "(_godot_object";
-                    if (return_type.dType == "String") ret ~= ")";
-                    if (return_type.dType == "StringName") ret ~= ")";
-                    ret ~= ");\n";
+                    ret ~= "\t\treturn " ~ return_type.dType ~ "(_godot_object);\n";
                 }
             }
         } // end normal method impl
@@ -383,20 +405,20 @@ class GodotMethod {
     /// formats function pointer loader, e.g.
     /// 	GDNativeClassBinding.method_append.mb = _godot_api.clasdb_get_methodbind("class", "method", hash);
     string loader() const {
+        char[] buf;
+        buf ~= "StringName classname = StringName(\"" ~ parent.name.godotType ~ "\");\n";
+        buf ~= "StringName methodname = StringName(\"" ~ name ~ "\");\n";
         // probably better to move in its own subclass
         if (parent.isBuiltinClass) {
-            return format(`GDNativeClassBinding.%s.mb = _godot_api.variant_get_ptr_builtin_method(%s, "%s", %d);`,
+            return cast(string) buf ~ format(`GDNativeClassBinding.%s.mb = _godot_api.variant_get_ptr_builtin_method(%s, cast(GDNativeStringNamePtr) methodname, %d);`,
                 wrapperIdentifier,
                 parent.name.asNativeVariantType,
-                name,
                 hash
             );
         }
 
-        return format(`GDNativeClassBinding.%s.mb = _godot_api.classdb_get_method_bind("%s", "%s", %d);`,
+        return cast(string) buf ~ format(`GDNativeClassBinding.%s.mb = _godot_api.classdb_get_method_bind(cast(GDNativeStringNamePtr) classname, cast(GDNativeStringNamePtr) methodname, %d);`,
             wrapperIdentifier,
-            parent.name.godotType,
-            name,
             hash,
         );
     }
@@ -431,11 +453,6 @@ class GodotProperty {
 
     string getterSource(in GodotMethod m) const {
         string retType = m.return_type.dType;
-        if (retType == "String" || retType == "StringName") {
-            // HACK: string auto-conversion
-            // FIXME: make exception list
-            retType = "string";
-        }
         string ret;
         ret ~= "\t/**\n\t" ~ ddoc.replace("\n", "\n\t") ~ "\n\t*/\n";
         ret ~= "\t@property " ~ retType ~ " " ~ name.replace("/", "_")
@@ -455,11 +472,6 @@ class GodotProperty {
 
     string setterSource(in GodotMethod m) const {
         string setType = m.arguments[$ - 1].type.dType;
-        if (setType == "String" || setType == "StringName") {
-            // HACK: string auto-conversion
-            // FIXME: make exception list
-            setType = "string";
-        }
         string ret;
         ret ~= "\t/// ditto\n";
         ret ~= "\t@property void " ~ name.replace("/", "_")
@@ -474,6 +486,49 @@ class GodotProperty {
         }
         ret ~= "v);\n";
         ret ~= "\t}\n";
+        return ret;
+    }
+}
+
+
+class StringHelperGodotMethod : GodotMethod {
+    override string body_() const {
+        // simply forwards all arguments to the actual method but wrap any string types
+        string ret;
+
+        // wrap string types before calling the method
+        foreach (i, const arg; arguments) {
+            auto realType = redirectsTo.arguments[i].type;
+            if (realType.isGodotStringType) {
+                // writes something like this:
+                // StringName arg3 = StringName(p_name);
+                ret ~= "\t\t" ~ escapeDType(realType.dType) ~ " arg" ~ text(cast(int) i) 
+                    ~ " = " ~ escapeDType(realType.dType) ~ "(" ~ escapeDType(arg.name) ~ ");\n";
+            }
+            //ret ~= "\t\t_GODOT_args[" ~ text(cast(int) i) ~ "] = " ~ escapeDType(arg.name) ~ ";\n";
+        }
+
+        if (return_type.dType != "void") {
+            ret ~= "\t\treturn ";
+        }
+        else {
+            ret ~= "\t\t";
+        }
+
+        // now write the normal D method(not a godot one) call with wrapped arguments in place of D strings
+        ret ~= name.snakeToCamel.escapeDType ~ "(";
+        foreach (ai, const arg; arguments) {
+            if (ai) {
+                ret ~= ", ";
+            }
+            if (redirectsTo.arguments[ai].type.isGodotStringType) {
+                ret ~= "arg" ~ text(cast(int) ai);
+            }
+            else {
+                ret ~= arg.name.escapeDType; 
+            }
+        }
+        ret ~= ");\n";
         return ret;
     }
 }

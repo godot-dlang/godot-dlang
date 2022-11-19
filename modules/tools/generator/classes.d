@@ -343,15 +343,16 @@ import godot.classdb;`;
         ret ~= "\t/// Construct a new instance of " ~ className ~ ".\n";
         ret ~= "\t/// Note: use `memnew!" ~ className ~ "` instead.\n";
         ret ~= "\tstatic " ~ className ~ " _new() {\n";
-        ret ~= "\t\tif(auto obj = _godot_api.classdb_construct_object(\"" ~ name.godotType ~ "\"))\n";
+        ret ~= "\t\tStringName godotname = StringName(\"" ~ name.godotType ~ "\");\n";
+        ret ~= "\t\tif(auto obj = _godot_api.classdb_construct_object(cast(GDNativeStringNamePtr) godotname))\n";
         ret ~= "\t\t\treturn " ~ className ~ "(godot_object(obj));\n";
         ret ~= "\t\treturn typeof(this).init;\n";
         ret ~= "\t}\n";
 
         foreach (ct; constructors) {
-            //ret ~= "\tstatic "~name.d~" "~ ct.name ~ ct.templateArgsString ~ ct.argsString ~ " {\n";
+            //ret ~= "\tstatic "~name.dType~" "~ ct.name ~ ct.templateArgsString ~ ct.argsString ~ " {\n";
             //ret ~= "\t\tif(auto fn = _godot_api.variant_get_ptr_constructor(GDNATIVE_VARIANT_TYPE_"~name.godotType.snakeToCamel.toUpper ~ ", " ~ text(ct.index) ~"))\n";
-            //ret ~= "\t\t\treturn "~name.d~"(godot_object(fn(...)));\n";
+            //ret ~= "\t\t\treturn "~name.dType~"(godot_object(fn(...)));\n";
             //ret ~= "\t\treturn typeof(this).init;\n";
             //ret ~= "\t}\n";
             ret ~= ct.source;

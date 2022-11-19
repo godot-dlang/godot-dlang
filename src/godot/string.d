@@ -20,6 +20,7 @@ import godot.builtins;
 import godot.poolarrays;
 import godot.abi;
 import godot.abi.gdextension;
+import godot.abi.types;
 import godot.stringname;
 import godot.charstring;
 
@@ -36,17 +37,20 @@ struct String {
 
     package(godot) union _String {
         godot_string _godot_string;
-        String_Bind _bind;
+        // some issue with forward reference 
+        // error: `godot.api.traits.getGodotObject!(Resource).getGodotObject.ret` size of type `Resource` is invalid
+        //String_Bind _bind; 
+        void* s;
     }
+
+    // TODO: deal with union problem
+    ref String_Bind _bind() const { return *cast(String_Bind*) s;}
 
     package(godot) _String _string;
     alias _string this;
 
     this(StringName n) {
-        // this = _bind.new2(n);
-        // HACK: since godot StringBind accepts string as args we do this
-        // FIXME: ARE YOU SERIOUS?
-        this = _bind.new2(toDStringName(n));
+        this = _bind.new2(n);
         //_godot_api.variant_new_copy(&_godot_string, &n._godot_string_name);
     }
 
@@ -82,7 +86,7 @@ struct String {
                           isImplicitlyConvertible!(S, const(char)*)) {
         static if (isImplicitlyConvertible!(S, const(char)[])) {
             const(char)[] contents = str;
-            _godot_api.string_new_with_utf8_chars_and_len(&_godot_string, contents.ptr, cast(int) contents.length);
+            _godot_api.string_new_with_utf8_chars_and_len(&_string, contents.ptr, cast(int) contents.length);
         } else {
             const(char)* contents = str;
             _godot_api.string_new_with_utf8_chars(&_godot_string, contents);
@@ -134,8 +138,8 @@ struct String {
 
     /// Returns the length of the wchar_t array, minus the zero terminator.
     size_t length() const {
-        return _bind.length();
-        //return _godot_api.string_length(&_godot_string);
+        //return _bind.length(); // bug: infinite recursion
+        return _godot_api.string_to_utf8_chars(&_godot_string, null, 0);
     }
 
     /// Returns: $(D true) if length is 0
@@ -193,7 +197,7 @@ struct String {
                 );
         }
         mb(&_godot_string, &other._godot_string, &tmp);
-        _bind._destructor();
+        //_bind._destructor();
         _godot_string = tmp;
     }
 

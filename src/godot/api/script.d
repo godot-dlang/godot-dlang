@@ -143,7 +143,8 @@ RefOrT!T memnew(T)() if (extendsGodotBaseClass!T) {
     import godot.refcounted;
 
     //GodotClass!T o = GodotClass!T._new();
-    auto obj = _godot_api.classdb_construct_object(godotName!T);
+    auto name = StringName(godotName!T);
+    auto obj = _godot_api.classdb_construct_object(cast(GDNativeStringNamePtr) name);
     assert(obj !is null);
 
     auto id = _godot_api.object_get_instance_id(obj);
@@ -206,7 +207,6 @@ extern (C) package(godot) void* createFunc(T)(void* data) //nothrow @nogc
     import std.exception;
     import godot.api.register : _GODOT_library;
 
-    enum classname = cast(const char*)(godotName!T ~ '\0');
     T t = cast(T) _godot_api.mem_alloc(__traits(classInstanceSize, T));
 
     emplace(t);
@@ -215,10 +215,11 @@ extern (C) package(godot) void* createFunc(T)(void* data) //nothrow @nogc
 
     //static if(extendsGodotBaseClass!T)
     {
+        StringName classname = godotName!T;
+        StringName snInternalName = (GodotClass!T)._GODOT_internal_name;
         if (!t.owner._godot_object.ptr)
-            t.owner._godot_object.ptr = _godot_api.classdb_construct_object((GodotClass!T)
-                    ._GODOT_internal_name);
-        _godot_api.object_set_instance(cast(void*) t.owner._godot_object.ptr, classname, cast(
+            t.owner._godot_object.ptr = _godot_api.classdb_construct_object(cast(GDNativeStringNamePtr) snInternalName);
+        _godot_api.object_set_instance(cast(void*) t.owner._godot_object.ptr, cast(GDNativeStringNamePtr) classname, cast(
                 void*) t);
     }
     //else
