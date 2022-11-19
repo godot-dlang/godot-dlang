@@ -57,14 +57,44 @@ mouse_filter = 0
 
 [node name="Label" type="Label" parent="GameOver"]
 layout_mode = 2
-offset_left = 540.0
-offset_top = 311.0
-offset_right = 612.0
-offset_bottom = 337.0
+offset_left = 496.0
+offset_top = 297.0
+offset_right = 656.0
+offset_bottom = 350.0
+theme_override_colors/font_color = Color(0.85098, 0, 0, 1)
+theme_override_font_sizes/font_size = 36
 text = "You died."
 
 [node name="MeshInstance3d" type="MeshInstance3D" parent="."]
 transform = Transform3D(1.58079, 0, 0, 0, -9.1853e-08, 1, 0, -2.10135, -4.37114e-08, 0, 0, -0.0795785)
 mesh = SubResource("PrismMesh_vlgkf")
+
+[node name="ControlsHelpPanel" type="AspectRatioContainer" parent="."]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 50.0
+offset_top = -76.0
+offset_right = 283.0
+offset_bottom = -50.0
+grow_vertical = 0
+
+[node name="HBoxContainer" type="VBoxContainer" parent="ControlsHelpPanel"]
+layout_mode = 2
+offset_right = 233.0
+offset_bottom = 56.0
+
+[node name="Label2" type="Label" parent="ControlsHelpPanel/HBoxContainer"]
+layout_mode = 2
+offset_right = 233.0
+offset_bottom = 26.0
+text = "Controls:"
+
+[node name="Label" type="Label" parent="ControlsHelpPanel/HBoxContainer"]
+layout_mode = 2
+offset_top = 30.0
+offset_right = 233.0
+offset_bottom = 56.0
+text = "[RMB], [Space] - move forward"
 
 [connection signal="body_entered" from="." to="." method="hit"]

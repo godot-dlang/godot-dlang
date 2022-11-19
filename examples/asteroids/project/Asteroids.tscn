@@ -1,6 +1,7 @@
-[gd_scene load_steps=4 format=3 uid="uid://ddmutloo1fiov"]
+[gd_scene load_steps=5 format=3 uid="uid://ddmutloo1fiov"]
 
 [ext_resource type="PlaneMesh" uid="uid://b2jcxg2ha0cvt" path="res://gridMesh.tres" id="2"]
+[ext_resource type="Environment" uid="uid://dlgcyso3hn8d4" path="res://default_env.tres" id="2_pkfxt"]
 [ext_resource type="PackedScene" uid="uid://ctr7nbk5dgjbw" path="res://Player.tscn" id="3"]
 
 [sub_resource type="SphereMesh" id="1"]
@@ -29,6 +30,7 @@ transform = Transform3D(1, 0, 0, 0, 0.5, 0.866025, 0, -0.866025, 0.5, 0, 0, 0)
 
 [node name="Camera3D" type="Camera3D" parent="CameraTarget"]
 transform = Transform3D(1, 0, 0, 0, 1, -1.39091e-08, 0, 1.39091e-08, 1, 0, 0, 40)
+environment = ExtResource("2_pkfxt")
 fov = 70.0
 far = 300.0
 
