@@ -181,17 +181,14 @@ struct Dictionary {
         return cast(int) _bind.size;
     }
 
-    // String toJson() const {
-    string toJson() const {
+    String toJson() const {
         import godot.json;
         import godot.api;
 
         Variant v = void;
         v._godot_variant = *cast(godot_variant*)&this;
         JSON json = memnew!JSON();
-        // HACK: string
-        return json.stringify(v, "\"\"", true, false);
-        // return json.stringify(v, gs!(`""`), true, false);
+        return json.stringify(v, gs!(`""`), true, false);
 
         //godot_string s = _godot_api.dictionary_to_json(&_godot_dictionary);
         //return cast(String)s;

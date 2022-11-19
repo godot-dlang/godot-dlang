@@ -723,8 +723,7 @@ struct Variant {
             if (Ref!Script s = o.getScript().as!Script)
                 return GodotType(s);
             else
-                // return GodotType(BuiltInClass(o.getClass()));
-                return GodotType(BuiltInClass(toGodotString(o.getClass())));
+                return GodotType(BuiltInClass(o.getClass()));
         } else
             return GodotType(this.type);
     }

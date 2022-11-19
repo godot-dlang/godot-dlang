@@ -223,6 +223,9 @@ package(godot) struct MethodWrapper(T, alias mf) {
 
     enum string name = __traits(identifier, mf);
 
+    // Used later instead of string comparison
+    __gshared static GDNativeStringNamePtr funName;
+
     /++
 	C function passed to Godot that calls the wrapped method
 	+/
@@ -373,9 +376,12 @@ package(godot) struct MethodWrapperMeta(alias mf) {
         static foreach (i; 0 .. A.length) {
             if (Variant.variantTypeOf!(A[i]) == VariantType.object)
                 argInfo[i].class_name = cast(GDNativeStringNamePtr) StringName(A[i].stringof);
+            else
+                argInfo[i].class_name = cast(GDNativeStringNamePtr) StringName();
             argInfo[i].name = cast(GDNativeStringNamePtr) StringName((ParameterIdentifierTuple!mf)[i]);
             argInfo[i].type = Variant.variantTypeOf!(A[i]);
             argInfo[i].usage = GDNATIVE_EXTENSION_METHOD_FLAGS_DEFAULT;
+            argInfo[i].hint_string = cast(GDNativeStringNamePtr) StringName();
         }
         return argInfo;
     }
@@ -387,10 +393,10 @@ package(godot) struct MethodWrapperMeta(alias mf) {
         GDNativePropertyInfo[2] retInfo = [ 
             GDNativePropertyInfo(
                 cast(uint32_t) Variant.variantTypeOf!R,
-                null,
-                (Variant.variantTypeOf!R == VariantType.object) ? null : cast(GDNativeStringNamePtr) StringName(R.stringof),
+                cast(GDNativeStringNamePtr) StringName(),
+                cast(GDNativeStringNamePtr) (Variant.variantTypeOf!R == VariantType.object ? StringName() : StringName(R.stringof)),
                 0,
-                null,
+                cast(GDNativeStringNamePtr) StringName(),
                 GDNATIVE_EXTENSION_METHOD_FLAGS_DEFAULT
             ), 
             GDNativePropertyInfo.init 
@@ -624,9 +630,9 @@ struct VirtualMethodsHelper(T) {
     alias derivedMfs = Filter!(matchesNamingConv, __traits(derivedMembers, T));
     alias onlyFuncs = Filter!(isFunc, derivedMfs);
 
-    static GDNativeExtensionClassCallVirtual findVCall(in string func) {
+    static GDNativeExtensionClassCallVirtual findVCall(const GDNativeStringNamePtr func) {
         static foreach (name; onlyFuncs) {
-            if (func == name)
+            if (MethodWrapper!(T, __traits(getMember, T, name)).funName == func)
                 return &MethodWrapper!(T, __traits(getMember, T, name)).virtualCall;
         }
         return null;

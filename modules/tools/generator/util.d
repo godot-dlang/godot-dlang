@@ -114,6 +114,12 @@ class Type {
         return dType.indexOf("*") != -1;
     }
 
+    // Any type that is internally backed by godot string
+    bool isGodotStringType() const {
+        import std.algorithm : among;
+        return godotType.among("StringName", "String", "NodePath") > 0;
+    }
+
     bool isPrimitive() const {
         if (isEnum || isBitfield)
             return true;
@@ -441,23 +447,27 @@ string escapeDefaultType(in Type type, string arg) {
         else
             return arg;
     case "String":
-        // HACK: hack in string, trying auto-convert?
-        // if (arg.canFind('"'))
-        //     return "gs!" ~ arg;
-        // return "gs!\"" ~ arg ~ "\"";
-        if (arg.canFind('"'))
-            return arg;
-        return "\"" ~ arg ~ "\"";
     case "StringName":
+    case "NodePath": 
+        // TODO: use this instead 
+        version(none) {
+            return type.dType ~ "(" ~ stripStringDefaultValueType() ~ ")"; 
+        } 
         if (arg[0] == '&')
             arg = arg[1 .. $];
+        // node path has default value that includes type, 
+        // must strip it from here as we deal with string helpers later
+        // example value: NodePath("")
+        if (arg.startsWith("NodePath("))
+            arg = arg["NodePath(".length..$-1];
+
         // HACK: hack in string, trying auto-convert?
         // if (arg.canFind('"'))
         //     return "gn!" ~ arg;
         // return "gn!\"" ~ arg ~ "\"";
         if (arg.canFind('"'))
-            return arg;
-        return "\"" ~ arg ~ "\"";
+            return type.dType ~ "(" ~ arg ~ ")";
+        return type.dType ~ "(\"" ~ arg ~ "\")";
     default: // all Object types
     {
             if (arg == "Null" || arg == "null")
@@ -469,6 +479,30 @@ string escapeDefaultType(in Type type, string arg) {
             return arg;
         }
     }
+}
+
+// Same as above except it returns only the string itself without the prepending type
+string stripStringDefaultValueType(in Type type, string arg) {
+    // only mess up with strings
+    if (!type.isGodotStringType)
+        return arg;
+
+    if (arg[0] == '&')
+        arg = arg[1 .. $];
+    // node path has default value that includes type, 
+    // must strip it from here as we deal with string helpers later
+    // example value: NodePath("")
+    if (arg.startsWith("NodePath("))
+        arg = arg["NodePath(".length..$-1];
+
+    // HACK: hack in string, trying auto-convert?
+    // if (arg.canFind('"'))
+    //     return "gn!" ~ arg;
+    // return "gn!\"" ~ arg ~ "\"";
+    if (arg[0]=='"')
+        return arg;
+    else
+        return "";
 }
 
 string escapeGodotType(string t) {
@@ -566,9 +600,6 @@ string escapeDType(string s, string godotType = "") {
     foreach (kw; keywords) case kw:
         return "_" ~ s;
     default:
-        // HACK: dirty way to make string auto-conversion
-        if (godotType == "String") return "toGodotString(" ~ s ~ ")";
-        if (godotType == "StringName") return "toGodotStringName(" ~ s ~ ")";
         return s;
     }
 }

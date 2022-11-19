@@ -89,8 +89,7 @@ void print(Args...)(Args args, string fn = __FUNCTION__, string f = __FILE__, in
         static if (is(typeof(arg) : String))
             str ~= arg;
         else static if (is(typeof(arg) : NodePath))
-            str ~= toGodotString(arg.str);
-            // str ~= arg.str;
+            str ~= arg.str;
         else static if (is(typeof(arg) : string))
             str ~= String(arg);
         else static if (is(typeof(arg) : Variant))

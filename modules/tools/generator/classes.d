@@ -350,9 +350,9 @@ import godot.classdb;`;
         ret ~= "\t}\n";
 
         foreach (ct; constructors) {
-            //ret ~= "\tstatic "~name.d~" "~ ct.name ~ ct.templateArgsString ~ ct.argsString ~ " {\n";
+            //ret ~= "\tstatic "~name.dType~" "~ ct.name ~ ct.templateArgsString ~ ct.argsString ~ " {\n";
             //ret ~= "\t\tif(auto fn = _godot_api.variant_get_ptr_constructor(GDNATIVE_VARIANT_TYPE_"~name.godotType.snakeToCamel.toUpper ~ ", " ~ text(ct.index) ~"))\n";
-            //ret ~= "\t\t\treturn "~name.d~"(godot_object(fn(...)));\n";
+            //ret ~= "\t\t\treturn "~name.dType~"(godot_object(fn(...)));\n";
             //ret ~= "\t\treturn typeof(this).init;\n";
             //ret ~= "\t}\n";
             ret ~= ct.source;

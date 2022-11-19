@@ -285,17 +285,14 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
         import core.stdc.string;
         import std.conv : to;
 
-        // FIXME: well... this is a problem as it will likely allocate a lot
-        string fnName = StringName(godot_string(cast(size_t)p_name)).data.to!string;
-
-        //printf("requested method %s\n", p_name);
+        //print("requested method ", *cast(StringName*) p_name);
         static if (__traits(compiles, __traits(getMember, T, "_ready"))) {
-            if (fnName == "_ready") {
+            if (MethodWrapper!(T, __traits(getMember, T, "_ready")).funName == p_name) {
                 return cast(GDNativeExtensionClassCallVirtual) 
                     &OnReadyWrapper!(T, __traits(getMember, T, "_ready")).callOnReady;
             }
         }
-        return VirtualMethodsHelper!T.findVCall(fnName);
+        return VirtualMethodsHelper!T.findVCall(p_name);
     }
 
     class_info.get_virtual_func = &getVirtualFn;
@@ -339,24 +336,24 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
             MethodWrapperMeta!mf.getDefaultArgs(), //GDNativeVariantPtr *default_arguments;
         
         };
-
-        StringName snName = StringName(mfn);
-        _godot_api.classdb_register_extension_class_method(lib, cast(GDNativeStringNamePtr) snName, &mi);
+        _godot_api.classdb_register_extension_class_method(lib, cast(GDNativeStringNamePtr) snClass, &mi);
+        // cache StringName for comparison later on
+        MethodWrapper!(T, mf).funName = cast(GDNativeStringNamePtr) snFunName;
     }
 
     void registerMemberAccessor(alias mf, alias propType, string funcName)() {
         static assert(Parameters!propType.length == 0 || Parameters!propType.length == 1,
             "only getter or setter is allowed with exactly zero or one arguments");
 
-        static if (funcName) {
-            StringName snName = StringName(funcName);
-        } else
-            StringName snName;
+        //static if (funcName) {
+        StringName snName = StringName(funcName);
+        //} else
+        //    StringName snName = StringName(godotName!mf);
 
         uint flags = GDNATIVE_EXTENSION_METHOD_FLAGS_DEFAULT;
 
         GDNativeExtensionClassMethodInfo mi = {
-            cast(GDNativeStringNamePtr) snName.ptr, //const char *name;
+            cast(GDNativeStringNamePtr) snName, //const char *name;
             &mf, //void *method_userdata;
             &mf, //GDNativeExtensionClassMethodCall call_func;
             null, //GDNativeExtensionClassMethodPtrCall ptrcall_func;
@@ -374,7 +371,7 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
             MethodWrapperMeta!propType.getDefaultArgs(), //GDNativeVariantPtr *default_arguments;
         };
 
-        _godot_api.classdb_register_extension_class_method(lib, cast(GDNativeStringNamePtr) snName, &mi);
+        _godot_api.classdb_register_extension_class_method(lib, cast(GDNativeStringNamePtr) snClass, &mi);
     }
 
     static foreach (mf; godotMethods!T) {
@@ -415,9 +412,11 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
 
                 if (Variant.variantTypeOf!p == VariantType.object)
                     prop[i].class_name = cast(GDNativeStringNamePtr) snClass;
+                else
+                    prop[i].class_name = cast(GDNativeStringNamePtr) StringName();
                 prop[i].type = Variant.variantTypeOf!p;
                 prop[i].hint = 0;
-                prop[i].hint_string = null;
+                prop[i].hint_string = cast(GDNativeStringNamePtr) StringName();
                 prop[i].usage = GDNATIVE_EXTENSION_METHOD_FLAGS_DEFAULT;
             }
 
@@ -453,15 +452,28 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
 
             __gshared static GDNativePropertyInfo pinfo;
 
-            static if (Variant.variantTypeOf!P == VariantType.object)
-                pinfo.class_name = cast(GDNativeStringNamePtr) StringName(godotName!(P));
+
+            StringName snPropName = StringName(pName);
+            static if (Variant.variantTypeOf!P == VariantType.object) {
+                StringName snParamClassName = StringName(godotName!(P));
+            }
+            else {
+                StringName snParamClassName = StringName("");
+            }
+            static if (uda.hintString.length) {
+                StringName snHintString = StringName(uda.hintString);
+            }
+            else {
+                StringName snHintString = StringName("");
+            }
+
+            pinfo.class_name = cast(GDNativeStringNamePtr) snParamClassName;
             pinfo.type = vt;
-            pinfo.name = cast(GDNativeStringNamePtr) StringName(pName);
+            pinfo.name = cast(GDNativeStringNamePtr) snPropName;
             pinfo.hint = GDNATIVE_EXTENSION_METHOD_ARGUMENT_METADATA_NONE;
             //pinfo.usage = GDNATIVE_EXTENSION_METHOD_FLAGS_DEFAULT | GDNATIVE_EXTENSION_METHOD_FLAG_EDITOR;
             pinfo.usage = 7; // godot-cpp uses 7 as value which is default|const|editor currently, doesn't shows up in inspector without const. WTF?
-            static if (uda.hintString.length)
-                pinfo.hint_string = uda.hintString;
+            pinfo.hint_string = cast(GDNativeStringNamePtr) snHintString;
 
             // register acessor methods for that property
             static if (getterMatches.length) {
@@ -498,15 +510,21 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
 
             __gshared static GDNativePropertyInfo pinfo;
 
+            StringName snPropName = StringName(pName);
             static if (Variant.variantTypeOf!P == VariantType.object) {
                 StringName snPName = StringName(godotName!(P));
-                pinfo.class_name = cast(GDNativeStringNamePtr) snPName;
             }
+            else {
+                StringName snPName = StringName("");
+            }
+            pinfo.class_name = cast(GDNativeStringNamePtr) snPName;
             pinfo.type = vt;
-            pinfo.name = cast(GDNativeStringNamePtr) StringName(pName);
+            pinfo.name = cast(GDNativeStringNamePtr) snPropName;
             pinfo.usage = GDNATIVE_EXTENSION_METHOD_FLAGS_DEFAULT | GDNATIVE_EXTENSION_METHOD_FLAG_EDITOR;
             static if (uda.hintString.length)
                 pinfo.hint_string = uda.hintString;
+            else
+                pinfo.hint_string = cast(GDNativeStringNamePtr) StringName();
 
             // register acessor methods for that property
             enum get_prop = "get_" ~ pName ~ '\0';
@@ -558,7 +576,7 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
             _godot_api.classdb_register_extension_class_integer_constant(
                 lib, 
                 cast(GDNativeStringNamePtr) snClass, 
-                null, 
+                cast(GDNativeStringNamePtr) StringName(), 
                 cast(GDNativeStringNamePtr) mixin("snProp"~pName), 
                 cast(int) E, 
                 false

@@ -16,6 +16,7 @@ module godot.nodepath;
 import core.lifetime : emplace;
 
 import godot.string;
+import godot.stringname;
 import godot.abi;
 import godot.builtins;
 
@@ -54,17 +55,14 @@ struct NodePath {
     }
 
     this(in String from) {
-        string name = toDString(from);
-        emplace(&this, _bind.new2(name));
-        // emplace(&this, _bind.new2(from));
+        emplace(&this, _bind.new2(from));
         // //_godot_api.node_path_new(&_node_path, &from._godot_string);
     }
 
     this(in string name) {
-        // String from = String(name);
+        String from = String(name);
         // // _godot_api.node_path_new(&_node_path, &from._godot_string);
-        // emplace(&this, _bind.new2(from));
-        emplace(&this, _bind.new2(name));
+        emplace(&this, _bind.new2(from));
     }
 
     // quick hack for beta2+ changes
@@ -79,8 +77,7 @@ struct NodePath {
         return _bind == other._bind;
     }
 
-    // StringName getName(in int idx) const {
-    string getName(in int idx) const {
+    StringName getName(in int idx) const {
         return _bind.getName(idx);
         //godot_string str = _godot_api.node_path_get_name(&_node_path, idx);
         //return String(str);
@@ -91,8 +88,7 @@ struct NodePath {
         return cast(int) _bind.getNameCount();
     }
 
-    // StringName getSubname(in int idx) const {
-    string getSubname(in int idx) const {
+    StringName getSubname(in int idx) const {
         return _bind.getSubname(idx);
         //godot_string str = _godot_api.node_path_get_subname(&_node_path, idx);
         //return String(str);
@@ -113,8 +109,7 @@ struct NodePath {
         //return cast(bool)_godot_api.node_path_is_empty(&_node_path);
     }
 
-    // String str() const {
-    string str() const {
+    String str() const {
         return String_Bind.new3(cast() this);
         //godot_string str = _godot_api.node_path_as_string(&_node_path);
         //return String(str);
@@ -175,8 +170,6 @@ struct NodePath {
         //godot_node_path_copy(&_node_path, &other._node_path);
         if (other._node_path._opaque.ptr) {
             import godot.api;
-
-            print(other);
             return _bind.new1(other);
         }
 
