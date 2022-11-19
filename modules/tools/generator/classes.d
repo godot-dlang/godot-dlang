@@ -173,7 +173,7 @@ final class GodotClass {
         ret ~= "\t\t__gshared:\n";
         if (singleton) {
             ret ~= "\t\tgodot_object _singleton;\n";
-            ret ~= "\t\timmutable char* _singletonName = \"" ~ name.godotType.chompPrefix(
+            ret ~= "\t\timmutable string _singletonName = \"" ~ name.godotType.chompPrefix(
                 "_") ~ "\";\n";
         }
         foreach (const ct; constructors) {

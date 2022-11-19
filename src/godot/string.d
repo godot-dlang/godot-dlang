@@ -209,7 +209,8 @@ struct String {
 
     /// Returns a slice of the wchar_t data without the zero terminator.
     immutable(wchar_t)[] data() const {
-        return cast(typeof(return)) ptr[0 .. length];
+        import std.conv : to;
+        return cast(typeof(return)) to!wstring(cast(dchar[])(ptr[0 .. length]));
     }
 
     alias toString = data;

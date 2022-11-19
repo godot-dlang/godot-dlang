@@ -13,5 +13,49 @@
             "cwd": "${workspaceRoot}",
             "preLaunchTask": "Build Generate API"
         },
+        {
+            "name": "(test project) GD4 editor",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "C:/godot/bin/godot.windows.editor.dev.x86_64.exe",
+            "args": ["${workspaceFolder}/examples/test/project/project.godot"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "internalConsole"
+        },
+        {
+            "name": "(asteroids) GD4 editor",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "C:/godot/bin/godot.windows.editor.dev.x86_64.exe",
+            "args": ["${workspaceFolder}/examples/asteroids/project/project.godot"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "internalConsole"
+        },
+        {
+            "name": "(test project) GD4 instance",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "C:/godot/bin/godot.windows.editor.dev.x86_64.exe",
+            "args": ["--path", "${workspaceFolder}/examples/test/project"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "internalConsole"
+        },
+        {
+            "name": "(asteroids) GD4 instance",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "C:/godot/bin/godot.windows.editor.dev.x86_64.exe",
+            "args": ["--path", "${workspaceFolder}/examples/asteroids/project"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "internalConsole"
+        }
     ]
 }
