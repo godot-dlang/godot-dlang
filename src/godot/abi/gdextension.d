@@ -136,12 +136,16 @@ enum : GDNativeVariantOperator {
 }
 
 alias GDNativeVariantPtr = void*;
+alias GDNativeConstVariantPtr = const(void*);
 alias GDNativeStringNamePtr = void*;
+alias GDNativeConstStringNamePtr = const(void*);
 alias GDNativeStringPtr = void*;
+alias GDNativeConstStringPtr = const(void*);
 alias GDNativeObjectPtr = void*;
+alias GDNativeConstObjectPtr = const(void*);
 alias GDNativeTypePtr = void*;
-alias GDNativeExtensionPtr = void*;
-alias GDNativeMethodBindPtr = void*;
+alias GDNativeConstTypePtr = const(void*);
+alias GDNativeMethodBindPtr = const(void*);
 alias GDNativeInt = int64_t;
 alias GDNativeBool = uint8_t;
 alias GDObjectInstanceID = uint64_t;
@@ -169,18 +173,18 @@ struct GDNativeCallError {
 
 alias GDNativeVariantFromTypeConstructorFunc = void function(GDNativeVariantPtr, GDNativeTypePtr);
 alias GDNativeTypeFromVariantConstructorFunc = void function(GDNativeTypePtr, GDNativeVariantPtr);
-alias GDNativePtrOperatorEvaluator = void function(const GDNativeTypePtr p_left, const GDNativeTypePtr p_right, GDNativeTypePtr r_result);
-alias GDNativePtrBuiltInMethod = void function(GDNativeTypePtr p_base, const GDNativeTypePtr* p_args, GDNativeTypePtr r_return, int p_argument_count);
-alias GDNativePtrConstructor = void function(GDNativeTypePtr p_base, const GDNativeTypePtr* p_args);
+alias GDNativePtrOperatorEvaluator = void function(GDNativeConstTypePtr p_left, GDNativeConstTypePtr p_right, GDNativeTypePtr r_result);
+alias GDNativePtrBuiltInMethod = void function(GDNativeTypePtr p_base, GDNativeConstTypePtr* p_args, GDNativeTypePtr r_return, int p_argument_count);
+alias GDNativePtrConstructor = void function(GDNativeTypePtr p_base, GDNativeConstTypePtr* p_args);
 alias GDNativePtrDestructor = void function(GDNativeTypePtr p_base);
-alias GDNativePtrSetter = void function(GDNativeTypePtr p_base, const GDNativeTypePtr p_value);
-alias GDNativePtrGetter = void function(const GDNativeTypePtr p_base, GDNativeTypePtr r_value);
-alias GDNativePtrIndexedSetter = void function(GDNativeTypePtr p_base, GDNativeInt p_index, const GDNativeTypePtr p_value);
-alias GDNativePtrIndexedGetter = void function(const GDNativeTypePtr p_base, GDNativeInt p_index, GDNativeTypePtr r_value);
-alias GDNativePtrKeyedSetter = void function(GDNativeTypePtr p_base, const GDNativeTypePtr p_key, const GDNativeTypePtr p_value);
-alias GDNativePtrKeyedGetter = void function(const GDNativeTypePtr p_base, const GDNativeTypePtr p_key, GDNativeTypePtr r_value);
-alias GDNativePtrKeyedChecker = uint32_t function(const GDNativeVariantPtr p_base, const GDNativeVariantPtr p_key);
-alias GDNativePtrUtilityFunction = void function(GDNativeTypePtr r_return, const GDNativeTypePtr* p_arguments, int p_argument_count);
+alias GDNativePtrSetter = void function(GDNativeTypePtr p_base, GDNativeConstTypePtr p_value);
+alias GDNativePtrGetter = void function(GDNativeConstTypePtr p_base, GDNativeTypePtr r_value);
+alias GDNativePtrIndexedSetter = void function(GDNativeTypePtr p_base, GDNativeInt p_index, GDNativeConstTypePtr p_value);
+alias GDNativePtrIndexedGetter = void function(GDNativeConstTypePtr p_base, GDNativeInt p_index, GDNativeTypePtr r_value);
+alias GDNativePtrKeyedSetter = void function(GDNativeTypePtr p_base, GDNativeConstTypePtr p_key, GDNativeConstTypePtr p_value);
+alias GDNativePtrKeyedGetter = void function(GDNativeConstTypePtr p_base, GDNativeConstTypePtr p_key, GDNativeTypePtr r_value);
+alias GDNativePtrKeyedChecker = uint32_t function(GDNativeConstTypePtr p_base, GDNativeConstTypePtr p_key);
+alias GDNativePtrUtilityFunction = void function(GDNativeTypePtr r_return, GDNativeConstTypePtr* p_arguments, int p_argument_count);
 
 alias GDNativeClassConstructor = GDNativeObjectPtr function();
 
@@ -200,8 +204,8 @@ struct GDNativeInstanceBindingCallbacks {
 
 alias GDExtensionClassInstancePtr = void*;
 
-alias GDNativeExtensionClassSet = GDNativeBool function(GDExtensionClassInstancePtr p_instance, const GDNativeStringNamePtr p_name, const GDNativeVariantPtr p_value);
-alias GDNativeExtensionClassGet = GDNativeBool function(GDExtensionClassInstancePtr p_instance, const GDNativeStringNamePtr p_name, GDNativeVariantPtr r_ret);
+alias GDNativeExtensionClassSet = GDNativeBool function(GDExtensionClassInstancePtr p_instance, GDNativeConstStringNamePtr p_name, GDNativeConstVariantPtr p_value);
+alias GDNativeExtensionClassGet = GDNativeBool function(GDExtensionClassInstancePtr p_instance, GDNativeConstStringNamePtr p_name, GDNativeVariantPtr r_ret);
 alias GDNativeExtensionClassGetRID = uint64_t function(GDExtensionClassInstancePtr p_instance);
 
 struct GDNativePropertyInfo {
@@ -235,20 +239,20 @@ alias GDNativeExtensionClassGetPropertyList = const GDNativePropertyInfo* functi
 alias GDNativeExtensionClassFreePropertyList = void function(
     GDExtensionClassInstancePtr p_instance, const GDNativePropertyInfo* p_list);
 alias GDNativeExtensionClassPropertyCanRevert = GDNativeBool function(
-    GDExtensionClassInstancePtr p_instance, const GDNativeStringNamePtr p_name);
+    GDExtensionClassInstancePtr p_instance, GDNativeConstStringNamePtr p_name);
 alias GDNativeExtensionClassPropertyGetRevert = GDNativeBool function(
-    GDExtensionClassInstancePtr p_instance, const GDNativeStringNamePtr p_name, GDNativeVariantPtr r_ret);
+    GDExtensionClassInstancePtr p_instance, GDNativeConstStringNamePtr p_name, GDNativeVariantPtr r_ret);
 alias GDNativeExtensionClassNotification = void function(
     GDExtensionClassInstancePtr p_instance, int32_t p_what);
 alias GDNativeExtensionClassToString = void function(
     GDExtensionClassInstancePtr p_instance, GDNativeBool *r_is_valid, GDNativeStringPtr p_out);
 alias GDNativeExtensionClassReference = void function(GDExtensionClassInstancePtr p_instance);
 alias GDNativeExtensionClassUnreference = void function(GDExtensionClassInstancePtr p_instance);
-alias GDNativeExtensionClassCallVirtual = void function(GDExtensionClassInstancePtr p_instance, const GDNativeTypePtr* p_args, GDNativeTypePtr r_ret);
+alias GDNativeExtensionClassCallVirtual = void function(GDExtensionClassInstancePtr p_instance, GDNativeConstTypePtr* p_args, GDNativeTypePtr r_ret);
 alias GDNativeExtensionClassCreateInstance = GDNativeObjectPtr function(void* p_userdata);
 alias GDNativeExtensionClassFreeInstance = void function(void* p_userdata, GDExtensionClassInstancePtr p_instance);
 alias GDNativeExtensionClassGetVirtual = GDNativeExtensionClassCallVirtual function(
-    void* p_userdata, const GDNativeStringNamePtr p_name);
+    void* p_userdata, GDNativeConstStringNamePtr p_name);
 
 struct GDNativeExtensionClassCreationInfo {
     //@nogc nothrow:
@@ -271,7 +275,7 @@ struct GDNativeExtensionClassCreationInfo {
     void* class_userdata; // Per-class user data, later accessible in instance bindings.
 }
 
-alias GDNativeExtensionClassLibraryPtr = void*;
+alias GDNativeExtensionClassLibraryPtr = const(void*);
 
 /* Method */
 
@@ -301,8 +305,8 @@ enum : GDNativeExtensionClassMethodArgumentMetadata {
     GDNATIVE_EXTENSION_METHOD_ARGUMENT_METADATA_REAL_IS_DOUBLE
 }
 
-alias GDNativeExtensionClassMethodCall = void function(void* method_userdata, GDExtensionClassInstancePtr p_instance, const GDNativeVariantPtr* p_args, const GDNativeInt p_argument_count, GDNativeVariantPtr r_return, GDNativeCallError* r_error);
-alias GDNativeExtensionClassMethodPtrCall = void function(void* method_userdata, GDExtensionClassInstancePtr p_instance, const GDNativeTypePtr* p_args, GDNativeTypePtr r_ret);
+alias GDNativeExtensionClassMethodCall = void function(void* method_userdata, GDExtensionClassInstancePtr p_instance, GDNativeConstVariantPtr* p_args, const GDNativeInt p_argument_count, GDNativeVariantPtr r_return, GDNativeCallError* r_error);
+alias GDNativeExtensionClassMethodPtrCall = void function(void* method_userdata, GDExtensionClassInstancePtr p_instance, GDNativeConstTypePtr* p_args, GDNativeTypePtr r_ret);
 
 /* passing -1 as argument in the following functions refers to the return type */
 alias GDNativeExtensionClassMethodGetArgumentType = GDNativeVariantType function(
@@ -341,24 +345,24 @@ struct GDNativeExtensionClassMethodInfo {
 
 alias GDNativeExtensionScriptInstanceDataPtr = void*; // Pointer to custom ScriptInstance native implementation.
 
-alias GDNativeExtensionScriptInstanceSet = GDNativeBool function(GDNativeExtensionScriptInstanceDataPtr p_instance, const GDNativeStringNamePtr p_name, const GDNativeVariantPtr p_value);
-alias GDNativeExtensionScriptInstanceGet = GDNativeBool function(GDNativeExtensionScriptInstanceDataPtr p_instance, const GDNativeStringNamePtr p_name, GDNativeVariantPtr r_ret);
+alias GDNativeExtensionScriptInstanceSet = GDNativeBool function(GDNativeExtensionScriptInstanceDataPtr p_instance, GDNativeConstStringNamePtr p_name, GDNativeConstVariantPtr p_value);
+alias GDNativeExtensionScriptInstanceGet = GDNativeBool function(GDNativeExtensionScriptInstanceDataPtr p_instance, GDNativeConstStringNamePtr p_name, GDNativeVariantPtr r_ret);
 alias GDNativeExtensionScriptInstanceGetPropertyList = const GDNativePropertyInfo function(
     GDNativeExtensionScriptInstanceDataPtr p_instance, uint32_t* r_count);
 alias GDNativeExtensionScriptInstanceFreePropertyList = void function(
     GDNativeExtensionScriptInstanceDataPtr p_instance, const GDNativePropertyInfo* p_list);
 alias GDNativeExtensionScriptInstanceGetPropertyType = GDNativeVariantType function(
-    GDNativeExtensionScriptInstanceDataPtr p_instance, const GDNativeStringNamePtr p_name, GDNativeBool* r_is_valid);
+    GDNativeExtensionScriptInstanceDataPtr p_instance, GDNativeConstStringNamePtr p_name, GDNativeBool* r_is_valid);
 
 alias GDNativeExtensionScriptInstancePropertyCanRevert = GDNativeBool function(
-    GDNativeExtensionScriptInstanceDataPtr p_instance, const GDNativeStringNamePtr p_name);
+    GDNativeExtensionScriptInstanceDataPtr p_instance, GDNativeConstStringNamePtr p_name);
 alias GDNativeExtensionScriptInstancePropertyGetRevert = GDNativeBool function(
-    GDNativeExtensionScriptInstanceDataPtr p_instance, const GDNativeStringNamePtr p_name, GDNativeVariantPtr r_ret);
+    GDNativeExtensionScriptInstanceDataPtr p_instance, GDNativeConstStringNamePtr p_name, GDNativeVariantPtr r_ret);
 
 alias GDNativeExtensionScriptInstanceGetOwner = GDNativeObjectPtr function(
     GDNativeExtensionScriptInstanceDataPtr p_instance);
 alias GDNativeExtensionScriptInstancePropertyStateAdd = void function(
-    const GDNativeStringNamePtr p_name, const GDNativeVariantPtr p_value, void* p_userdata);
+    GDNativeConstStringNamePtr p_name, GDNativeConstVariantPtr p_value, void* p_userdata);
 alias GDNativeExtensionScriptInstanceGetPropertyState = void function(GDNativeExtensionScriptInstanceDataPtr p_instance, GDNativeExtensionScriptInstancePropertyStateAdd p_add_func, void* p_userdata);
 
 alias GDNativeExtensionScriptInstanceGetMethodList = const GDNativeMethodInfo function(
@@ -367,10 +371,10 @@ alias GDNativeExtensionScriptInstanceFreeMethodList = void function(
     GDNativeExtensionScriptInstanceDataPtr p_instance, const GDNativeMethodInfo* p_list);
 
 alias GDNativeExtensionScriptInstanceHasMethod = GDNativeBool function(
-    GDNativeExtensionScriptInstanceDataPtr p_instance, const GDNativeStringNamePtr p_name);
+    GDNativeExtensionScriptInstanceDataPtr p_instance, GDNativeConstStringNamePtr p_name);
 
 alias GDNativeExtensionScriptInstanceCall = void function(
-    GDNativeExtensionScriptInstanceDataPtr p_self, const GDNativeStringNamePtr p_method, const GDNativeVariantPtr* p_args, const GDNativeInt p_argument_count, GDNativeVariantPtr r_return, GDNativeCallError* r_error);
+    GDNativeExtensionScriptInstanceDataPtr p_self, GDNativeConstStringNamePtr p_method, GDNativeConstVariantPtr* p_args, const GDNativeInt p_argument_count, GDNativeVariantPtr r_return, GDNativeCallError* r_error);
 alias GDNativeExtensionScriptInstanceNotification = void function(
     GDNativeExtensionScriptInstanceDataPtr p_instance, int32_t p_what);
 alias GDNativeExtensionScriptInstanceToString = void function(
@@ -454,41 +458,41 @@ struct GDNativeInterface {
     nothrow void function(const(char)* p_description, const(char)* p_function, const(char)* p_file, int32_t p_line) print_warning;
     nothrow void function(const(char)* p_description, const(char)* p_function, const(char)* p_file, int32_t p_line) print_script_error;
 
-    uint64_t function(const GDNativeStringNamePtr p_name) get_native_struct_size;
+    uint64_t function(GDNativeConstStringNamePtr p_name) get_native_struct_size;
 
     /* GODOT VARIANT */
 
     /* variant general */
-    void function(GDNativeVariantPtr r_dest, const GDNativeVariantPtr p_src) variant_new_copy;
+    void function(GDNativeVariantPtr r_dest, GDNativeConstVariantPtr p_src) variant_new_copy;
     void function(GDNativeVariantPtr r_dest) variant_new_nil;
     void function(GDNativeVariantPtr p_self) variant_destroy;
 
     /* variant type */
-    void function(GDNativeVariantPtr p_self, const GDNativeStringNamePtr p_method, const GDNativeVariantPtr* p_args, const GDNativeInt p_argument_count, GDNativeVariantPtr r_return, GDNativeCallError* r_error) variant_call;
-    void function(GDNativeVariantType p_type, const GDNativeStringNamePtr p_method, const GDNativeVariantPtr* p_args, const GDNativeInt p_argument_count, GDNativeVariantPtr r_return, GDNativeCallError* r_error) variant_call_static;
-    void function(GDNativeVariantOperator p_op, const GDNativeVariantPtr p_a, const GDNativeVariantPtr p_b, GDNativeVariantPtr r_return, GDNativeBool* r_valid) variant_evaluate;
-    void function(GDNativeVariantPtr p_self, const GDNativeVariantPtr p_key, const GDNativeVariantPtr p_value, GDNativeBool* r_valid) variant_set;
-    void function(GDNativeVariantPtr p_self, const GDNativeStringNamePtr p_key, const GDNativeVariantPtr p_value, GDNativeBool* r_valid) variant_set_named;
-    void function(GDNativeVariantPtr p_self, const GDNativeVariantPtr p_key, const GDNativeVariantPtr p_value, GDNativeBool* r_valid) variant_set_keyed;
-    void function(GDNativeVariantPtr p_self, GDNativeInt p_index, const GDNativeVariantPtr p_value, GDNativeBool* r_valid, GDNativeBool* r_oob) variant_set_indexed;
-    void function(const GDNativeVariantPtr p_self, const GDNativeVariantPtr p_key, GDNativeVariantPtr r_ret, GDNativeBool* r_valid) variant_get;
-    void function(const GDNativeVariantPtr p_self, const GDNativeStringNamePtr p_key, GDNativeVariantPtr r_ret, GDNativeBool* r_valid) variant_get_named;
-    void function(const GDNativeVariantPtr p_self, const GDNativeVariantPtr p_key, GDNativeVariantPtr r_ret, GDNativeBool* r_valid) variant_get_keyed;
-    void function(const GDNativeVariantPtr p_self, GDNativeInt p_index, GDNativeVariantPtr r_ret, GDNativeBool* r_valid, GDNativeBool* r_oob) variant_get_indexed;
-    GDNativeBool function(const GDNativeVariantPtr p_self, GDNativeVariantPtr r_iter, GDNativeBool* r_valid) variant_iter_init;
-    GDNativeBool function(const GDNativeVariantPtr p_self, GDNativeVariantPtr r_iter, GDNativeBool* r_valid) variant_iter_next;
-    void function(const GDNativeVariantPtr p_self, GDNativeVariantPtr r_iter, GDNativeVariantPtr r_ret, GDNativeBool* r_valid) variant_iter_get;
-    GDNativeInt function(const GDNativeVariantPtr p_self) variant_hash;
-    GDNativeInt function(const GDNativeVariantPtr p_self, GDNativeInt p_recursion_count) variant_recursive_hash;
-    GDNativeBool function(const GDNativeVariantPtr p_self, const GDNativeVariantPtr p_other) variant_hash_compare;
-    GDNativeBool function(const GDNativeVariantPtr p_self) variant_booleanize;
-    void function(const GDNativeVariantPtr p_self, GDNativeVariantPtr r_ret, GDNativeBool p_deep) variant_duplicate;
-    void function(const GDNativeVariantPtr p_self, GDNativeStringPtr r_ret) variant_stringify;
+    void function(GDNativeVariantPtr p_self, GDNativeConstStringNamePtr p_method, GDNativeConstVariantPtr* p_args, const GDNativeInt p_argument_count, GDNativeVariantPtr r_return, GDNativeCallError* r_error) variant_call;
+    void function(GDNativeVariantType p_type, GDNativeConstStringNamePtr p_method, GDNativeConstVariantPtr* p_args, const GDNativeInt p_argument_count, GDNativeVariantPtr r_return, GDNativeCallError* r_error) variant_call_static;
+    void function(GDNativeVariantOperator p_op, GDNativeConstVariantPtr p_a, GDNativeConstVariantPtr p_b, GDNativeVariantPtr r_return, GDNativeBool* r_valid) variant_evaluate;
+    void function(GDNativeVariantPtr p_self, GDNativeConstVariantPtr p_key, GDNativeConstVariantPtr p_value, GDNativeBool* r_valid) variant_set;
+    void function(GDNativeVariantPtr p_self, GDNativeConstStringNamePtr p_key, GDNativeConstVariantPtr p_value, GDNativeBool* r_valid) variant_set_named;
+    void function(GDNativeVariantPtr p_self, GDNativeConstVariantPtr p_key, GDNativeConstVariantPtr p_value, GDNativeBool* r_valid) variant_set_keyed;
+    void function(GDNativeVariantPtr p_self, GDNativeInt p_index, GDNativeConstVariantPtr p_value, GDNativeBool* r_valid, GDNativeBool* r_oob) variant_set_indexed;
+    void function(GDNativeConstVariantPtr p_self, GDNativeConstVariantPtr p_key, GDNativeVariantPtr r_ret, GDNativeBool* r_valid) variant_get;
+    void function(GDNativeConstVariantPtr p_self, GDNativeConstStringNamePtr p_key, GDNativeVariantPtr r_ret, GDNativeBool* r_valid) variant_get_named;
+    void function(GDNativeConstVariantPtr p_self, GDNativeConstVariantPtr p_key, GDNativeVariantPtr r_ret, GDNativeBool* r_valid) variant_get_keyed;
+    void function(GDNativeConstVariantPtr p_self, GDNativeInt p_index, GDNativeVariantPtr r_ret, GDNativeBool* r_valid, GDNativeBool* r_oob) variant_get_indexed;
+    GDNativeBool function(GDNativeConstVariantPtr p_self, GDNativeVariantPtr r_iter, GDNativeBool* r_valid) variant_iter_init;
+    GDNativeBool function(GDNativeConstVariantPtr p_self, GDNativeVariantPtr r_iter, GDNativeBool* r_valid) variant_iter_next;
+    void function(GDNativeConstVariantPtr p_self, GDNativeVariantPtr r_iter, GDNativeVariantPtr r_ret, GDNativeBool* r_valid) variant_iter_get;
+    GDNativeInt function(GDNativeConstVariantPtr p_self) variant_hash;
+    GDNativeInt function(GDNativeConstVariantPtr p_self, GDNativeInt p_recursion_count) variant_recursive_hash;
+    GDNativeBool function(GDNativeConstVariantPtr p_self, GDNativeConstVariantPtr p_other) variant_hash_compare;
+    GDNativeBool function(GDNativeConstVariantPtr p_self) variant_booleanize;
+    void function(GDNativeConstVariantPtr p_self, GDNativeVariantPtr r_ret, GDNativeBool p_deep) variant_duplicate;
+    void function(GDNativeConstVariantPtr p_self, GDNativeStringPtr r_ret) variant_stringify;
 
-    GDNativeVariantType function(const GDNativeVariantPtr p_self) variant_get_type;
-    GDNativeBool function(const GDNativeVariantPtr p_self, const GDNativeStringNamePtr p_method) variant_has_method;
-    GDNativeBool function(GDNativeVariantType p_type, const GDNativeStringNamePtr p_member) variant_has_member;
-    GDNativeBool function(const GDNativeVariantPtr p_self, const GDNativeVariantPtr p_key, GDNativeBool* r_valid) variant_has_key;
+    GDNativeVariantType function(GDNativeConstVariantPtr p_self) variant_get_type;
+    GDNativeBool function(GDNativeConstVariantPtr p_self, GDNativeConstStringNamePtr p_method) variant_has_method;
+    GDNativeBool function(GDNativeVariantType p_type, GDNativeConstStringNamePtr p_member) variant_has_member;
+    GDNativeBool function(GDNativeConstVariantPtr p_self, GDNativeConstVariantPtr p_key, GDNativeBool* r_valid) variant_has_key;
     void function(GDNativeVariantType p_type, GDNativeStringPtr r_name) variant_get_type_name;
     GDNativeBool function(GDNativeVariantType p_from, GDNativeVariantType p_to) variant_can_convert;
     GDNativeBool function(GDNativeVariantType p_from, GDNativeVariantType p_to) variant_can_convert_strict;
@@ -497,19 +501,19 @@ struct GDNativeInterface {
     GDNativeVariantFromTypeConstructorFunc function(GDNativeVariantType p_type) get_variant_from_type_constructor;
     GDNativeTypeFromVariantConstructorFunc function(GDNativeVariantType p_type) get_variant_to_type_constructor;
     GDNativePtrOperatorEvaluator function(GDNativeVariantOperator p_operator, GDNativeVariantType p_type_a, GDNativeVariantType p_type_b) variant_get_ptr_operator_evaluator;
-    GDNativePtrBuiltInMethod function(GDNativeVariantType p_type, const GDNativeStringNamePtr p_method, GDNativeInt p_hash) variant_get_ptr_builtin_method;
+    GDNativePtrBuiltInMethod function(GDNativeVariantType p_type, GDNativeConstStringNamePtr p_method, GDNativeInt p_hash) variant_get_ptr_builtin_method;
     GDNativePtrConstructor function(GDNativeVariantType p_type, int32_t p_constructor) variant_get_ptr_constructor;
     GDNativePtrDestructor function(GDNativeVariantType p_type) variant_get_ptr_destructor;
     void function(GDNativeVariantType p_type, GDNativeVariantPtr p_base, const(GDNativeVariantPtr)* p_args, int32_t p_argument_count, GDNativeCallError* r_error) variant_construct;
-    GDNativePtrSetter function(GDNativeVariantType p_type, const GDNativeStringNamePtr p_member) variant_get_ptr_setter;
-    GDNativePtrGetter function(GDNativeVariantType p_type, const GDNativeStringNamePtr p_member) variant_get_ptr_getter;
+    GDNativePtrSetter function(GDNativeVariantType p_type, GDNativeConstStringNamePtr p_member) variant_get_ptr_setter;
+    GDNativePtrGetter function(GDNativeVariantType p_type, GDNativeConstStringNamePtr p_member) variant_get_ptr_getter;
     GDNativePtrIndexedSetter function(GDNativeVariantType p_type) variant_get_ptr_indexed_setter;
     GDNativePtrIndexedGetter function(GDNativeVariantType p_type) variant_get_ptr_indexed_getter;
     GDNativePtrKeyedSetter function(GDNativeVariantType p_type) variant_get_ptr_keyed_setter;
     GDNativePtrKeyedGetter function(GDNativeVariantType p_type) variant_get_ptr_keyed_getter;
     GDNativePtrKeyedChecker function(GDNativeVariantType p_type) variant_get_ptr_keyed_checker;
-    void function(GDNativeVariantType p_type, const GDNativeStringNamePtr p_constant, GDNativeVariantPtr r_ret) variant_get_constant_value;
-    GDNativePtrUtilityFunction function(const GDNativeStringNamePtr p_function, GDNativeInt p_hash) variant_get_ptr_utility_function;
+    void function(GDNativeVariantType p_type, GDNativeConstStringNamePtr p_constant, GDNativeVariantPtr r_ret) variant_get_constant_value;
+    GDNativePtrUtilityFunction function(GDNativeConstStringNamePtr p_function, GDNativeInt p_hash) variant_get_ptr_utility_function;
 
     /*  extra utilities */
     void function(GDNativeStringPtr r_dest, const(char)* p_contents) string_new_with_latin1_chars;
@@ -531,63 +535,63 @@ struct GDNativeInterface {
 	 * - p_max_write_length argument is in characters, not bytes. It will be ignored if r_text is NULL.
 	 * - p_max_write_length argument does not affect the return value, it's only to cap write length.
 	 */
-    GDNativeInt function(const GDNativeStringPtr p_self, char* r_text, GDNativeInt p_max_write_length) string_to_latin1_chars;
-    GDNativeInt function(const GDNativeStringPtr p_self, char* r_text, GDNativeInt p_max_write_length) string_to_utf8_chars;
-    GDNativeInt function(const GDNativeStringPtr p_self, char16_t* r_text, GDNativeInt p_max_write_length) string_to_utf16_chars;
-    GDNativeInt function(const GDNativeStringPtr p_self, char32_t* r_text, GDNativeInt p_max_write_length) string_to_utf32_chars;
-    GDNativeInt function(const GDNativeStringPtr p_self, wchar_t* r_text, GDNativeInt p_max_write_length) string_to_wide_chars;
+    GDNativeInt function(GDNativeConstStringPtr p_self, char* r_text, GDNativeInt p_max_write_length) string_to_latin1_chars;
+    GDNativeInt function(GDNativeConstStringPtr p_self, char* r_text, GDNativeInt p_max_write_length) string_to_utf8_chars;
+    GDNativeInt function(GDNativeConstStringPtr p_self, char16_t* r_text, GDNativeInt p_max_write_length) string_to_utf16_chars;
+    GDNativeInt function(GDNativeConstStringPtr p_self, char32_t* r_text, GDNativeInt p_max_write_length) string_to_utf32_chars;
+    GDNativeInt function(GDNativeConstStringPtr p_self, wchar_t* r_text, GDNativeInt p_max_write_length) string_to_wide_chars;
     char32_t* function(GDNativeStringPtr p_self, GDNativeInt p_index) string_operator_index;
-    const(char32_t)* function(const GDNativeStringPtr p_self, GDNativeInt p_index) string_operator_index_const;
+    const(char32_t)* function(GDNativeConstStringPtr p_self, GDNativeInt p_index) string_operator_index_const;
 
     /* Packed array functions */
 
     uint8_t* function(GDNativeTypePtr p_self, GDNativeInt p_index) packed_byte_array_operator_index; // p_self should be a PackedByteArray
-    const(uint8_t)* function(const GDNativeTypePtr p_self, GDNativeInt p_index) packed_byte_array_operator_index_const; // p_self should be a PackedByteArray
+    const(uint8_t)* function(GDNativeConstTypePtr p_self, GDNativeInt p_index) packed_byte_array_operator_index_const; // p_self should be a PackedByteArray
 
     GDNativeTypePtr function(GDNativeTypePtr p_self, GDNativeInt p_index) packed_color_array_operator_index; // p_self should be a PackedColorArray, returns Color ptr
-    GDNativeTypePtr function(const GDNativeTypePtr p_self, GDNativeInt p_index) packed_color_array_operator_index_const; // p_self should be a PackedColorArray, returns Color ptr
+    GDNativeTypePtr function(GDNativeConstTypePtr p_self, GDNativeInt p_index) packed_color_array_operator_index_const; // p_self should be a PackedColorArray, returns Color ptr
 
     float* function(GDNativeTypePtr p_self, GDNativeInt p_index) packed_float32_array_operator_index; // p_self should be a PackedFloat32Array
-    const(float)* function(const GDNativeTypePtr p_self, GDNativeInt p_index) packed_float32_array_operator_index_const; // p_self should be a PackedFloat32Array
+    const(float)* function(GDNativeConstTypePtr p_self, GDNativeInt p_index) packed_float32_array_operator_index_const; // p_self should be a PackedFloat32Array
     double* function(GDNativeTypePtr p_self, GDNativeInt p_index) packed_float64_array_operator_index; // p_self should be a PackedFloat64Array
-    const(double)* function(const GDNativeTypePtr p_self, GDNativeInt p_index) packed_float64_array_operator_index_const; // p_self should be a PackedFloat64Array
+    const(double)* function(GDNativeConstTypePtr p_self, GDNativeInt p_index) packed_float64_array_operator_index_const; // p_self should be a PackedFloat64Array
 
     int32_t* function(GDNativeTypePtr p_self, GDNativeInt p_index) packed_int32_array_operator_index; // p_self should be a PackedInt32Array
-    const(int32_t)* function(const GDNativeTypePtr p_self, GDNativeInt p_index) packed_int32_array_operator_index_const; // p_self should be a PackedInt32Array
+    const(int32_t)* function(GDNativeConstTypePtr p_self, GDNativeInt p_index) packed_int32_array_operator_index_const; // p_self should be a PackedInt32Array
     int64_t* function(GDNativeTypePtr p_self, GDNativeInt p_index) packed_int64_array_operator_index; // p_self should be a PackedInt32Array
-    const(int64_t)* function(const GDNativeTypePtr p_self, GDNativeInt p_index) packed_int64_array_operator_index_const; // p_self should be a PackedInt32Array
+    const(int64_t)* function(GDNativeConstTypePtr p_self, GDNativeInt p_index) packed_int64_array_operator_index_const; // p_self should be a PackedInt32Array
 
     GDNativeStringPtr function(GDNativeTypePtr p_self, GDNativeInt p_index) packed_string_array_operator_index; // p_self should be a PackedStringArray
-    GDNativeStringPtr function(const GDNativeTypePtr p_self, GDNativeInt p_index) packed_string_array_operator_index_const; // p_self should be a PackedStringArray
+    GDNativeStringPtr function(GDNativeConstTypePtr p_self, GDNativeInt p_index) packed_string_array_operator_index_const; // p_self should be a PackedStringArray
 
     GDNativeTypePtr function(GDNativeTypePtr p_self, GDNativeInt p_index) packed_vector2_array_operator_index; // p_self should be a PackedVector2Array, returns Vector2 ptr
-    GDNativeTypePtr function(const GDNativeTypePtr p_self, GDNativeInt p_index) packed_vector2_array_operator_index_const; // p_self should be a PackedVector2Array, returns Vector2 ptr
+    GDNativeTypePtr function(GDNativeConstTypePtr p_self, GDNativeInt p_index) packed_vector2_array_operator_index_const; // p_self should be a PackedVector2Array, returns Vector2 ptr
     GDNativeTypePtr function(GDNativeTypePtr p_self, GDNativeInt p_index) packed_vector3_array_operator_index; // p_self should be a PackedVector3Array, returns Vector3 ptr
-    GDNativeTypePtr function(const GDNativeTypePtr p_self, GDNativeInt p_index) packed_vector3_array_operator_index_const; // p_self should be a PackedVector3Array, returns Vector3 ptr
+    GDNativeTypePtr function(GDNativeConstTypePtr p_self, GDNativeInt p_index) packed_vector3_array_operator_index_const; // p_self should be a PackedVector3Array, returns Vector3 ptr
 
     GDNativeVariantPtr function(GDNativeTypePtr p_self, GDNativeInt p_index) array_operator_index; // p_self should be an Array ptr
-    GDNativeVariantPtr function(const GDNativeTypePtr p_self, GDNativeInt p_index) array_operator_index_const; // p_self should be an Array ptr
+    GDNativeVariantPtr function(GDNativeConstTypePtr p_self, GDNativeInt p_index) array_operator_index_const; // p_self should be an Array ptr
 
     /* Dictionary functions */
 
-    GDNativeVariantPtr function(GDNativeTypePtr p_self, const GDNativeVariantPtr p_key) dictionary_operator_index; // p_self should be an Dictionary ptr
-    GDNativeVariantPtr function(const GDNativeTypePtr p_self, const GDNativeVariantPtr p_key) dictionary_operator_index_const; // p_self should be an Dictionary ptr
+    GDNativeVariantPtr function(GDNativeTypePtr p_self, GDNativeConstVariantPtr p_key) dictionary_operator_index; // p_self should be an Dictionary ptr
+    GDNativeVariantPtr function(GDNativeConstTypePtr p_self, GDNativeConstVariantPtr p_key) dictionary_operator_index_const; // p_self should be an Dictionary ptr
 
     /* OBJECT */
 
-    void function(const GDNativeMethodBindPtr p_method_bind, GDNativeObjectPtr p_instance, const GDNativeVariantPtr* p_args, GDNativeInt p_arg_count, GDNativeVariantPtr r_ret, GDNativeCallError* r_error) object_method_bind_call;
-    void function(const GDNativeMethodBindPtr p_method_bind, GDNativeObjectPtr p_instance, const GDNativeTypePtr* p_args, GDNativeTypePtr r_ret) object_method_bind_ptrcall;
+    void function(GDNativeMethodBindPtr p_method_bind, GDNativeObjectPtr p_instance, GDNativeConstVariantPtr* p_args, GDNativeInt p_arg_count, GDNativeVariantPtr r_ret, GDNativeCallError* r_error) object_method_bind_call;
+    void function(GDNativeMethodBindPtr p_method_bind, GDNativeObjectPtr p_instance, GDNativeConstTypePtr* p_args, GDNativeTypePtr r_ret) object_method_bind_ptrcall;
     void function(GDNativeObjectPtr p_o) object_destroy;
-    GDNativeObjectPtr function(const GDNativeStringNamePtr p_name) global_get_singleton;
+    GDNativeObjectPtr function(GDNativeConstStringNamePtr p_name) global_get_singleton;
 
     void* function(GDNativeObjectPtr p_o, void* p_token, const GDNativeInstanceBindingCallbacks* p_callbacks) object_get_instance_binding;
     void function(GDNativeObjectPtr p_o, void* p_token, void* p_binding, const GDNativeInstanceBindingCallbacks* p_callbacks) object_set_instance_binding;
 
-    void function(GDNativeObjectPtr p_o, const GDNativeStringNamePtr p_classname, GDExtensionClassInstancePtr p_instance) object_set_instance; /* p_classname should be a registered extension class and should extend the p_o object's class. */
+    void function(GDNativeObjectPtr p_o, GDNativeConstStringNamePtr p_classname, GDExtensionClassInstancePtr p_instance) object_set_instance; /* p_classname should be a registered extension class and should extend the p_o object's class. */
 
-    GDNativeObjectPtr function(const GDNativeObjectPtr p_object, void* p_class_tag) object_cast_to;
+    GDNativeObjectPtr function(GDNativeConstObjectPtr p_object, void* p_class_tag) object_cast_to;
     GDNativeObjectPtr function(GDObjectInstanceID p_instance_id) object_get_instance_from_id;
-    GDObjectInstanceID function(const GDNativeObjectPtr p_object) object_get_instance_id;
+    GDObjectInstanceID function(GDNativeConstObjectPtr p_object) object_get_instance_id;
 
     /* SCRIPT INSTANCE */
 
@@ -595,23 +599,23 @@ struct GDNativeInterface {
 
     /* CLASSDB */
 
-    GDNativeObjectPtr function(const GDNativeStringNamePtr p_classname) classdb_construct_object; /* The passed class must be a built-in godot class, or an already-registered extension class. In both case, object_set_instance should be called to fully initialize the object. */
-    GDNativeMethodBindPtr function(const GDNativeStringNamePtr p_classname, const GDNativeStringNamePtr p_methodname, GDNativeInt p_hash) classdb_get_method_bind;
-    void* function(const GDNativeStringNamePtr p_classname) classdb_get_class_tag;
+    GDNativeObjectPtr function(GDNativeConstStringNamePtr p_classname) classdb_construct_object; /* The passed class must be a built-in godot class, or an already-registered extension class. In both case, object_set_instance should be called to fully initialize the object. */
+    GDNativeMethodBindPtr function(GDNativeConstStringNamePtr p_classname, GDNativeConstStringNamePtr p_methodname, GDNativeInt p_hash) classdb_get_method_bind;
+    void* function(GDNativeConstStringNamePtr p_classname) classdb_get_class_tag;
 
     /* CLASSDB EXTENSION */
 
     /* Provided parameters for `classdb_register_extension_*` can be safely freed once the function returns. */
-	void function(const GDNativeExtensionClassLibraryPtr p_library, const GDNativeStringNamePtr p_class_name, const GDNativeStringNamePtr p_parent_class_name, const GDNativeExtensionClassCreationInfo* p_extension_funcs) classdb_register_extension_class;
-	void function(const GDNativeExtensionClassLibraryPtr p_library, const GDNativeStringNamePtr p_class_name, const GDNativeExtensionClassMethodInfo* p_method_info) classdb_register_extension_class_method;
-	void function(const GDNativeExtensionClassLibraryPtr p_library, const GDNativeStringNamePtr p_class_name, const GDNativeStringNamePtr p_enum_name, const GDNativeStringNamePtr p_constant_name, GDNativeInt p_constant_value, GDNativeBool p_is_bitfield) classdb_register_extension_class_integer_constant;
-	void function(const GDNativeExtensionClassLibraryPtr p_library, const GDNativeStringNamePtr p_class_name, const GDNativePropertyInfo* p_info, const GDNativeStringNamePtr p_setter, const GDNativeStringNamePtr p_getter) classdb_register_extension_class_property;
-	void function(const GDNativeExtensionClassLibraryPtr p_library, const GDNativeStringNamePtr p_class_name, const GDNativeStringPtr p_group_name, const GDNativeStringPtr p_prefix) classdb_register_extension_class_property_group;
-	void function(const GDNativeExtensionClassLibraryPtr p_library, const GDNativeStringNamePtr p_class_name, const GDNativeStringPtr p_subgroup_name, const GDNativeStringPtr p_prefix) classdb_register_extension_class_property_subgroup;
-	void function(const GDNativeExtensionClassLibraryPtr p_library, const GDNativeStringNamePtr p_class_name, const GDNativeStringNamePtr p_signal_name, const GDNativePropertyInfo* p_argument_info, GDNativeInt p_argument_count) classdb_register_extension_class_signal;
-	void function(const GDNativeExtensionClassLibraryPtr p_library, const GDNativeStringNamePtr p_class_name) classdb_unregister_extension_class; /* Unregistering a parent class before a class that inherits it will result in failure. Inheritors must be unregistered first. */
+	void function(GDNativeExtensionClassLibraryPtr p_library, GDNativeConstStringNamePtr p_class_name, GDNativeConstStringNamePtr p_parent_class_name, const GDNativeExtensionClassCreationInfo* p_extension_funcs) classdb_register_extension_class;
+	void function(GDNativeExtensionClassLibraryPtr p_library, GDNativeConstStringNamePtr p_class_name, const GDNativeExtensionClassMethodInfo* p_method_info) classdb_register_extension_class_method;
+	void function(GDNativeExtensionClassLibraryPtr p_library, GDNativeConstStringNamePtr p_class_name, GDNativeConstStringNamePtr p_enum_name, GDNativeConstStringNamePtr p_constant_name, GDNativeInt p_constant_value, GDNativeBool p_is_bitfield) classdb_register_extension_class_integer_constant;
+	void function(GDNativeExtensionClassLibraryPtr p_library, GDNativeConstStringNamePtr p_class_name, const GDNativePropertyInfo* p_info, GDNativeConstStringNamePtr p_setter, GDNativeConstStringNamePtr p_getter) classdb_register_extension_class_property;
+	void function(GDNativeExtensionClassLibraryPtr p_library, GDNativeConstStringNamePtr p_class_name, GDNativeConstStringPtr p_group_name, GDNativeConstStringPtr p_prefix) classdb_register_extension_class_property_group;
+	void function(GDNativeExtensionClassLibraryPtr p_library, GDNativeConstStringNamePtr p_class_name, GDNativeConstStringPtr p_subgroup_name, GDNativeConstStringPtr p_prefix) classdb_register_extension_class_property_subgroup;
+	void function(GDNativeExtensionClassLibraryPtr p_library, GDNativeConstStringNamePtr p_class_name, GDNativeConstStringNamePtr p_signal_name, const GDNativePropertyInfo* p_argument_info, GDNativeInt p_argument_count) classdb_register_extension_class_signal;
+	void function(GDNativeExtensionClassLibraryPtr p_library, GDNativeConstStringNamePtr p_class_name) classdb_unregister_extension_class; /* Unregistering a parent class before a class that inherits it will result in failure. Inheritors must be unregistered first. */
 
-    void function(const GDNativeExtensionClassLibraryPtr p_library, GDNativeStringPtr r_path) get_library_path;
+    void function(GDNativeExtensionClassLibraryPtr p_library, GDNativeStringPtr r_path) get_library_path;
 
 }
 
@@ -642,4 +646,4 @@ struct GDNativeInitialization {
  * It can be used to set up different init levels, which are called during various stages of initialization/shutdown.
  * The function name must be a unique one specified in the .gdextension config file.
  */
-alias GDNativeInitializationFunction = GDNativeBool function(const GDNativeInterface* p_interface, const GDNativeExtensionClassLibraryPtr p_library, GDNativeInitialization* r_initialization);
+alias GDNativeInitializationFunction = GDNativeBool function(const GDNativeInterface* p_interface, GDNativeExtensionClassLibraryPtr p_library, GDNativeInitialization* r_initialization);

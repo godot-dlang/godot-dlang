@@ -42,7 +42,7 @@ In order to proceed you will need D compiler (`dmd` or `ldc2`) with `dub`, `git`
 - download godot beta4 editor and place it in somewhere like `C:\godot`
 - step into that directory and open terminal
 - generate script API information with command `godot.exe --dump-extension-api`
-- run binding generator (-j tells where to look for script api and -o tells to overwrite any existing bindings) `dub run godot-dlang:api-binding-generator -- -j extension_api.json -o`
+- run binding generator (-j tells where to look for script api and -o tells to overwrite any existing bindings) `dub run godot-dlang:generator -- -j extension_api.json -o`
 
 > This step is one time process, though you would need to re-generate API and bindings for every godot release
 
