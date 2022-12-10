@@ -32,9 +32,6 @@ private bool isValidSwizzle(dstring s) {
     return true;
 }
 
-alias vec4 = Vector4;
-alias ivec4 = Vector4i;
-
 /**
 Vector4 is one of the core classes of the engine, and includes several built-in helper functions to perform basic vector math operations.
 */
