@@ -84,7 +84,7 @@ struct Ref(T) {
 
     pragma(inline, true)
     bool opEquals(R)(in auto ref R other) const {
-        return _self.getGDNativeObject!T == other.getGDNativeObject!T;
+        return _self.getGDExtensionObject!T == other.getGDExtensionObject!T;
     }
 
     pragma(inline, true)

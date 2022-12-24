@@ -92,8 +92,8 @@ struct Dictionary {
             if (Args.length % 2 == 0 && allSatisfy!(Variant.compatibleToGodot, Args)) {
         Dictionary ret = void;
         //_godot_api.dictionary_new(&ret._godot_dictionary);
-        _godot_api.get_variant_from_type_constructor(GDNATIVE_VARIANT_TYPE_DICTIONARY)(
-            cast(GDNativeTypePtr)&ret._godot_dictionary, null);
+        _godot_api.get_variant_from_type_constructor(GDEXTENSION_VARIANT_TYPE_DICTIONARY)(
+            cast(GDExtensionTypePtr)&ret._godot_dictionary, null);
         /+
 		BUG: wtf? when using static foreach(i; 0..Args.length/2):
 		Error: cannot use operator ~= in @nogc delegate godot.dictionary.Dictionary.make!(GodotStringLiteral!"name", String, GodotStringLiteral!"type", int).make.__lambda6
@@ -110,14 +110,14 @@ struct Dictionary {
     deprecated("Use Dictionary.make() with 0 args instead.")
     static Dictionary empty_dictionary() {
         Dictionary d = void;
-        _godot_api.get_variant_from_type_constructor(GDNATIVE_VARIANT_TYPE_DICTIONARY)(
-            cast(GDNativeTypePtr)&d._godot_dictionary, null);
+        _godot_api.get_variant_from_type_constructor(GDEXTENSION_VARIANT_TYPE_DICTIONARY)(
+            cast(GDExtensionTypePtr)&d._godot_dictionary, null);
         return d;
     }
 
     void clear() {
-        //auto m =_godot_api.variant_get_ptr_builtin_method(GDNATIVE_VARIANT_TYPE_DICTIONARY, "clear", 134152229);
-        //m(cast(GDNativeTypePtr)&_godot_dictionary);
+        //auto m =_godot_api.variant_get_ptr_builtin_method(GDEXTENSION_VARIANT_TYPE_DICTIONARY, "clear", 134152229);
+        //m(cast(GDExtensionTypePtr)&_godot_dictionary);
         _bind.clear();
     }
 

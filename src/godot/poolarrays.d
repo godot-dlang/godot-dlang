@@ -38,17 +38,17 @@ private alias PackedArrayTypes = AliasSeq!(
     Color
 );
 
-// used in GDNativeInterface.variant_get_ptr_destructor()
+// used in GDExtensionInterface.variant_get_ptr_destructor()
 private alias PackedArrayVariantType = AliasSeq!(
-    GDNATIVE_VARIANT_TYPE_PACKED_BYTE_ARRAY,
-    GDNATIVE_VARIANT_TYPE_PACKED_INT32_ARRAY,
-    GDNATIVE_VARIANT_TYPE_PACKED_INT64_ARRAY,
-    GDNATIVE_VARIANT_TYPE_PACKED_FLOAT32_ARRAY,
-    GDNATIVE_VARIANT_TYPE_PACKED_FLOAT64_ARRAY,
-    GDNATIVE_VARIANT_TYPE_PACKED_STRING_ARRAY,
-    GDNATIVE_VARIANT_TYPE_PACKED_VECTOR2_ARRAY,
-    GDNATIVE_VARIANT_TYPE_PACKED_VECTOR3_ARRAY,
-    GDNATIVE_VARIANT_TYPE_PACKED_COLOR_ARRAY,
+    GDEXTENSION_VARIANT_TYPE_PACKED_BYTE_ARRAY,
+    GDEXTENSION_VARIANT_TYPE_PACKED_INT32_ARRAY,
+    GDEXTENSION_VARIANT_TYPE_PACKED_INT64_ARRAY,
+    GDEXTENSION_VARIANT_TYPE_PACKED_FLOAT32_ARRAY,
+    GDEXTENSION_VARIANT_TYPE_PACKED_FLOAT64_ARRAY,
+    GDEXTENSION_VARIANT_TYPE_PACKED_STRING_ARRAY,
+    GDEXTENSION_VARIANT_TYPE_PACKED_VECTOR2_ARRAY,
+    GDEXTENSION_VARIANT_TYPE_PACKED_VECTOR3_ARRAY,
+    GDEXTENSION_VARIANT_TYPE_PACKED_COLOR_ARRAY,
 );
 
 private enum string nameOverride(T) = AliasSeq!(
@@ -89,7 +89,7 @@ struct PackedArray(T) {
     //mixin("package(godot) "~(typeName!T)~" _godot_array;");
 
     package(godot) union _PackedArray {
-        GDNativeTypePtr _godot_array;
+        GDExtensionTypePtr _godot_array;
         mixin("Packed" ~ bindNameOverride!T ~ "Array_Bind _bind;");
     }
 
@@ -110,7 +110,7 @@ struct PackedArray(T) {
 
     }
 
-    package(godot) this(GDNativeTypePtr opaque) {
+    package(godot) this(GDExtensionTypePtr opaque) {
         _godot_array = opaque;
     }
 
@@ -181,7 +181,7 @@ struct PackedArray(T) {
     }
 
     ~this() {
-        //auto d = _godot_api.variant_get_ptr_destructor(GDNATIVE_VARIANT_TYPE_PACKED_BYTE_ARRAY)
+        //auto d = _godot_api.variant_get_ptr_destructor(GDEXTENSION_VARIANT_TYPE_PACKED_BYTE_ARRAY)
         auto d = _godot_api.variant_get_ptr_destructor(VARIANT_TYPE);
         d(&_godot_array);
     }

@@ -130,7 +130,7 @@ Useful for generic code.
 +/
 GodotClass!T getGodotObject(T)(in T t) if (isGodotClass!T) {
     GodotClass!T ret;
-    ret._godot_object = t.getGDNativeObject;
+    ret._godot_object = t.getGDExtensionObject;
     return ret;
 }
 
@@ -138,7 +138,7 @@ GodotClass!(NonRef!R) getGodotObject(R)(auto ref R r) if (is(R : Ref!U, U)) {
     return r._reference;
 }
 
-package(godot) godot_object getGDNativeObject(T)(in T t) if (isGodotClass!T) {
+package(godot) godot_object getGDExtensionObject(T)(in T t) if (isGodotClass!T) {
     static if (isGodotBaseClass!T)
         return cast(godot_object) t._godot_object;
     static if (extendsGodotBaseClass!T) {
@@ -146,7 +146,7 @@ package(godot) godot_object getGDNativeObject(T)(in T t) if (isGodotClass!T) {
     }
 }
 
-package(godot) godot_object getGDNativeObject(R)(auto ref R r) if (is(R : Ref!U, U)) {
+package(godot) godot_object getGDExtensionObject(R)(auto ref R r) if (is(R : Ref!U, U)) {
     return r._reference._godot_object;
 }
 

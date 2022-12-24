@@ -116,7 +116,7 @@ struct Array {
     //@disable this(this);
     //{
     //	const godot_array tmp = _godot_array;
-    //	_godot_api.get_variant_from_type_constructor(GDNATIVE_VARIANT_TYPE_ARRAY)(cast(GDNativeTypePtr) &_godot_array, cast(GDNativeTypePtr) &tmp);
+    //	_godot_api.get_variant_from_type_constructor(GDEXTENSION_VARIANT_TYPE_ARRAY)(cast(GDExtensionTypePtr) &_godot_array, cast(GDExtensionTypePtr) &tmp);
     //	this = _bind.duplicate(false);
     //}
 
@@ -151,8 +151,8 @@ struct Array {
             if (allSatisfy!(Variant.compatibleToGodot, Args)) {
         Array ret = void;
         ret._godot_array = godot_array.init;
-        auto ct = _godot_api.variant_get_ptr_constructor(GDNATIVE_VARIANT_TYPE_ARRAY, 0);
-        ct(cast(GDNativeTypePtr)&ret._godot_array, null);
+        auto ct = _godot_api.variant_get_ptr_constructor(GDEXTENSION_VARIANT_TYPE_ARRAY, 0);
+        ct(cast(GDExtensionTypePtr)&ret._godot_array, null);
 
         static if (args.length)
             ret.resize(args.length);

@@ -30,7 +30,7 @@ package(godot) struct GodotName {
 Definition of a method from API JSON.
 +/
 struct GodotMethod(Return, Args...) {
-    GDNativeMethodBindPtr mb; /// MethodBind for ptrcalls
+    GDExtensionMethodBindPtr mb; /// MethodBind for ptrcalls
     String name; /// String name from Godot (snake_case, not always valid D)
 
     static if (Args.length)
@@ -39,27 +39,27 @@ struct GodotMethod(Return, Args...) {
         enum bool hasVarArgs = false;
 
     /+package(godot)+/
-    void bind(in string className, in string methodName, in GDNativeInt hash = 0) {
+    void bind(in string className, in string methodName, in GDExtensionInt hash = 0) {
         if (mb)
             return;
-        mb = _godot_api.classdb_get_method_bind(cast(GDNativeStringNamePtr) StringName(className), cast(GDNativeStringNamePtr) StringName(methodName), hash);
+        mb = _godot_api.classdb_get_method_bind(cast(GDExtensionStringNamePtr) StringName(className), cast(GDExtensionStringNamePtr) StringName(methodName), hash);
         name = String(methodName);
     }
 
     /+package(godot)+/
-    void bind(in GDNativeVariantType type, in string methodName, in GDNativeInt hash = 0) {
+    void bind(in GDExtensionVariantType type, in string methodName, in GDExtensionInt hash = 0) {
         if (mb)
             return;
-        mb = _godot_api.variant_get_ptr_builtin_method(type, cast(GDNativeStringNamePtr) StringName(methodName), hash);
+        mb = _godot_api.variant_get_ptr_builtin_method(type, cast(GDExtensionStringNamePtr) StringName(methodName), hash);
         name = String(methodName);
     }
 }
 
 struct GodotConstructor(Return, Args...) {
-    GDNativePtrConstructor mb; /// MethodBind for ptrcalls
+    GDExtensionPtrConstructor mb; /// MethodBind for ptrcalls
 
     /+package(godot)+/
-    void bind(in GDNativeVariantType type, in int index) {
+    void bind(in GDExtensionVariantType type, in int index) {
         if (mb)
             return;
         mb = _godot_api.variant_get_ptr_constructor(type, index);
@@ -69,13 +69,13 @@ struct GodotConstructor(Return, Args...) {
 /++
 Raw Method call helper
 +/
-Return callBuiltinMethod(Return, Args...)(in GDNativePtrBuiltInMethod method, GDNativeTypePtr obj, Args args) {
+Return callBuiltinMethod(Return, Args...)(in GDExtensionPtrBuiltInMethod method, GDExtensionTypePtr obj, Args args) {
     static if (!is(Return == void))
         Return ret = void;
     else
         typeof(null) ret = null;
 
-    GDNativeTypePtr[Args.length + 1] _args;
+    GDExtensionTypePtr[Args.length + 1] _args;
     foreach (i, a; args) {
         _args[i] = &a;
     }
@@ -93,7 +93,7 @@ package(godot) void checkClassBinding(C)() {
     }
 }
 
-// these have same order as in GDNativeVariantType
+// these have same order as in GDExtensionVariantType
 private immutable enum coreTypes = [
         "Nil", "Bool", "Int", "Float", "String",
 
@@ -119,36 +119,36 @@ package(godot) void initializeClassBinding(C)() {
 
     synchronized {
         if (!C._classBindingInitialized) {
-            static foreach (n; __traits(allMembers, C.GDNativeClassBinding)) {
+            static foreach (n; __traits(allMembers, C.GDExtensionClassBinding)) {
                 static if (n == "_singleton")
-                    C.GDNativeClassBinding._singleton = godot_object(
+                    C.GDExtensionClassBinding._singleton = godot_object(
                         _godot_api.global_get_singleton(
-                            cast(GDNativeStringNamePtr) StringName(C.GDNativeClassBinding._singletonName)));
+                            cast(GDExtensionStringNamePtr) StringName(C.GDExtensionClassBinding._singletonName)));
                 else static if (n == "_singletonName") {
                 } else {
                     // core types require special registration for built-in types
                     static if (coreTypes.canFind(C._GODOT_internal_name)) {
-                        static if (isInstanceOf!(GodotConstructor, __traits(getMember, C.GDNativeClassBinding, n))) {
-                            // binds constructor using GDNativeVariantType and index
-                            __traits(getMember, C.GDNativeClassBinding, n).bind(
+                        static if (isInstanceOf!(GodotConstructor, __traits(getMember, C.GDExtensionClassBinding, n))) {
+                            // binds constructor using GDExtensionVariantType and index
+                            __traits(getMember, C.GDExtensionClassBinding, n).bind(
                                 cast(int) coreTypes.countUntil(C._GODOT_internal_name),
-                                to!int(getUDAs!(mixin("C.GDNativeClassBinding." ~ n), GodotName)[0].name[$ - 2 .. $ - 1]), // get last number from name in form of "_new_2"
+                                to!int(getUDAs!(mixin("C.GDExtensionClassBinding." ~ n), GodotName)[0].name[$ - 2 .. $ - 1]), // get last number from name in form of "_new_2"
                                 
                             );
                         } else {
                             // binds native built-in method
-                            __traits(getMember, C.GDNativeClassBinding, n).bind(
+                            __traits(getMember, C.GDExtensionClassBinding, n).bind(
                                 cast(int) coreTypes.countUntil(C._GODOT_internal_name),
-                                getUDAs!(mixin("C.GDNativeClassBinding." ~ n), GodotName)[0].name,
-                                getUDAs!(mixin("C.GDNativeClassBinding." ~ n), MethodHash)[0].hash,
+                                getUDAs!(mixin("C.GDExtensionClassBinding." ~ n), GodotName)[0].name,
+                                getUDAs!(mixin("C.GDExtensionClassBinding." ~ n), MethodHash)[0].hash,
                             );
                         }
                     } else {
                         //enum immutable(char*) cn = C._GODOT_internal_name;
-                        __traits(getMember, C.GDNativeClassBinding, n).bind(
+                        __traits(getMember, C.GDExtensionClassBinding, n).bind(
                             C._GODOT_internal_name,
-                            getUDAs!(__traits(getMember, C.GDNativeClassBinding, n), GodotName)[0].name,
-                            0 //getUDAs!(__traits(getMember, C.GDNativeClassBinding, n), MethodHash)[0].hash,
+                            getUDAs!(__traits(getMember, C.GDExtensionClassBinding, n), GodotName)[0].name,
+                            0 //getUDAs!(__traits(getMember, C.GDExtensionClassBinding, n), MethodHash)[0].hash,
                         
                         );
                     }
@@ -200,7 +200,7 @@ do {
                     MBArgs[ai], GodotClass!A.GodotClass) != -1, "method" ~
                     " argument " ~ ai.text ~ " of type " ~ A.stringof ~
                     " does not inherit parameter type " ~ MBArgs[ai].stringof);
-            aarr[ai] = getGDNativeObject(args[ai]).ptr;
+            aarr[ai] = getGDExtensionObject(args[ai]).ptr;
         } else static if (!needsConversion!(Args[ai], MBArgs[ai])) {
             aarr[ai] = cast(const(void)*)(&args[ai]);
         } else // needs conversion
@@ -228,7 +228,7 @@ do {
     else
         const(void)** aptr = aarr.ptr;
 
-    _godot_api.object_method_bind_ptrcall(method.mb, cast(GDNativeObjectPtr) self.ptr, aptr, rptr);
+    _godot_api.object_method_bind_ptrcall(method.mb, cast(GDExtensionObjectPtr) self.ptr, aptr, rptr);
     static if (!is(Return : void))
         return r;
 }

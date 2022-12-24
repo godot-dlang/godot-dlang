@@ -7,17 +7,17 @@ import godot.api.types;
 @nogc nothrow:
 extern (C):
 
-alias godot_api = GDNativeInterface;
+alias godot_api = GDExtensionInterface;
 
 // TODO: make sure it is propely loaded within extensions
-__gshared GDNativeInterface* _godot_api;
+__gshared GDExtensionInterface* _godot_api;
 
 enum GODOT_API_VERSION = 1;
 
 ////// MethodBind API
 
 struct godot_method_bind {
-    GDNativeMethodBindPtr ptr; // TODO
+    GDExtensionMethodBindPtr ptr; // TODO
     alias ptr this;
 }
 /*
@@ -52,9 +52,9 @@ struct godot_signal {
 version (none)  : alias godot_class_constructor = godot_object function();
 
 ////// GDExtension procedure types
-alias godot_gdnative_init_fn = void function(godot_gdnative_init_options*);
-alias godot_gdnative_terminate_fn = void function(godot_gdnative_terminate_options*);
-alias godot_gdnative_procedure_fn = godot_variant function(void*, godot_array*);
+alias godot_gdextension_init_fn = void function(godot_gdextension_init_options*);
+alias godot_gdextension_terminate_fn = void function(godot_gdextension_terminate_options*);
+alias godot_gdextension_procedure_fn = godot_variant function(void*, godot_array*);
 
 alias native_call_cb = godot_variant function(void*, godot_array*);
 

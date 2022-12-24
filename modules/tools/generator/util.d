@@ -62,7 +62,7 @@ class Type {
         return godotType.chompPrefix("_").toLower;
     }
 
-    /// Backing opaque type to use instead of raw GDNativeTypePtr
+    /// Backing opaque type to use instead of raw GDExtensionTypePtr
     string asOpaqueType() const {
         switch (godotType) {
         case "TypedArray":
@@ -87,7 +87,7 @@ class Type {
         case "PackedVector3Array":
         case "PackedColorArray":
             //case "Nil":
-            return "GDNativeTypePtr";
+            return "GDExtensionTypePtr";
         default:
             break;
         }
@@ -190,9 +190,9 @@ class Type {
 
         // useless but ok
         if (!(isCoreType || isPrimitive))
-            return "GDNATIVE_VARIANT_TYPE_OBJECT";
+            return "GDEXTENSION_VARIANT_TYPE_OBJECT";
 
-        return "GDNATIVE_VARIANT_TYPE_" ~ camelToSnake(godotType).toUpper;
+        return "GDEXTENSION_VARIANT_TYPE_" ~ camelToSnake(godotType).toUpper;
     }
 
     /// returns TypedArray type
@@ -523,7 +523,7 @@ string escapeGodotType(string t) {
     if (t == "int")
         return "long";
     if (t == "Nil")
-        return "GDNativeTypePtr";
+        return "GDExtensionTypePtr";
     if (t.startsWith("enum::"))
         return t.asEnumName;
     if (t.startsWith("bitfield::"))

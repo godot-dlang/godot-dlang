@@ -182,9 +182,9 @@ class GodotMethod {
 	e.g.:
     ```d
     string getSlice(in string delimiter, in long slice) const {
-		if (!GDNativeClassBinding.method_getSlice.mb)
-			GDNativeClassBinding.method_getSlice.mb = _godot_api.variant_get_ptr_builtin_method(GDNATIVE_VARIANT_TYPE_STRING, "get_slice", 3535100402);
-		return toDString(callBuiltinMethod!(String)(cast(GDNativePtrBuiltInMethod) GDNativeClassBinding.method_getSlice.mb, cast(void*) &_godot_object, cast() toGodotString(delimiter), cast() slice));
+		if (!GDExtensionClassBinding.method_getSlice.mb)
+			GDExtensionClassBinding.method_getSlice.mb = _godot_api.variant_get_ptr_builtin_method(GDEXTENSION_VARIANT_TYPE_STRING, "get_slice", 3535100402);
+		return toDString(callBuiltinMethod!(String)(cast(GDExtensionPtrBuiltInMethod) GDExtensionClassBinding.method_getSlice.mb, cast(void*) &_godot_object, cast() toGodotString(delimiter), cast() slice));
     }
     ```
 	+/
@@ -270,7 +270,7 @@ class GodotMethod {
         string ret;
 
         // load function pointer
-        ret ~= "\t\tif (!GDNativeClassBinding." ~ wrapperIdentifier ~ ".mb) {\n";
+        ret ~= "\t\tif (!GDExtensionClassBinding." ~ wrapperIdentifier ~ ".mb) {\n";
         // tab() will indent it correctly starting from first element
         ret ~= loader().split('\n').map!(s => s.tab(3)).join('\n') ~ "\n";
         ret ~= "\t\t}\n";
@@ -294,8 +294,8 @@ class GodotMethod {
 		_args[i] = &_GODOT_args[i];
 	}
 	Variant ret;
-	GDNativeCallError err;
-	_godot_api.object_method_bind_call(GDNativeClassBinding.method_emitSignal.mb, _godot_object.ptr, cast(void**) _args.ptr, _GODOT_args.length, cast(void*) &ret, &err);
+	GDExtensionCallError err;
+	_godot_api.object_method_bind_call(GDExtensionClassBinding.method_emitSignal.mb, _godot_object.ptr, cast(void**) _args.ptr, _GODOT_args.length, cast(void*) &ret, &err);
 	debug if (int code = ret.as!int()) {
 		import godot.api;
 		print("signal error: ", signal, " code: ", code);
@@ -337,8 +337,8 @@ class GodotMethod {
             //ret ~= "\t\tStringName _GODOT_method_name = StringName(\""~name~"\");\n";
 
             ret ~= "\t\tVariant ret;\n";
-            ret ~= "\t\tGDNativeCallError err;\n";
-            ret ~= "\t\t_godot_api.object_method_bind_call(GDNativeClassBinding." ~ wrapperIdentifier ~ ".mb, cast(void*) _godot_object.ptr, cast(void**) _args.ptr, _GODOT_args.length, cast(void*) &ret, &err);\n";
+            ret ~= "\t\tGDExtensionCallError err;\n";
+            ret ~= "\t\t_godot_api.object_method_bind_call(GDExtensionClassBinding." ~ wrapperIdentifier ~ ".mb, cast(void*) _godot_object.ptr, cast(void**) _args.ptr, _GODOT_args.length, cast(void*) &ret, &err);\n";
             // ret ~= "\t\t";
             if (return_type.dType != "void") {
                 ret ~= "\t\treturn ";
@@ -365,8 +365,8 @@ class GodotMethod {
 
             ret ~= callType() ~ "!(" ~ return_type.dType ~ ")(";
             if (parent.isBuiltinClass)
-                ret ~= "cast(GDNativePtrBuiltInMethod) ";
-            ret ~= "GDNativeClassBinding." ~ wrapperIdentifier;
+                ret ~= "cast(GDExtensionPtrBuiltInMethod) ";
+            ret ~= "GDExtensionClassBinding." ~ wrapperIdentifier;
             if (parent.isBuiltinClass) // Adds method pointer accessor instead of template itself
                 ret ~= ".mb";
             ret ~= ", ";
@@ -403,21 +403,21 @@ class GodotMethod {
     }
 
     /// formats function pointer loader, e.g.
-    /// 	GDNativeClassBinding.method_append.mb = _godot_api.clasdb_get_methodbind("class", "method", hash);
+    /// 	GDExtensionClassBinding.method_append.mb = _godot_api.clasdb_get_methodbind("class", "method", hash);
     string loader() const {
         char[] buf;
         buf ~= "StringName classname = StringName(\"" ~ parent.name.godotType ~ "\");\n";
         buf ~= "StringName methodname = StringName(\"" ~ name ~ "\");\n";
         // probably better to move in its own subclass
         if (parent.isBuiltinClass) {
-            return cast(string) buf ~ format(`GDNativeClassBinding.%s.mb = _godot_api.variant_get_ptr_builtin_method(%s, cast(GDNativeStringNamePtr) methodname, %d);`,
+            return cast(string) buf ~ format(`GDExtensionClassBinding.%s.mb = _godot_api.variant_get_ptr_builtin_method(%s, cast(GDExtensionStringNamePtr) methodname, %d);`,
                 wrapperIdentifier,
                 parent.name.asNativeVariantType,
                 hash
             );
         }
 
-        return cast(string) buf ~ format(`GDNativeClassBinding.%s.mb = _godot_api.classdb_get_method_bind(cast(GDNativeStringNamePtr) classname, cast(GDNativeStringNamePtr) methodname, %d);`,
+        return cast(string) buf ~ format(`GDExtensionClassBinding.%s.mb = _godot_api.classdb_get_method_bind(cast(GDExtensionStringNamePtr) classname, cast(GDExtensionStringNamePtr) methodname, %d);`,
             wrapperIdentifier,
             hash,
         );
@@ -444,8 +444,10 @@ struct GodotArgument {
 class GodotProperty {
     string name;
     Type type;
+    @serdeOptional
     string getter, setter;
-    int index;
+    @serdeOptional
+    int index = -1;
 
 @serdeIgnore:
 

@@ -512,7 +512,7 @@ struct Variant {
 
             // this gives wrong result, try the other way around
             //auto fn = _godot_api.get_variant_from_type_constructor(VarType);
-            //fn(cast(GDNativeVariantPtr) &_godot_variant, &ret);
+            //fn(cast(GDExtensionVariantPtr) &_godot_variant, &ret);
 
             // special case such as calling function with null optional parameter
             if (_godot_variant._opaque.ptr is null) {
@@ -656,13 +656,13 @@ struct Variant {
     bool opEquals(in ref Variant other) const {
         Variant ret;
         bool valid;
-        evaluate(GDNATIVE_VARIANT_OP_EQUAL, this, other, ret, valid);
+        evaluate(GDEXTENSION_VARIANT_OP_EQUAL, this, other, ret, valid);
         return ret.as!bool;
         //return cast(bool)_godot_api.variant_operator_equal(&_godot_variant, &other._godot_variant);
     }
 
     private void evaluate(int op, ref const Variant a, ref const Variant b, ref Variant ret, ref bool isValid) const {
-        GDNativeBool res;
+        GDExtensionBool res;
         _godot_api.variant_evaluate(op, &a._godot_variant, &b._godot_variant, &ret._godot_variant, &res);
         isValid = !!res;
     }
@@ -670,10 +670,10 @@ struct Variant {
     int opCmp(in ref Variant other) const {
         Variant res;
         bool valid;
-        evaluate(GDNATIVE_VARIANT_OP_EQUAL, this, other, res, valid);
+        evaluate(GDEXTENSION_VARIANT_OP_EQUAL, this, other, res, valid);
         if (res.as!bool)
             return 0;
-        evaluate(GDNATIVE_VARIANT_OP_LESS, this, other, res, valid);
+        evaluate(GDEXTENSION_VARIANT_OP_LESS, this, other, res, valid);
         return res.as!bool ? -1 : 1;
         //if(_godot_api.variant_operator_equal(&_godot_variant, &other._godot_variant))
         //	return 0;
