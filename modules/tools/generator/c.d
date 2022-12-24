@@ -51,17 +51,17 @@ struct Api {
         ret ~= "import core.stdc.stdint;\nimport core.stdc.stddef : wchar_t;\n\n";
 
         ret ~= q{
-			extern(C) struct godot_gdnative_api_version
+			extern(C) struct godot_gdextension_api_version
 			{
 				uint major, minor;
 			}
 			mixin template ApiStructHeader()
 			{
 				uint type;
-				godot_gdnative_api_version ver;
-				const godot_gdnative_api_struct *next;
+				godot_gdextension_api_version ver;
+				const godot_gdextension_api_struct *next;
 			}
-			extern(C) struct godot_gdnative_api_struct
+			extern(C) struct godot_gdextension_api_struct
 			{
 				mixin ApiStructHeader;
 			}
@@ -70,7 +70,7 @@ struct Api {
 				string ret = "Bindings for GDExtension extension "~name;
 				if((major == 1 && minor == 0)) ret ~= " do not exist. ";
 				else ret ~= format!" exist, but not for version %d.%d. "(major, minor);
-				ret ~= "Please provide a more recent gdnative_api.json to the binding generator to fix this.";
+				ret ~= "Please provide a more recent gdextension_api.json to the binding generator to fix this.";
 				return ret;
 			}
 		};
@@ -87,7 +87,7 @@ struct Api {
             ret ~= part.versionSource;
         ret ~= "}\n";
 
-        ret ~= "struct GDNativeVersion {\n";
+        ret ~= "struct GDExtensionVersion {\n";
         ret ~= core.versionGetterSource;
         foreach (part; extensions)
             ret ~= part.versionGetterSource;
@@ -96,7 +96,7 @@ struct Api {
 			static bool opDispatch(string name)()
 			{
 				static assert(name.length > 3 && name[0..3] == "has",
-					"Usage: `GDNativeVersion.has<Extension>!(<major>, <minor>)`");
+					"Usage: `GDExtensionVersion.has<Extension>!(<major>, <minor>)`");
 				static assert(0, versionError(name[3..$], 1, 0));
 			}
 		};
@@ -118,13 +118,13 @@ struct Api {
 
         ret ~= q{
 			@nogc nothrow
-			void godot_gdnative_api_struct_init(in godot_gdnative_core_api_struct* s)
+			void godot_gdextension_api_struct_init(in godot_gdextension_core_api_struct* s)
 			{
 				import std.traits : EnumMembers;
 				
-				@nogc nothrow static void initVersions(ApiType type)(in godot_gdnative_api_struct* main)
+				@nogc nothrow static void initVersions(ApiType type)(in godot_gdextension_api_struct* main)
 				{
-					const(godot_gdnative_api_struct)* part = main;
+					const(godot_gdextension_api_struct)* part = main;
 					while(part)
 					{
 						foreach(int[2] v; SupportedVersions!type)
@@ -136,10 +136,10 @@ struct Api {
 					}
 				}
 				
-				if(!s) assert(0, "godot_gdnative_core_api_struct is null");
+				if(!s) assert(0, "godot_gdextension_core_api_struct is null");
 				if(_godot_api) return; // already initialized
 				_godot_api = s;
-				initVersions!(ApiType.core)(cast(const(godot_gdnative_api_struct)*)(cast(void*)s));
+				initVersions!(ApiType.core)(cast(const(godot_gdextension_api_struct)*)(cast(void*)s));
 				foreach(ext; s.extensions[0..s.num_extensions])
 				{
 					// check the actual extension type at runtime, instead of relying on the order in the JSON
@@ -192,7 +192,7 @@ class ApiPart {
         ApiPart p = this;
         while (p) {
             ret ~= "\t__gshared bool has" ~ p.versionID ~ " = false;\n";
-            ret ~= "\tversion(GDNativeRequire" ~ p.versionID ~ ") enum bool requires" ~ p.versionID ~ " = true;\n";
+            ret ~= "\tversion(GDExtensionRequire" ~ p.versionID ~ ") enum bool requires" ~ p.versionID ~ " = true;\n";
             if (p.next)
                 ret ~= "\telse enum bool requires" ~ p.versionID ~ " = requires" ~ p.next.versionID ~ ";\n";
             else
@@ -254,7 +254,7 @@ class ApiPart {
             ret ~= q{
 			mixin ApiStructHeader;
 			uint num_extensions;
-			const godot_gdnative_api_struct **extensions;
+			const godot_gdextension_api_struct **extensions;
 		};
         else
             ret ~= q{
@@ -288,9 +288,9 @@ class ApiPart {
 }
 
 string structName(string name, ApiVersion ver) {
-    return (name == "core") ? ("godot_gdnative_core_api_struct" ~
+    return (name == "core") ? ("godot_gdextension_core_api_struct" ~
             (ver == ApiVersion(4, 0) ? "" : ver.str)) : (
-        "godot_gdnative_ext_" ~ name ~ "_api_struct" ~ ver.str);
+        "godot_gdextension_ext_" ~ name ~ "_api_struct" ~ ver.str);
 }
 
 string globalVarName(string name, ApiVersion ver = ApiVersion(-1, -1)) {

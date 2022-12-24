@@ -122,8 +122,8 @@ struct StringName {
         return String(_godot_string_name);
     }
 
-    GDNativeStringNamePtr opCast(T = GDNativeStringNamePtr)() const {
-        return cast(GDNativeStringNamePtr) &_godot_string_name;
+    GDExtensionStringNamePtr opCast(T = GDExtensionStringNamePtr)() const {
+        return cast(GDExtensionStringNamePtr) &_godot_string_name;
     }
 
     @trusted

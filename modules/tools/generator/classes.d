@@ -75,7 +75,7 @@ class Constructor : GodotMethod {
     }
 
     override string loader() const {
-        return format(`GDNativeClassBinding.%s.mb = _godot_api.variant_get_ptr_constructor(%s, %d);`,
+        return format(`GDExtensionClassBinding.%s.mb = _godot_api.variant_get_ptr_constructor(%s, %d);`,
             wrapperIdentifier,
             parent.name.asNativeVariantType(),
             index
@@ -169,7 +169,7 @@ final class GodotClass {
 
     string bindingStruct() const {
         string ret = "\tpackage(godot) __gshared bool _classBindingInitialized = false;\n";
-        ret ~= "\tpackage(godot) static struct GDNativeClassBinding {\n";
+        ret ~= "\tpackage(godot) static struct GDExtensionClassBinding {\n";
         ret ~= "\t\t__gshared:\n";
         if (singleton) {
             ret ~= "\t\tgodot_object _singleton;\n";
@@ -191,7 +191,7 @@ final class GodotClass {
 
     string destuctorBinding() const {
         string ret;
-        ret ~= "\t\tGDNativePtrDestructor destructor;\n";
+        ret ~= "\t\tGDExtensionPtrDestructor destructor;\n";
         return ret;
     }
 
@@ -344,14 +344,14 @@ import godot.classdb;`;
         ret ~= "\t/// Note: use `memnew!" ~ className ~ "` instead.\n";
         ret ~= "\tstatic " ~ className ~ " _new() {\n";
         ret ~= "\t\tStringName godotname = StringName(\"" ~ name.godotType ~ "\");\n";
-        ret ~= "\t\tif(auto obj = _godot_api.classdb_construct_object(cast(GDNativeStringNamePtr) godotname))\n";
+        ret ~= "\t\tif(auto obj = _godot_api.classdb_construct_object(cast(GDExtensionStringNamePtr) godotname))\n";
         ret ~= "\t\t\treturn " ~ className ~ "(godot_object(obj));\n";
         ret ~= "\t\treturn typeof(this).init;\n";
         ret ~= "\t}\n";
 
         foreach (ct; constructors) {
             //ret ~= "\tstatic "~name.dType~" "~ ct.name ~ ct.templateArgsString ~ ct.argsString ~ " {\n";
-            //ret ~= "\t\tif(auto fn = _godot_api.variant_get_ptr_constructor(GDNATIVE_VARIANT_TYPE_"~name.godotType.snakeToCamel.toUpper ~ ", " ~ text(ct.index) ~"))\n";
+            //ret ~= "\t\tif(auto fn = _godot_api.variant_get_ptr_constructor(GDEXTENSION_VARIANT_TYPE_"~name.godotType.snakeToCamel.toUpper ~ ", " ~ text(ct.index) ~"))\n";
             //ret ~= "\t\t\treturn "~name.dType~"(godot_object(fn(...)));\n";
             //ret ~= "\t\treturn typeof(this).init;\n";
             //ret ~= "\t}\n";
@@ -361,10 +361,10 @@ import godot.classdb;`;
         // currently only core types can have destructor
         if (has_destructor) {
             ret ~= "\tvoid _destructor() {\n";
-            ret ~= "\t\tif (!GDNativeClassBinding.destructor)\n";
-            ret ~= "\t\t\tGDNativeClassBinding.destructor = _godot_api.variant_get_ptr_destructor(GDNATIVE_VARIANT_TYPE_" ~ name
+            ret ~= "\t\tif (!GDExtensionClassBinding.destructor)\n";
+            ret ~= "\t\t\tGDExtensionClassBinding.destructor = _godot_api.variant_get_ptr_destructor(GDEXTENSION_VARIANT_TYPE_" ~ name
                 .godotType.camelToSnake.toUpper ~ ");\n";
-            ret ~= "\t\tGDNativeClassBinding.destructor(&_godot_object);\n";
+            ret ~= "\t\tGDExtensionClassBinding.destructor(&_godot_object);\n";
             ret ~= "\t}\n";
         }
 
@@ -457,7 +457,7 @@ import godot.classdb;`;
             ret ~= "@property pragma(inline, true)\n";
             ret ~= className ~ " " ~ name.dType ~ "() {\n";
             ret ~= "\tcheckClassBinding!" ~ className ~ "();\n";
-            ret ~= "\treturn " ~ className ~ "(" ~ className ~ ".GDNativeClassBinding._singleton);\n";
+            ret ~= "\treturn " ~ className ~ "(" ~ className ~ ".GDExtensionClassBinding._singleton);\n";
             ret ~= "}\n";
         }
 

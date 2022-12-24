@@ -60,7 +60,7 @@ int main(string[] args) {
         .replace(':', '_');
     auto opt = args.getopt(
         "makeEntryPoint", "Create GodotNativeLibrary entry point (if it doesn't already exist)", &makeEntryPoint,
-        "prefix|p", "GDNativeLibrary symbolPrefix", &prefix
+        "prefix|p", "GDExtensionLibrary symbolPrefix", &prefix
     );
 
     bool firstTimeSetup = false;

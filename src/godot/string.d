@@ -169,13 +169,13 @@ struct String {
         //String ret;
         godot_string ret;
 
-        // __gshared static GDNativePtrOperatorEvaluator mb;
-        GDNativePtrOperatorEvaluator mb;
+        // __gshared static GDExtensionPtrOperatorEvaluator mb;
+        GDExtensionPtrOperatorEvaluator mb;
         if (!mb) {
             mb = _godot_api.variant_get_ptr_operator_evaluator(
-                GDNATIVE_VARIANT_OP_ADD, 
-                GDNATIVE_VARIANT_TYPE_STRING, 
-                GDNATIVE_VARIANT_TYPE_STRING
+                GDEXTENSION_VARIANT_OP_ADD, 
+                GDEXTENSION_VARIANT_TYPE_STRING, 
+                GDEXTENSION_VARIANT_TYPE_STRING
                 );
         }
         mb(&_godot_string, &other._godot_string, &ret);
@@ -187,13 +187,13 @@ struct String {
         //this = opBinary!"+"(other);
         godot_string tmp;
 
-        // __gshared static GDNativePtrOperatorEvaluator mb;
-        GDNativePtrOperatorEvaluator mb;
+        // __gshared static GDExtensionPtrOperatorEvaluator mb;
+        GDExtensionPtrOperatorEvaluator mb;
         if (!mb) {
             mb = _godot_api.variant_get_ptr_operator_evaluator(
-                GDNATIVE_VARIANT_OP_ADD, 
-                GDNATIVE_VARIANT_TYPE_STRING, 
-                GDNATIVE_VARIANT_TYPE_STRING
+                GDEXTENSION_VARIANT_OP_ADD, 
+                GDEXTENSION_VARIANT_TYPE_STRING, 
+                GDEXTENSION_VARIANT_TYPE_STRING
                 );
         }
         mb(&_godot_string, &other._godot_string, &tmp);

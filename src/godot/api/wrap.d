@@ -224,20 +224,20 @@ package(godot) struct MethodWrapper(T, alias mf) {
     enum string name = __traits(identifier, mf);
 
     // Used later instead of string comparison
-    __gshared static GDNativeStringNamePtr funName;
+    __gshared static GDExtensionStringNamePtr funName;
 
     /++
 	C function passed to Godot that calls the wrapped method
 	+/
     extern (C) // for calling convention
     static void callMethod(void* methodData, void* instance,
-        const(void**) args, const long numArgs, void* r_return, GDNativeCallError* r_error) //@nogc nothrow
+        const(void**) args, const long numArgs, void* r_return, GDExtensionCallError* r_error) //@nogc nothrow
         {
         // TODO: check types for Variant compatibility, give a better error here
         // TODO: check numArgs, accounting for D arg defaults
 
         if (!instance) {
-            r_error.error = GDNATIVE_CALL_ERROR_INSTANCE_IS_NULL;
+            r_error.error = GDEXTENSION_CALL_ERROR_INSTANCE_IS_NULL;
             return;
         }
 
@@ -310,7 +310,7 @@ package(godot) struct MethodWrapper(T, alias mf) {
     extern (C)
     static void callPtrMethod(void* methodData, void* instance,
         const(void**) args, void* r_return) {
-        //GDNativeCallError err;
+        //GDExtensionCallError err;
         //callMethod(methodData, instance, args, A.length, r_return, &err);
 
         T obj = cast(T) instance;
@@ -334,8 +334,8 @@ package(godot) struct MethodWrapper(T, alias mf) {
     }
 
     extern (C)
-    static void virtualCall(GDExtensionClassInstancePtr instance, const GDNativeTypePtr* args, GDNativeTypePtr ret) {
-        GDNativeCallError err;
+    static void virtualCall(GDExtensionClassInstancePtr instance, const GDExtensionTypePtr* args, GDExtensionTypePtr ret) {
+        GDExtensionCallError err;
         callMethod(&mf, instance, args, Parameters!mf.length, ret, &err);
     }
 }
@@ -346,10 +346,10 @@ package(godot) struct MethodWrapperMeta(alias mf) {
 
     //enum string name = __traits(identifier, mf);
 
-    // GDNativeExtensionClassMethodGetArgumentType signature:
-    //   GDNativeVariantType function(void *p_method_userdata, int32_t p_argument)
+    // GDExtensionClassMethodGetArgumentType signature:
+    //   GDExtensionVariantType function(void *p_method_userdata, int32_t p_argument)
     extern (C)
-    static GDNativeVariantType* getArgTypes() {
+    static GDExtensionVariantType* getArgTypes() {
         // fill array of argument types and use cached data
         import godot.variant;
         import std.meta : staticMap;
@@ -357,64 +357,64 @@ package(godot) struct MethodWrapperMeta(alias mf) {
         immutable __gshared static VariantType[A.length] argInfo = [
             staticMap!(Variant.variantTypeOf, A)
         ];
-        return cast(GDNativeVariantType*) argInfo.ptr;
+        return cast(GDExtensionVariantType*) argInfo.ptr;
     }
 
     // yeah, it says return types, godot goes brrr
     extern (C)
-    static GDNativeVariantType* getReturnTypes() {
+    static GDExtensionVariantType* getReturnTypes() {
         // fill array of argument types and use cached data
         import godot.variant;
         immutable __gshared static VariantType[2] retInfo = [Variant.variantTypeOf!R, VariantType.nil ];
-        return cast(GDNativeVariantType*) retInfo.ptr;
+        return cast(GDExtensionVariantType*) retInfo.ptr;
     }
 
     // function parameter type information
     extern (C)
-    static GDNativePropertyInfo[A.length+1] getArgInfo() {
-        GDNativePropertyInfo[A.length + 1] argInfo;
+    static GDExtensionPropertyInfo[A.length+1] getArgInfo() {
+        GDExtensionPropertyInfo[A.length + 1] argInfo;
         static foreach (i; 0 .. A.length) {
             if (Variant.variantTypeOf!(A[i]) == VariantType.object)
-                argInfo[i].class_name = cast(GDNativeStringNamePtr) StringName(A[i].stringof);
+                argInfo[i].class_name = cast(GDExtensionStringNamePtr) StringName(A[i].stringof);
             else
-                argInfo[i].class_name = cast(GDNativeStringNamePtr) StringName();
-            argInfo[i].name = cast(GDNativeStringNamePtr) StringName((ParameterIdentifierTuple!mf)[i]);
+                argInfo[i].class_name = cast(GDExtensionStringNamePtr) StringName();
+            argInfo[i].name = cast(GDExtensionStringNamePtr) StringName((ParameterIdentifierTuple!mf)[i]);
             argInfo[i].type = Variant.variantTypeOf!(A[i]);
-            argInfo[i].usage = GDNATIVE_EXTENSION_METHOD_FLAGS_DEFAULT;
-            argInfo[i].hint_string = cast(GDNativeStringNamePtr) StringName();
+            argInfo[i].usage = GDEXTENSION_METHOD_FLAGS_DEFAULT;
+            argInfo[i].hint_string = cast(GDExtensionStringNamePtr) StringName();
         }
         return argInfo;
     }
 
     // return type information
     extern (C)
-    static GDNativePropertyInfo[2] getReturnInfo() {
+    static GDExtensionPropertyInfo[2] getReturnInfo() {
         // FIXME: StringName makes it no longer CTFE-able
-        GDNativePropertyInfo[2] retInfo = [ 
-            GDNativePropertyInfo(
+        GDExtensionPropertyInfo[2] retInfo = [ 
+            GDExtensionPropertyInfo(
                 cast(uint32_t) Variant.variantTypeOf!R,
-                cast(GDNativeStringNamePtr) StringName(),
-                cast(GDNativeStringNamePtr) (Variant.variantTypeOf!R == VariantType.object ? StringName() : StringName(R.stringof)),
+                cast(GDExtensionStringNamePtr) StringName(),
+                cast(GDExtensionStringNamePtr) (Variant.variantTypeOf!R == VariantType.object ? StringName() : StringName(R.stringof)),
                 0,
-                cast(GDNativeStringNamePtr) StringName(),
-                GDNATIVE_EXTENSION_METHOD_FLAGS_DEFAULT
+                cast(GDExtensionStringNamePtr) StringName(),
+                GDEXTENSION_METHOD_FLAGS_DEFAULT
             ), 
-            GDNativePropertyInfo.init 
+            GDExtensionPropertyInfo.init 
         ];
         return retInfo;
     }
 
     // metadata array for argument types
     extern (C)
-    static GDNativeExtensionClassMethodArgumentMetadata* getArgMetadata() {
-        __gshared static GDNativeExtensionClassMethodArgumentMetadata[A.length] argInfo = GDNATIVE_EXTENSION_METHOD_ARGUMENT_METADATA_NONE;
+    static GDExtensionClassMethodArgumentMetadata* getArgMetadata() {
+        __gshared static GDExtensionClassMethodArgumentMetadata[A.length] argInfo = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE;
         return argInfo.ptr;
     }
 
     // metadata for return type
     extern (C)
-    static GDNativeExtensionClassMethodArgumentMetadata getReturnMetadata() {
-        return GDNATIVE_EXTENSION_METHOD_ARGUMENT_METADATA_NONE;
+    static GDExtensionClassMethodArgumentMetadata getReturnMetadata() {
+        return GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE;
     }
 
     import std.traits;
@@ -425,7 +425,7 @@ package(godot) struct MethodWrapperMeta(alias mf) {
 
     // this function expected to return Variant[] containing default values
     extern (C)
-    static GDNativeVariantPtr* getDefaultArgs() {
+    static GDExtensionVariantPtr* getDefaultArgs() {
         //pragma(msg, "fn: ", __traits(identifier, mf), " > ",  ParameterDefaults!mf);
 
         // just pick any possible property for now
@@ -437,7 +437,7 @@ package(godot) struct MethodWrapperMeta(alias mf) {
         //		defval[0] = Variant(R.init);
         //	else
         //		defval[0] = Variant(A[0].init);
-        //	return cast(GDNativeVariantPtr*) &defval[0];
+        //	return cast(GDExtensionVariantPtr*) &defval[0];
         //}
         {
             __gshared static Variant*[ParameterDefaults!mf.length + 1] defaultsPtrs;
@@ -452,7 +452,7 @@ package(godot) struct MethodWrapperMeta(alias mf) {
             }
             defaults[ParameterDefaults!mf.length + 1 .. $] = Variant();
 
-            return cast(GDNativeVariantPtr*)&defaultsPtrs[0];
+            return cast(GDExtensionVariantPtr*)&defaultsPtrs[0];
         }
     }
 }
@@ -461,10 +461,10 @@ package(godot) struct MethodWrapperMeta(alias mf) {
 package(godot) struct OnReadyWrapper(T, alias mf) if (is(GodotClass!T : Node)) {
     extern (C) // for calling convention
     static void callOnReady(void* methodData, void* instance,
-        const(void**) args, const long numArgs, void* r_return, GDNativeCallError* r_error) {
+        const(void**) args, const long numArgs, void* r_return, GDExtensionCallError* r_error) {
         //if (!instance)
         //{
-        //	*r_error = cast(GDNativeCallError) GDNATIVE_CALL_ERROR_INSTANCE_IS_NULL;
+        //	*r_error = cast(GDExtensionCallError) GDEXTENSION_CALL_ERROR_INSTANCE_IS_NULL;
         //	return;
         //}
         //
@@ -571,14 +571,14 @@ package(godot) struct VariableWrapper(T, alias var) {
 
     extern (C) // for calling convention
     static void callPropertyGet(void* methodData, void* instance,
-        const(void**) args, const long numArgs, void* r_return, GDNativeCallError* r_error) {
+        const(void**) args, const long numArgs, void* r_return, GDExtensionCallError* r_error) {
         auto obj = cast(T) instance;
         if (!obj) {
-            r_error.error = GDNATIVE_CALL_ERROR_INSTANCE_IS_NULL;
+            r_error.error = GDEXTENSION_CALL_ERROR_INSTANCE_IS_NULL;
             return;
         }
         if (numArgs > 0) {
-            r_error.error = GDNATIVE_CALL_ERROR_TOO_MANY_ARGUMENTS;
+            r_error.error = GDEXTENSION_CALL_ERROR_TOO_MANY_ARGUMENTS;
             return;
         }
         Variant* v = cast(Variant*) r_return;
@@ -587,14 +587,14 @@ package(godot) struct VariableWrapper(T, alias var) {
 
     extern (C) // for calling convention
     static void callPropertySet(void* methodData, void* instance,
-        const(void**) args, const long numArgs, void* r_return, GDNativeCallError* r_error) {
+        const(void**) args, const long numArgs, void* r_return, GDExtensionCallError* r_error) {
         auto obj = cast(T) instance;
         if (!obj) {
-            r_error.error = GDNATIVE_CALL_ERROR_INSTANCE_IS_NULL;
+            r_error.error = GDEXTENSION_CALL_ERROR_INSTANCE_IS_NULL;
             return;
         }
         if (numArgs < 1) {
-            r_error.error = GDNATIVE_CALL_ERROR_TOO_FEW_ARGUMENTS;
+            r_error.error = GDEXTENSION_CALL_ERROR_TOO_FEW_ARGUMENTS;
             return;
         }
         Variant* v = cast(Variant*) args[0];
@@ -630,7 +630,7 @@ struct VirtualMethodsHelper(T) {
     alias derivedMfs = Filter!(matchesNamingConv, __traits(derivedMembers, T));
     alias onlyFuncs = Filter!(isFunc, derivedMfs);
 
-    static GDNativeExtensionClassCallVirtual findVCall(const GDNativeStringNamePtr func) {
+    static GDExtensionClassCallVirtual findVCall(const GDExtensionStringNamePtr func) {
         // FIXME: StringName issues
         auto v = Variant(*cast(StringName*) func);
         wstring fname = v.as!String.data();

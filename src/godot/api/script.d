@@ -23,7 +23,7 @@ class GodotScript(Base) if (isGodotBaseClass!Base) {
     pragma(inline, true)
     inout(To) as(To)() inout if (isGodotBaseClass!To) {
         static assert(extends!(Base, To), typeof(this).stringof ~ " does not extend " ~ To.stringof);
-        return cast(inout(To))(owner.getGDNativeObject);
+        return cast(inout(To))(owner.getGDExtensionObject);
     }
 
     pragma(inline, true)
@@ -144,7 +144,7 @@ RefOrT!T memnew(T)() if (extendsGodotBaseClass!T) {
 
     //GodotClass!T o = GodotClass!T._new();
     auto name = StringName(godotName!T);
-    auto obj = _godot_api.classdb_construct_object(cast(GDNativeStringNamePtr) name);
+    auto obj = _godot_api.classdb_construct_object(cast(GDExtensionStringNamePtr) name);
     assert(obj !is null);
 
     auto id = _godot_api.object_get_instance_id(obj);
@@ -176,10 +176,10 @@ RefOrT!T memnew(T)() if (isGodotBaseClass!T) {
 }
 
 void memdelete(T)(T t) if (isGodotClass!T) {
-    _godot_api.object_destroy(t.getGDNativeObject.ptr);
+    _godot_api.object_destroy(t.getGDExtensionObject.ptr);
 }
 
-package(godot) extern (C) __gshared GDNativeInstanceBindingCallbacks _instanceCallbacks = {
+package(godot) extern (C) __gshared GDExtensionInstanceBindingCallbacks _instanceCallbacks = {
     &___binding_create_callback,
     &___binding_free_callback,
     &___binding_reference_callback
@@ -192,8 +192,8 @@ extern (C) static void* ___binding_create_callback(void* p_token, void* p_instan
 extern (C) static void ___binding_free_callback(void* p_token, void* p_instance, void* p_binding) {
 }
 
-extern (C) static GDNativeBool ___binding_reference_callback(void* p_token, void* p_instance, GDNativeBool p_reference) {
-    return cast(GDNativeBool) true;
+extern (C) static GDExtensionBool ___binding_reference_callback(void* p_token, void* p_instance, GDExtensionBool p_reference) {
+    return cast(GDExtensionBool) true;
 }
 
 extern (C) package(godot) void* createFunc(T)(void* data) //nothrow @nogc
@@ -218,8 +218,8 @@ extern (C) package(godot) void* createFunc(T)(void* data) //nothrow @nogc
         StringName classname = godotName!T;
         StringName snInternalName = (GodotClass!T)._GODOT_internal_name;
         if (!t.owner._godot_object.ptr)
-            t.owner._godot_object.ptr = _godot_api.classdb_construct_object(cast(GDNativeStringNamePtr) snInternalName);
-        _godot_api.object_set_instance(cast(void*) t.owner._godot_object.ptr, cast(GDNativeStringNamePtr) classname, cast(
+            t.owner._godot_object.ptr = _godot_api.classdb_construct_object(cast(GDExtensionStringNamePtr) snInternalName);
+        _godot_api.object_set_instance(cast(void*) t.owner._godot_object.ptr, cast(GDExtensionStringNamePtr) classname, cast(
                 void*) t);
     }
     //else

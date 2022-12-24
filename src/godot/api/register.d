@@ -21,7 +21,7 @@ import godot, godot.abi;
 import godot.abi.gdextension;
 
 // global instance for current library
-__gshared GDNativeExtensionClassLibraryPtr _GODOT_library;
+__gshared GDExtensionClassLibraryPtr _GODOT_library;
 
 enum bool is_(alias a) = is(a);
 template fileClassesAsLazyImports(FileInfo f) {
@@ -47,7 +47,7 @@ This mixin will generate the GDExtension C interface functions for this D librar
 Pass to it a name string for the library, followed by the GodotScript types to
 register, functions to call, and other options to configure Godot-D.
 
-The symbolPrefix must match the GDNativeLibrary's symbolPrefix in Godot.
+The symbolPrefix must match the GDExtensionLibrary's symbolPrefix in Godot.
 
 D runtime will be initialized and terminated, unless you pass $(D LoadDRuntime.no)
 or compile with BetterC.
@@ -100,8 +100,8 @@ mixin template GodotNativeLibrary(string symbolPrefix, Args...) {
 
     /// This is the main entry point declared in your .gdextension file, it will be called by godot engine on load
     pragma(mangle, symbolPrefix ~ "_gdextension_entry")
-    export extern (C) static GDNativeBool godot_gdextension_entry(GDNativeInterface* p_interface,
-        GDNativeExtensionClassLibraryPtr p_library, GDNativeInitialization* r_initialization) {
+    export extern (C) static GDExtensionBool godot_gdextension_entry(GDExtensionInterface* p_interface,
+        GDExtensionClassLibraryPtr p_library, GDExtensionInitialization* r_initialization) {
         import godot.abi.gdextension;
         import godot.api.reference;
         import std.meta, std.traits;
@@ -128,7 +128,7 @@ mixin template GodotNativeLibrary(string symbolPrefix, Args...) {
         //	: (&godotAssertHandlerCrash);
 
         // TODO: explore various stages, for example for making core classes
-        r_initialization.minimum_initialization_level = GDNATIVE_INITIALIZATION_SCENE;
+        r_initialization.minimum_initialization_level = GDEXTENSION_INITIALIZATION_SCENE;
         r_initialization.initialize = &initializeLevel;
         r_initialization.deinitialize = &deinitializeLevel;
 
@@ -149,7 +149,7 @@ mixin template GodotNativeLibrary(string symbolPrefix, Args...) {
         return 1; // return OK
     }
 
-    extern (C) void initializeLevel(void* userdata, GDNativeInitializationLevel level) //@nogc nothrow
+    extern (C) void initializeLevel(void* userdata, GDExtensionInitializationLevel level) //@nogc nothrow
     {
         //writeln("Initializing level: ", level);
         import std.exception;
@@ -157,12 +157,12 @@ mixin template GodotNativeLibrary(string symbolPrefix, Args...) {
         register_types(userdata, level);
     }
 
-    extern (C) void deinitializeLevel(void* userdata, GDNativeInitializationLevel level) //@nogc nothrow
+    extern (C) void deinitializeLevel(void* userdata, GDExtensionInitializationLevel level) //@nogc nothrow
     {
         //writeln("Deinitializing level: ", level);
     }
 
-    static void register_types(void* userdata, GDNativeInitializationLevel level) //@nogc nothrow
+    static void register_types(void* userdata, GDExtensionInitializationLevel level) //@nogc nothrow
     {
         import std.meta, std.traits;
         import godot.api.register : register, fileClassesAsLazyImports;
@@ -171,7 +171,7 @@ mixin template GodotNativeLibrary(string symbolPrefix, Args...) {
         import godot.api.traits;
 
         // currently only scene-level scripts supportes
-        if (level != GDNATIVE_INITIALIZATION_SCENE)
+        if (level != GDEXTENSION_INITIALIZATION_SCENE)
             return;
 
         alias classList = staticMap!(fileClassesAsLazyImports, aliasSeqOf!(_GODOT_projectInfo.files));
@@ -185,8 +185,8 @@ mixin template GodotNativeLibrary(string symbolPrefix, Args...) {
     }
 
     /*
-	pragma(mangle, symbolPrefix~"gdnative_terminate")
-	export extern(C) static void godot_gdnative_terminate(godot.abi.godot_gdnative_terminate_options* options)
+	pragma(mangle, symbolPrefix~"gdextension_terminate")
+	export extern(C) static void godot_gdextension_terminate(godot.abi.godot_gdextension_terminate_options* options)
 	{
 		import std.meta, std.traits;
 		import godot.api.script : NativeScriptTemplate;
@@ -247,7 +247,7 @@ godot_variant _GODOT_nop(godot_object o, void* methodData,
 /++
 Register a class and all its $(D @GodotMethod) member functions into Godot.
 +/
-void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
+void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
     import std.array;
     import godot.abi;
     import godot.object, godot.resource;
@@ -275,12 +275,12 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
         enum string name = __traits(identifier, T);
     enum fqn = fullyQualifiedName!T ~ '\0';
 
-    __gshared static GDNativeExtensionClassCreationInfo class_info;
+    __gshared static GDExtensionClassCreationInfo class_info;
     class_info.create_instance_func = &createFunc!T;
     class_info.free_instance_func = &destroyFunc!T;
     class_info.class_userdata = cast(void*) name.ptr;
 
-    extern (C) static GDNativeExtensionClassCallVirtual getVirtualFn(void* p_userdata, const GDNativeStringNamePtr p_name) {
+    extern (C) static GDExtensionClassCallVirtual getVirtualFn(void* p_userdata, const GDExtensionStringNamePtr p_name) {
         import core.stdc.stdio;
         import core.stdc.string;
         import std.conv : to;
@@ -292,7 +292,7 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
         static if (__traits(compiles, __traits(getMember, T, "_ready"))) {
             //if (MethodWrapper!(T, __traits(getMember, T, "_ready")).funName == p_name) {
             if (str == "_ready") {
-                return cast(GDNativeExtensionClassCallVirtual) 
+                return cast(GDExtensionExtensionClassCallVirtual) 
                     &OnReadyWrapper!(T, __traits(getMember, T, "_ready")).callOnReady;
             }
         }
@@ -303,7 +303,7 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
 
     StringName snClass = StringName(name);
     StringName snBase = StringName(baseName);
-    _godot_api.classdb_register_extension_class(lib, cast(GDNativeStringNamePtr) snClass, cast(GDNativeStringNamePtr) snBase, &class_info);
+    _godot_api.classdb_register_extension_class(lib, cast(GDExtensionStringNamePtr) snClass, cast(GDExtensionStringNamePtr) snBase, &class_info);
 
     void registerMethod(alias mf, string nameOverride = null)() {
         static if (nameOverride.length) {
@@ -312,37 +312,37 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
             string mfn = godotName!mf;
         }
 
-        uint flags = GDNATIVE_EXTENSION_METHOD_FLAGS_DEFAULT;
+        uint flags = GDEXTENSION_METHOD_FLAGS_DEFAULT;
 
         // virtual methods like '_ready'
         if (__traits(identifier, mf)[0] == '_')
-            flags |= GDNATIVE_EXTENSION_METHOD_FLAG_VIRTUAL;
+            flags |= GDEXTENSION_METHOD_FLAG_VIRTUAL;
 
         enum isOnReady = godotName!mf == "_ready" && onReadyFieldNames!T.length;
 
         StringName snFunName = StringName(mfn);
-        GDNativeExtensionClassMethodInfo mi = {
-            cast(GDNativeStringNamePtr) snFunName , //const char *name;
+        GDExtensionClassMethodInfo mi = {
+            cast(GDExtensionStringNamePtr) snFunName , //const char *name;
             &mf, //void *method_userdata;
-            &MethodWrapper!(T, mf).callMethod, //GDNativeExtensionClassMethodCall call_func;
-            &MethodWrapper!(T, mf).callPtrMethod, //GDNativeExtensionClassMethodPtrCall ptrcall_func;
-            flags, //uint32_t method_flags; /* GDNativeExtensionClassMethodFlags */
+            &MethodWrapper!(T, mf).callMethod, //GDExtensionClassMethodCall call_func;
+            &MethodWrapper!(T, mf).callPtrMethod, //GDExtensionClassMethodPtrCall ptrcall_func;
+            flags, //uint32_t method_flags; /* GDExtensionClassMethodFlags */
 
-            cast(GDNativeBool) !is(ReturnType!mf == void), //GDNativeBool has_return_value;
-            MethodWrapperMeta!mf.getReturnInfo().ptr, //GDNativePropertyInfo* return_value_info;
-            MethodWrapperMeta!mf.getReturnMetadata, //GDNativeExtensionClassMethodArgumentMetadata return_value_metadata;
+            cast(GDExtensionBool) !is(ReturnType!mf == void), //GDExtensionBool has_return_value;
+            MethodWrapperMeta!mf.getReturnInfo().ptr, //GDExtensionPropertyInfo* return_value_info;
+            MethodWrapperMeta!mf.getReturnMetadata, //GDExtensionClassMethodArgumentMetadata return_value_metadata;
 
             cast(uint32_t) arity!mf, //uint32_t argument_count;
-            MethodWrapperMeta!mf.getArgInfo().ptr, //GDNativePropertyInfo* arguments_info;
-            MethodWrapperMeta!mf.getArgMetadata(), //GDNativeExtensionClassMethodArgumentMetadata* arguments_metadata;
+            MethodWrapperMeta!mf.getArgInfo().ptr, //GDExtensionPropertyInfo* arguments_info;
+            MethodWrapperMeta!mf.getArgMetadata(), //GDExtensionClassMethodArgumentMetadata* arguments_metadata;
 
             MethodWrapperMeta!mf.getDefaultArgNum, //uint32_t default_argument_count;
-            MethodWrapperMeta!mf.getDefaultArgs(), //GDNativeVariantPtr *default_arguments;
+            MethodWrapperMeta!mf.getDefaultArgs(), //GDExtensionVariantPtr *default_arguments;
         
         };
-        _godot_api.classdb_register_extension_class_method(lib, cast(GDNativeStringNamePtr) snClass, &mi);
+        _godot_api.classdb_register_extension_class_method(lib, cast(GDExtensionStringNamePtr) snClass, &mi);
         // cache StringName for comparison later on
-        MethodWrapper!(T, mf).funName = cast(GDNativeStringNamePtr) snFunName;
+        MethodWrapper!(T, mf).funName = cast(GDExtensionStringNamePtr) snFunName;
     }
 
     void registerMemberAccessor(alias mf, alias propType, string funcName)() {
@@ -354,28 +354,28 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
         //} else
         //    StringName snName = StringName(godotName!mf);
 
-        uint flags = GDNATIVE_EXTENSION_METHOD_FLAGS_DEFAULT;
+        uint flags = GDEXTENSION_METHOD_FLAGS_DEFAULT;
 
-        GDNativeExtensionClassMethodInfo mi = {
-            cast(GDNativeStringNamePtr) snName, //const char *name;
+        GDExtensionExtensionClassMethodInfo mi = {
+            cast(GDExtensionStringNamePtr) snName, //const char *name;
             &mf, //void *method_userdata;
-            &mf, //GDNativeExtensionClassMethodCall call_func;
-            null, //GDNativeExtensionClassMethodPtrCall ptrcall_func;
-            flags, //uint32_t method_flags; /* GDNativeExtensionClassMethodFlags */
+            &mf, //GDExtensionClassMethodCall call_func;
+            null, //GDExtensionClassMethodPtrCall ptrcall_func;
+            flags, //uint32_t method_flags; /* GDExtensionClassMethodFlags */
 
-            cast(GDNativeBool) !is(ReturnType!propType == void), //GDNativeBool has_return_value;
+            cast(GDExtensionBool) !is(ReturnType!propType == void), //GDExtensionBool has_return_value;
             MethodWrapperMeta!propType.getReturnInfo.ptr,
             MethodWrapperMeta!propType.getReturnMetadata,
 
             cast(uint32_t) arity!propType, //uint32_t argument_count;
-            MethodWrapperMeta!propType.getArgInfo.ptr, //GDNativePropertyInfo* arguments_info;
-            MethodWrapperMeta!propType.getArgMetadata, //GDNativeExtensionClassMethodArgumentMetadata* arguments_metadata;
+            MethodWrapperMeta!propType.getArgInfo.ptr, //GDExtensionPropertyInfo* arguments_info;
+            MethodWrapperMeta!propType.getArgMetadata, //GDExtensionClassMethodArgumentMetadata* arguments_metadata;
 
             MethodWrapperMeta!propType.getDefaultArgNum, //uint32_t default_argument_count;
-            MethodWrapperMeta!propType.getDefaultArgs(), //GDNativeVariantPtr *default_arguments;
+            MethodWrapperMeta!propType.getDefaultArgs(), //GDExtensionVariantPtr *default_arguments;
         };
 
-        _godot_api.classdb_register_extension_class_method(lib, cast(GDNativeStringNamePtr) snClass, &mi);
+        _godot_api.classdb_register_extension_class_method(lib, cast(GDExtensionStringNamePtr) snClass, &mi);
     }
 
     static foreach (mf; godotMethods!T) {
@@ -400,7 +400,7 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
             else
                 enum string externalName = (fullyQualifiedName!s).replace(".", "_");
 
-            __gshared static GDNativePropertyInfo[Parameters!s.length] prop;
+            __gshared static GDExtensionPropertyInfo[Parameters!s.length] prop;
             static foreach (int i, p; Parameters!s) {
                 static assert(Variant.compatible!p, fullyQualifiedName!s ~ " parameter " ~ i.text ~ " \""
                         ~ ParameterIdentifierTuple!s[i] ~ "\": type " ~ p.stringof ~ " is incompatible with Godot");
@@ -412,23 +412,23 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
                 else {
                     StringName snArgName = StringName("arg" ~ i.stringof);
                 }
-                prop[i].name = cast(GDNativeStringNamePtr) snArgName;
+                prop[i].name = cast(GDExtensionStringNamePtr) snArgName;
 
                 if (Variant.variantTypeOf!p == VariantType.object)
-                    prop[i].class_name = cast(GDNativeStringNamePtr) snClass;
+                    prop[i].class_name = cast(GDExtensionStringNamePtr) snClass;
                 else
-                    prop[i].class_name = cast(GDNativeStringNamePtr) StringName();
+                    prop[i].class_name = cast(GDExtensionStringNamePtr) StringName();
                 prop[i].type = Variant.variantTypeOf!p;
                 prop[i].hint = 0;
-                prop[i].hint_string = cast(GDNativeStringNamePtr) StringName();
-                prop[i].usage = GDNATIVE_EXTENSION_METHOD_FLAGS_DEFAULT;
+                prop[i].hint_string = cast(GDExtensionStringNamePtr) StringName();
+                prop[i].usage = GDEXTENSION_METHOD_FLAGS_DEFAULT;
             }
 
             StringName snExternalName = StringName(externalName);
             _godot_api.classdb_register_extension_class_signal(
                 lib, 
-                cast(GDNativeStringNamePtr) snClass, 
-                cast(GDNativeStringNamePtr) snExternalName, 
+                cast(GDExtensionStringNamePtr) snClass, 
+                cast(GDExtensionStringNamePtr) snExternalName, 
                 prop.ptr, 
                 Parameters!s.length
             );
@@ -454,7 +454,7 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
 
             enum Property uda = extractPropertyUDA!(getterMatches, setterMatches);
 
-            __gshared static GDNativePropertyInfo pinfo;
+            __gshared static GDExtensionPropertyInfo pinfo;
 
 
             StringName snPropName = StringName(pName);
@@ -471,13 +471,13 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
                 StringName snHintString = StringName("");
             }
 
-            pinfo.class_name = cast(GDNativeStringNamePtr) snParamClassName;
+            pinfo.class_name = cast(GDExtensionStringNamePtr) snParamClassName;
             pinfo.type = vt;
-            pinfo.name = cast(GDNativeStringNamePtr) snPropName;
-            pinfo.hint = GDNATIVE_EXTENSION_METHOD_ARGUMENT_METADATA_NONE;
-            //pinfo.usage = GDNATIVE_EXTENSION_METHOD_FLAGS_DEFAULT | GDNATIVE_EXTENSION_METHOD_FLAG_EDITOR;
+            pinfo.name = cast(GDExtensionStringNamePtr) snPropName;
+            pinfo.hint = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE;
+            //pinfo.usage = GDEXTENSION_METHOD_FLAGS_DEFAULT | GDEXTENSION_METHOD_FLAG_EDITOR;
             pinfo.usage = 7; // godot-cpp uses 7 as value which is default|const|editor currently, doesn't shows up in inspector without const. WTF?
-            pinfo.hint_string = cast(GDNativeStringNamePtr) snHintString;
+            pinfo.hint_string = cast(GDExtensionStringNamePtr) snHintString;
 
             // register acessor methods for that property
             static if (getterMatches.length) {
@@ -496,10 +496,10 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
             StringName snGetProp = StringName(get_prop);
             _godot_api.classdb_register_extension_class_property(
                 lib, 
-                cast(GDNativeStringNamePtr) snClass, 
+                cast(GDExtensionStringNamePtr) snClass, 
                 &pinfo, 
-                cast(GDNativeStringNamePtr) snSetProp, 
-                cast(GDNativeStringNamePtr) snGetProp
+                cast(GDExtensionStringNamePtr) snSetProp, 
+                cast(GDExtensionStringNamePtr) snGetProp
             );
         }
     }
@@ -512,7 +512,7 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
             alias udas = getUDAs!(mixin("T." ~ pName), Property);
             enum Property uda = is(udas[0]) ? Property.init : udas[0];
 
-            __gshared static GDNativePropertyInfo pinfo;
+            __gshared static GDExtensionPropertyInfo pinfo;
 
             StringName snPropName = StringName(pName);
             static if (Variant.variantTypeOf!P == VariantType.object) {
@@ -521,14 +521,14 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
             else {
                 StringName snPName = StringName("");
             }
-            pinfo.class_name = cast(GDNativeStringNamePtr) snPName;
+            pinfo.class_name = cast(GDExtensionStringNamePtr) snPName;
             pinfo.type = vt;
-            pinfo.name = cast(GDNativeStringNamePtr) snPropName;
-            pinfo.usage = GDNATIVE_EXTENSION_METHOD_FLAGS_DEFAULT | GDNATIVE_EXTENSION_METHOD_FLAG_EDITOR;
+            pinfo.name = cast(GDExtensionStringNamePtr) snPropName;
+            pinfo.usage = GDEXTENSION_METHOD_FLAGS_DEFAULT | GDEXTENSION_METHOD_FLAG_EDITOR;
             static if (uda.hintString.length)
                 pinfo.hint_string = uda.hintString;
             else
-                pinfo.hint_string = cast(GDNativeStringNamePtr) StringName();
+                pinfo.hint_string = cast(GDExtensionStringNamePtr) StringName();
 
             // register acessor methods for that property
             enum get_prop = "get_" ~ pName ~ '\0';
@@ -544,10 +544,10 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
             StringName snGetProp = StringName(get_prop);
             _godot_api.classdb_register_extension_class_property(
                 lib, 
-                cast(GDNativeStringNamePtr) snClass, 
+                cast(GDExtensionStringNamePtr) snClass, 
                 &pinfo, 
-                cast(GDNativeStringNamePtr) snSetProp, 
-                cast(GDNativeStringNamePtr) snGetProp 
+                cast(GDExtensionStringNamePtr) snSetProp, 
+                cast(GDExtensionStringNamePtr) snGetProp 
             );
         }
     }
@@ -561,9 +561,9 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
                 mixin("StringName snVal" ~ i.stringof ~ "= StringName(ev);");
                 _godot_api.classdb_register_extension_class_integer_constant(
                     lib, 
-                    cast(GDNativeStringNamePtr) snClass, 
-                    cast(GDNativeStringNamePtr) mixin("snEnum"~i.stringof), 
-                    cast(GDNativeStringNamePtr) mixin("snVal"~i.stringof), 
+                    cast(GDExtensionStringNamePtr) snClass, 
+                    cast(GDExtensionStringNamePtr) mixin("snEnum"~i.stringof), 
+                    cast(GDExtensionStringNamePtr) mixin("snVal"~i.stringof), 
                     cast(int) __traits(getMember, E, ev), 
                     false
                 );
@@ -579,9 +579,9 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
             mixin("StringName snProp" ~ pName ~ " = StringName(pName);");
             _godot_api.classdb_register_extension_class_integer_constant(
                 lib, 
-                cast(GDNativeStringNamePtr) snClass, 
-                cast(GDNativeStringNamePtr) StringName(), 
-                cast(GDNativeStringNamePtr) mixin("snProp"~pName), 
+                cast(GDExtensionStringNamePtr) snClass, 
+                cast(GDExtensionStringNamePtr) StringName(), 
+                cast(GDExtensionStringNamePtr) mixin("snProp"~pName), 
                 cast(int) E, 
                 false
             );
@@ -595,7 +595,7 @@ void register(T)(GDNativeExtensionClassLibraryPtr lib) if (is(T == class)) {
 	static if(hasUDA!(T, Tool)) _godot_nativescript_api.godot_nativescript_register_tool_class(handle, name, baseName, icf, idf);
 	else _godot_nativescript_api.godot_nativescript_register_class(handle, name, baseName, icf, idf);
 	
-	if(GDNativeVersion.hasNativescript!(1, 1))
+	if(GDExtensionVersion.hasNativescript!(1, 1))
 	{
 		_godot_nativescript_api.godot_nativescript_set_type_tag(handle, name, NativeScriptTag!T.tag);
 	}
