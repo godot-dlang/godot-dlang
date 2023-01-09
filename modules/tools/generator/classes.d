@@ -200,28 +200,20 @@ final class GodotClass {
 
         // generate the set of referenced classes
         foreach (m; joiner([cast(GodotMethod[]) constructors, methods])) {
-            // TODO: unify return and parameters logic, well that sucks as it basically repeats itself
-            // maybe a simple chain(ret, args[]) will do?
             import std.algorithm.searching;
 
-            if (m.return_type.isEnum) {
-                auto c = m.return_type.enumParent;
-                if (!c)
-                    c = Type.get(enumParent(m.return_type.godotType));
-                if (c && c !is name)
-                    addUsedClass(c);
-            } else if (m.return_type !is name) {
-                addUsedClass(m.return_type);
-            }
-            foreach (const a; m.arguments) {
-                if (a.type.isEnum) {
-                    auto c = cast() a.type.enumParent;
-                    if (!c)
-                        c = Type.get(enumParent(a.type.godotType));
+            foreach (const ty; chain([m.return_type], m.arguments.map!(t=>t.type))) {
+                if (ty.isMetaType) {
+                    auto c = cast() ty.stripMeta;
+                    // often a meta type is a nested type like enum or bitfield
+                    if (c && c.getParentType()) {
+                        c = c.getParentType();
+                    }
                     if (c && c !is name)
-                        addUsedClass(c);
-                } else if (a.type !is name) {
-                    addUsedClass(a.type);
+                        if (ty !is c) // ugh...
+                            addUsedClass(c);
+                } else if (ty !is name) {
+                    addUsedClass(ty);
                 }
             }
         }
@@ -265,23 +257,23 @@ final class GodotClass {
         if (!isBuiltinClass) {
             ret ~= "module godot." ~ name.asModuleName ~ ";\n\n";
 
-            ret ~= `import std.meta : AliasSeq, staticIndexOf;
-import std.traits : Unqual;
-import godot.api.traits;
-import godot;
-import godot.abi;
-import godot.api.bind;
-import godot.api.reference;
-import godot.globalenums;
-import godot.object;
-import godot.classdb;`;
+            ret ~= `public import std.meta : AliasSeq, staticIndexOf;
+public import std.traits : Unqual;
+public import godot.api.traits;
+public import godot;
+public import godot.abi;
+public import godot.api.bind;
+public import godot.api.reference;
+public import godot.globalenums;
+public import godot.object;
+public import godot.classdb;`;
             ret ~= "\n";
         }
 
         foreach (const u; used_classes) {
             if (!u.asModuleName)
                 continue;
-            ret ~= "import godot.";
+            ret ~= "public import godot.";
             ret ~= u.asModuleName;
             ret ~= ";\n";
         }

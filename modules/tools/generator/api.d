@@ -254,14 +254,14 @@ void writeStructs(ref ExtensionsApi api, string dirPath) {
     string buf;
     auto s = appender(buf);
     s ~= "module godot.structs;\n\n";
-    s ~= "import godot;\n";
-    s ~= "import godot.abi;\n\n";
+    s ~= "public import godot;\n";
+    s ~= "public import godot.abi;\n\n";
 
     foreach (st; api.native_structures) {
         auto source = st.parseMembers();
 
         foreach (imp; st.used_classes)
-            s ~= "import godot." ~ imp.asModuleName ~ ";\n";
+            s ~= "public import godot." ~ imp.asModuleName ~ ";\n";
 
         s ~= "struct " ~ st.name.dType ~ " {\n";
 

@@ -32,7 +32,6 @@ subPackage {
 	dependency "asdf" version="~>0.7.15"
 	targetType "executable"
 	targetName "generator"
-    targetPath "bin/"
 	dflags "--link-internally" platform="windows-ldc"
 	sourcePaths "modules/tools/generator"
 }

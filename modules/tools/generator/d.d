@@ -76,19 +76,19 @@ string[2] generateClass(GodotClass c) {
     ret ~= "module godot.";
     ret ~= c.name.asModuleName;
     ret ~= ";\n";
-    ret ~= "import std.meta : AliasSeq, staticIndexOf;\n";
-    ret ~= "import std.traits : Unqual;\n";
-    ret ~= "import godot.api.traits;\nimport godot;\nimport godot.abi;\n";
-    ret ~= "import godot.api.bind;\n";
-    ret ~= "import godot.api.reference;\n";
-    ret ~= "import godot.globalenums;\n";
+    ret ~= "public import std.meta : AliasSeq, staticIndexOf;\n";
+    ret ~= "public import std.traits : Unqual;\n";
+    ret ~= "public import godot.api.traits;\nimport godot;\nimport godot.abi;\n";
+    ret ~= "public import godot.api.bind;\n";
+    ret ~= "public import godot.api.reference;\n";
+    ret ~= "public import godot.globalenums;\n";
 
     if (c.name.godotType != "Object") {
-        ret ~= "import godot.object;\n";
+        ret ~= "public import godot.object;\n";
     }
 
     if (c.instanciable) {
-        ret ~= "import godot.classdb;\n";
+        ret ~= "public import godot.classdb;\n";
     }
 
     ret ~= c.source;

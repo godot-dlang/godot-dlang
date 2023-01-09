@@ -110,6 +110,10 @@ class Type {
         return godotType.startsWith("typedarray::");
     }
 
+    bool isMetaType() const {
+        return isEnum || isBitfield || isTypedArray;
+    }
+
     bool isPointerType() const {
         return dType.indexOf("*") != -1;
     }
@@ -285,6 +289,39 @@ class Type {
         char[] unqualified = cast(char[]) godotType.replace("const ", "").dup;
         unqualified = unqualified.stripRight; // strip whitespace leftovers
         return Type.get(cast(string) unqualified);
+    }
+
+    // removes any prefixed meta names such as "enum::" in "enum::MyClass.MyEnum"
+    Type stripMeta() const {
+        // NOTE: this method is marked const, but we want it to be convenient.
+        // this can lead to potential UB when user modifies the returned value,
+        // and there is no other way around because Type.get(godotName) will return
+        // same object as this.
+        if (isEnum) {
+            static import enumutils = godot.tools.generator.enums;
+            // returns cached parent first, otherwise extract from name string
+            if (enumParent)
+                return cast() enumParent;
+            return Type.get(enumutils.enumParent(godotType));
+        }
+        if (isBitfield) {
+            return Type.get(godotType["bitfield::".length .. $]);
+        }
+        if (isTypedArray) {
+            return Type.get(godotType["typedarray::".length .. $]);
+        }
+        return cast() this;
+    }
+
+    // Companion method for stripMeta, usually meta types is a nested types inside another class
+    // so we have to take their enclosing type
+    Type getParentType() const {
+        import std.string : lastIndexOf;
+        auto pos = godotType.lastIndexOf('.');
+        if (pos > 0) {
+            return Type.get(godotType[0..pos]);
+        }
+        return null;
     }
 
     this(string godotName) {
