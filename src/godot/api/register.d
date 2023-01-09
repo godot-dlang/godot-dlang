@@ -292,7 +292,7 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
         static if (__traits(compiles, __traits(getMember, T, "_ready"))) {
             //if (MethodWrapper!(T, __traits(getMember, T, "_ready")).funName == p_name) {
             if (str == "_ready") {
-                return cast(GDExtensionExtensionClassCallVirtual) 
+                return cast(GDExtensionClassCallVirtual) 
                     &OnReadyWrapper!(T, __traits(getMember, T, "_ready")).callOnReady;
             }
         }
@@ -356,7 +356,7 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
 
         uint flags = GDEXTENSION_METHOD_FLAGS_DEFAULT;
 
-        GDExtensionExtensionClassMethodInfo mi = {
+        GDExtensionClassMethodInfo mi = {
             cast(GDExtensionStringNamePtr) snName, //const char *name;
             &mf, //void *method_userdata;
             &mf, //GDExtensionClassMethodCall call_func;
