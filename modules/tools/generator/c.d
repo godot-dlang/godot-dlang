@@ -42,13 +42,13 @@ struct Api {
 
     string source() {
         string ret = "module godot.abi.api;\n\n";
-        ret ~= "import godot.abi.core;\n\n";
+        ret ~= "public import godot.abi.core;\n\n";
         foreach (v; extensions)
-            ret ~= "import godot.abi." ~ v.name ~ ";\n";
+            ret ~= "public import godot.abi." ~ v.name ~ ";\n";
 
-        ret ~= "import std.meta : AliasSeq, staticIndexOf;\n";
-        ret ~= "import std.format : format;\nimport std.string : capitalize, toLower;\nimport std.conv : text;\n";
-        ret ~= "import core.stdc.stdint;\nimport core.stdc.stddef : wchar_t;\n\n";
+        ret ~= "public import std.meta : AliasSeq, staticIndexOf;\n";
+        ret ~= "public import std.format : format;\nimport std.string : capitalize, toLower;\nimport std.conv : text;\n";
+        ret ~= "public import core.stdc.stdint;\nimport core.stdc.stddef : wchar_t;\n\n";
 
         ret ~= q{
 			extern(C) struct godot_gdextension_api_version
