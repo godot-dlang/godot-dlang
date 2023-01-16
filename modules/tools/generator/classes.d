@@ -209,6 +209,12 @@ final class GodotClass {
                     if (c && c.getParentType()) {
                         c = c.getParentType();
                     }
+
+                    // superbelko: i really don't like this one...
+                    // deals with global enums, just skip it as it is already imported by default
+                    if ((ty.isEnum || ty.isBitfield) && c && !ty.godotType.canFind('.'))
+                        continue;
+
                     if (c && c !is name)
                         if (ty !is c) // ugh...
                             addUsedClass(c);

@@ -319,7 +319,9 @@ class Type {
         import std.string : lastIndexOf;
         auto pos = godotType.lastIndexOf('.');
         if (pos > 0) {
-            return Type.get(godotType[0..pos]);
+            const parentName = godotType[0..pos];
+            if (auto parent = parentName in Type.typesByGodotName)
+                return *parent;
         }
         return null;
     }
