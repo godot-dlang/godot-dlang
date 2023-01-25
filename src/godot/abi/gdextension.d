@@ -136,12 +136,16 @@ enum : GDExtensionVariantOperator {
 }
 
 alias GDExtensionVariantPtr = void*;
+alias GDExtensionConstVariantPtr = const(void)*;
 alias GDExtensionStringNamePtr = void*;
+alias GDExtensionConstStringNamePtr = const(void)*;
 alias GDExtensionStringPtr = void*;
+alias GDExtensionConstStringPtr = const(void)*;
 alias GDExtensionObjectPtr = void*;
+alias GDExtensionConstObjectPtr = const(void)*;
 alias GDExtensionTypePtr = void*;
-alias GDExtensionPtr = void*;
-alias GDExtensionMethodBindPtr = void*;
+alias GDExtensionConstTypePtr = const(void)*;
+alias GDExtensionMethodBindPtr = const(void)*;
 alias GDExtensionInt = int64_t;
 alias GDExtensionBool = uint8_t;
 alias GDObjectInstanceID = uint64_t;
@@ -540,6 +544,27 @@ struct GDExtensionInterface {
     GDExtensionInt function(const GDExtensionStringPtr p_self, wchar_t* r_text, GDExtensionInt p_max_write_length) string_to_wide_chars;
     char32_t* function(GDExtensionStringPtr p_self, GDExtensionInt p_index) string_operator_index;
     const(char32_t)* function(const GDExtensionStringPtr p_self, GDExtensionInt p_index) string_operator_index_const;
+
+    void function(GDExtensionStringPtr p_self, GDExtensionConstStringPtr p_b) string_operator_plus_eq_string;
+	void function(GDExtensionStringPtr p_self, char32_t p_b) string_operator_plus_eq_char;
+	void function(GDExtensionStringPtr p_self, const(char)* p_b) string_operator_plus_eq_cstr;
+	void function(GDExtensionStringPtr p_self, const(wchar_t)* p_b) string_operator_plus_eq_wcstr;
+	void function(GDExtensionStringPtr p_self, const(char32_t)* p_b) string_operator_plus_eq_c32str;
+
+	/*  XMLParser extra utilities */
+
+	GDExtensionInt function(GDExtensionObjectPtr p_instance, const(uint8_t)* p_buffer, size_t p_size) xml_parser_open_buffer;
+
+	/*  FileAccess extra utilities */
+
+	void function(GDExtensionObjectPtr p_instance, const(uint8_t)* p_src, uint64_t p_length) file_access_store_buffer;
+	uint64_t function(GDExtensionConstObjectPtr p_instance, uint8_t* p_dst, uint64_t p_length) file_access_get_buffer;
+
+	/*  WorkerThreadPool extra utilities */
+
+	int64_t function(GDExtensionObjectPtr p_instance, void function(void*, uint32_t) p_func, void* p_userdata, int p_elements, int p_tasks, GDExtensionBool p_high_priority, GDExtensionConstStringPtr p_description) worker_thread_pool_add_native_group_task;
+	int64_t function(GDExtensionObjectPtr p_instance, void function(void*) p_func, void* p_userdata, GDExtensionBool p_high_priority, GDExtensionConstStringPtr p_description) worker_thread_pool_add_native_task;
+
 
     /* Packed array functions */
 
