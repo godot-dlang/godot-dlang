@@ -479,25 +479,7 @@ struct Variant {
         else
             enum VarType = EnumMembers!Type[staticIndexOf!(conversionFromGodotType!R, DType)];
 
-        // HACK workaround for DMD issue #5570
-        version (GodotSystemV)
-            enum sV = true;
-        else
-            enum sV = false;
-        static if (VarType == Type.vector3 && sV) {
-            godot_vector3 ret = void;
-            void* _func = cast(void*) _godot_api.variant_as_vector3;
-            void* _this = cast(void*)&this;
-
-            asm @nogc nothrow {
-                mov RDI, _this;
-                call _func;
-
-                mov ret[0], RAX;
-                mov ret[8], EDX;
-            }
-            return *cast(Vector3*)&ret;
-        } else static if (VarType == Type.nil) {
+        static if (VarType == Type.nil) {
             return conversionFromGodot!R(this);
         } else static if (is(Unqual!R == String)) {
             static if (is(Unqual!R == NodePath))

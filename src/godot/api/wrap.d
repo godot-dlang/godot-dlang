@@ -633,7 +633,7 @@ struct VirtualMethodsHelper(T) {
     static GDExtensionClassCallVirtual findVCall(const GDExtensionStringNamePtr func) {
         // FIXME: StringName issues
         auto v = Variant(*cast(StringName*) func);
-        wstring fname = v.as!String.data();
+        auto fname = v.as!String.data();
         static foreach (name; onlyFuncs) {
             //if (MethodWrapper!(T, __traits(getMember, T, name)).funName == func)
             if (__traits(identifier, __traits(getMember, T, name)) == fname)
