@@ -272,7 +272,7 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
         //print("requested method ", *cast(StringName*) p_name);
         // FIXME: StringName issues
         auto v = Variant(*cast(StringName*) p_name);
-        wstring str = v.as!String.data();
+        auto str = v.as!String.data();
         static if (__traits(compiles, __traits(getMember, T, "_ready"))) {
             //if (MethodWrapper!(T, __traits(getMember, T, "_ready")).funName == p_name) {
             if (str == "_ready") {
