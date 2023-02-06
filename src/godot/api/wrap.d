@@ -377,11 +377,11 @@ package(godot) struct MethodWrapperMeta(alias mf) {
             if (Variant.variantTypeOf!(A[i]) == VariantType.object)
                 argInfo[i].class_name = cast(GDExtensionStringNamePtr) StringName(A[i].stringof);
             else
-                argInfo[i].class_name = cast(GDExtensionStringNamePtr) StringName();
+                argInfo[i].class_name = cast(GDExtensionStringNamePtr) stringName();
             argInfo[i].name = cast(GDExtensionStringNamePtr) StringName((ParameterIdentifierTuple!mf)[i]);
             argInfo[i].type = Variant.variantTypeOf!(A[i]);
             argInfo[i].usage = GDEXTENSION_METHOD_FLAGS_DEFAULT;
-            argInfo[i].hint_string = cast(GDExtensionStringNamePtr) StringName();
+            argInfo[i].hint_string = cast(GDExtensionStringNamePtr) stringName();
         }
         return argInfo;
     }
@@ -393,10 +393,10 @@ package(godot) struct MethodWrapperMeta(alias mf) {
         GDExtensionPropertyInfo[2] retInfo = [ 
             GDExtensionPropertyInfo(
                 cast(uint32_t) Variant.variantTypeOf!R,
-                cast(GDExtensionStringNamePtr) StringName(),
-                cast(GDExtensionStringNamePtr) (Variant.variantTypeOf!R == VariantType.object ? StringName() : StringName(R.stringof)),
-                0,
-                cast(GDExtensionStringNamePtr) StringName(),
+                cast(GDExtensionStringNamePtr) stringName(),
+                cast(GDExtensionStringNamePtr) (Variant.variantTypeOf!R == VariantType.object ? stringName() : StringName(R.stringof)),
+                0, // aka PropertyHint.propertyHintNone
+                cast(GDExtensionStringNamePtr) stringName(),
                 GDEXTENSION_METHOD_FLAGS_DEFAULT
             ), 
             GDExtensionPropertyInfo.init 

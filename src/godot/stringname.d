@@ -10,6 +10,9 @@ import godot.string;
 
 import godot.variant;
 
+/// Initializes an empty StringName
+alias stringName = StringName.makeEmpty;
+
 struct StringName {
     //@nogc nothrow:
 
@@ -34,6 +37,9 @@ struct StringName {
         this(str);
     }
 
+    deprecated("Default struct ctor is not allowed, please use `stringName()` instead")
+    @disable this();
+
     //this(ref const StringName s)
     //{
     //	this = _bind.new1(s);
@@ -41,6 +47,12 @@ struct StringName {
 
     void _defaultCtor() {
         this = StringName_Bind.new0();
+    }
+    
+    static StringName makeEmpty() {
+        StringName sn = void;
+        sn._defaultCtor();
+        return sn;
     }
 
     /// Returns the length of the char32_t array, minus the zero terminator.
@@ -96,15 +108,15 @@ struct StringName {
     }
 
     void opAssign(in StringName other) {
-        if (&_godot_string_name)
-            _bind._destructor();
+        //if (&_godot_string_name)
+        //    _bind._destructor();
 
         _godot_string_name = other._godot_string_name;
     }
 
     void opAssign(in string other) {
-        if (&_godot_string_name)
-            _bind._destructor();
+        //if (&_godot_string_name)
+        //    _bind._destructor();
         godot_string gs;
         _godot_api.string_new_with_utf8_chars_and_len(&gs, other.ptr, cast(int) other.length);
         _godot_string_name = gs;

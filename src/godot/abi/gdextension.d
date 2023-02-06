@@ -228,12 +228,12 @@ struct GDExtensionMethodInfo {
     int32_t id;
 
     /* Arguments: `default_arguments` is an array of size `argument_count`. */
-    GDExtensionPropertyInfo* arguments;
     uint32_t argument_count;
+    GDExtensionPropertyInfo* arguments;
 
     /* Default arguments: `default_arguments` is an array of size `default_argument_count`. */
-    GDExtensionVariantPtr* default_arguments;
     uint32_t default_argument_count;
+    GDExtensionVariantPtr* default_arguments;
 }
 
 alias GDExtensionClassGetPropertyList = const GDExtensionPropertyInfo* function(
@@ -594,6 +594,8 @@ struct GDExtensionInterface {
 
     GDExtensionVariantPtr function(GDExtensionTypePtr p_self, GDExtensionInt p_index) array_operator_index; // p_self should be an Array ptr
     GDExtensionVariantPtr function(const GDExtensionTypePtr p_self, GDExtensionInt p_index) array_operator_index_const; // p_self should be an Array ptr
+    void function(GDExtensionTypePtr p_self, GDExtensionConstTypePtr p_from) array_ref; // p_self should be an Array ptr
+	void function(GDExtensionTypePtr p_self, uint32_t p_type, GDExtensionConstStringNamePtr p_class_name, GDExtensionConstVariantPtr p_script) array_set_typed; // p_self should be an Array ptr
 
     /* Dictionary functions */
 

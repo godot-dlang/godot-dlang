@@ -340,11 +340,23 @@ class GodotMethod {
             ret ~= "\t\tGDExtensionCallError err;\n";
             ret ~= "\t\t_godot_api.object_method_bind_call(GDExtensionClassBinding." ~ wrapperIdentifier ~ ".mb, cast(void*) _godot_object.ptr, cast(void**) _args.ptr, _GODOT_args.length, cast(void*) &ret, &err);\n";
             // ret ~= "\t\t";
+            // DMD 2.101 complains about Type* pointers escaping function scope
+            // So instead of returning it directly make a temporary pointer variable
             if (return_type.dType != "void") {
-                ret ~= "\t\treturn ";
+                if (return_type.isPointerType) {
+                    ret ~= "\t\tauto r = ";
+                }
+                else {
+                    ret ~= "\t\treturn ";
+                }
+
                 if (return_type.dType != "Variant") {
                     ret ~= "ret.as!(RefOrT!(" ~ return_type.stripConst.dType ~ "))";
-                } else {
+                    if (return_type.isPointerType) {
+                        ret ~= ";\n\t\treturn r";
+                    }
+                } 
+                else {
                     ret ~= "ret";
                 }
                 ret ~= ";\n";
