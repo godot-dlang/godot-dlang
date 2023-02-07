@@ -384,27 +384,40 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
             else
                 enum string externalName = (fullyQualifiedName!s).replace(".", "_");
 
+            __gshared static StringName[Parameters!s.length] snArgNames = void;
+            __gshared static StringName[Parameters!s.length] snClassNames = void;
+            __gshared static StringName[Parameters!s.length] snHintStrings = void;
             __gshared static GDExtensionPropertyInfo[Parameters!s.length] prop;
+            static if (is(FunctionTypeOf!s FT == __parameters)){
+                //pragma(msg, typeof(s), " : ", FT);
+                alias PARAMS = FT;
+            }
             static foreach (int i, p; Parameters!s) {
                 static assert(Variant.compatible!p, fullyQualifiedName!s ~ " parameter " ~ i.text ~ " \""
                         ~ ParameterIdentifierTuple!s[i] ~ "\": type " ~ p.stringof ~ " is incompatible with Godot");
 
                 // get name or argN fallback placeholder in case of function pointers
-                static if (ParameterIdentifierTuple!s[i].length > 0) {
-                    StringName snArgName = StringName(ParameterIdentifierTuple!s[i]);
+                static if (PARAMS.length > 0) {
+                    // "(String message)" gets split in half, and then chop out closing parenthesis
+                    // "(String message, String test)" handled as well
+                    //pragma(msg, PARAMS[i..i+1].stringof.split()[1][0..$-1]);
+                    snArgNames[i] = StringName(PARAMS[i..i+1].stringof.split()[1][0..$-1]);
                 }
                 else {
-                    StringName snArgName = StringName("arg" ~ i.stringof);
+                    snArgNames[i] = StringName("arg" ~ i.stringof);
                 }
-                prop[i].name = cast(GDExtensionStringNamePtr) snArgName;
+                prop[i].name = cast(GDExtensionStringNamePtr) snArgNames[i];
 
                 if (Variant.variantTypeOf!p == VariantType.object)
-                    prop[i].class_name = cast(GDExtensionStringNamePtr) snClass;
+                    snClassNames[i] = snClass;
                 else
-                    prop[i].class_name = cast(GDExtensionStringNamePtr) stringName();
+                    snClassNames[i] = stringName();
+                prop[i].class_name = cast(GDExtensionStringNamePtr) snClassNames[i];
+
+                snHintStrings[i] = stringName();
+                prop[i].hint_string = cast(GDExtensionStringNamePtr) snHintStrings[i];
                 prop[i].type = Variant.variantTypeOf!p;
                 prop[i].hint = 0;
-                prop[i].hint_string = cast(GDExtensionStringNamePtr) stringName();
                 prop[i].usage = GDEXTENSION_METHOD_FLAGS_DEFAULT;
             }
 
@@ -510,10 +523,10 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
             pinfo.name = cast(GDExtensionStringNamePtr) snPropName;
             pinfo.usage = GDEXTENSION_METHOD_FLAGS_DEFAULT | GDEXTENSION_METHOD_FLAG_EDITOR;
             static if (uda.hintString.length)
-                pinfo.hint_string = uda.hintString;
+                StringName snHintString = StringName(uda.hintString);
             else
-                pinfo.hint_string = cast(GDExtensionStringNamePtr) stringName();
-
+                StringName snHintString = stringName();
+            pinfo.hint_string = cast(GDExtensionStringNamePtr) snHintString;
             // register acessor methods for that property
             enum get_prop = "get_" ~ pName ~ '\0';
             alias fnWrapper = VariableWrapper!(T, __traits(getMember, T, pName));
