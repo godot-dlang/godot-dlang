@@ -373,15 +373,23 @@ package(godot) struct MethodWrapperMeta(alias mf) {
     extern (C)
     static GDExtensionPropertyInfo[A.length+1] getArgInfo() {
         GDExtensionPropertyInfo[A.length + 1] argInfo;
+        __gshared static StringName[A.length+1] snClassNames = void;
+        __gshared static StringName[A.length+1] snArgNames = void;
+        __gshared static StringName[A.length+1] snHintStrings = void;
         static foreach (i; 0 .. A.length) {
-            if (Variant.variantTypeOf!(A[i]) == VariantType.object)
-                argInfo[i].class_name = cast(GDExtensionStringNamePtr) StringName(A[i].stringof);
-            else
-                argInfo[i].class_name = cast(GDExtensionStringNamePtr) stringName();
-            argInfo[i].name = cast(GDExtensionStringNamePtr) StringName((ParameterIdentifierTuple!mf)[i]);
+            if (Variant.variantTypeOf!(A[i]) == VariantType.object) {
+                snClassNames[i] = StringName(A[i].stringof);
+            }
+            else {
+                snClassNames[i] = stringName();
+            }
+            snArgNames[i] = StringName((ParameterIdentifierTuple!mf)[i]);
+            snHintStrings[i] = stringName();
+            argInfo[i].class_name = cast(GDExtensionStringNamePtr) snClassNames[i];
+            argInfo[i].name = cast(GDExtensionStringNamePtr) snArgNames[i];
             argInfo[i].type = Variant.variantTypeOf!(A[i]);
             argInfo[i].usage = GDEXTENSION_METHOD_FLAGS_DEFAULT;
-            argInfo[i].hint_string = cast(GDExtensionStringNamePtr) stringName();
+            argInfo[i].hint_string = cast(GDExtensionStringNamePtr) snHintStrings[i];
         }
         return argInfo;
     }
