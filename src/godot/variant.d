@@ -500,7 +500,9 @@ struct Variant {
             if (_godot_variant._opaque.ptr is null) {
                 return R.init;
             }
-
+            import core.stdc.string;
+            memset(&ret, 0, ret.sizeof);
+            
             auto fn = _godot_api.get_variant_to_type_constructor(VarType);
             fn(cast(void*)&ret, cast(void*)&_godot_variant);
 
