@@ -435,6 +435,17 @@ string escapeDefaultType(in Type type, string arg) {
     if (!arg || arg.length == 0)
         return defaultTypeString(type);
 
+    if (type.isTypedArray) {
+        // examples of typedarray:
+        //   Array[RDPipelineSpecializationConstant]([])
+        //   Array[RID]([])
+        //   Array[Array]([])
+        //   []
+        // TODO: other cases such as that where it actually has values in it
+        if (arg.startsWith("Array[") && arg.endsWith("([])")) {
+            return "[]";
+        }
+    }
     // parse the defaults in api.json
     switch (type.dType) {
     case "Color": // "1,1,1,1"
