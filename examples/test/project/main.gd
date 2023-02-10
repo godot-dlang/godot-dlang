@@ -7,6 +7,7 @@ func _ready():
 	# $Panel/Label.set_text(str(t.writeStuffInt(42)))
 	# t.test()
 	# t._ready()
+	# print("using static method: ", TestD.get_some_number())
 	pass # Replace with function body.
 
 
