@@ -23,7 +23,7 @@ void godotAssertHandlerCrash(string file, size_t line, string msg) {
     buffer[file.length + 1 .. $ - 1] = msg[];
     buffer[$ - 1] = '\0';
 
-    _godot_api.print_error(&buffer.ptr[file.length + 1], "", buffer.ptr, cast(int) line);
+    _godot_api.print_error(&buffer.ptr[file.length + 1], "", buffer.ptr, cast(int) line, true);
 
     version (D_Exceptions)
         throw new AssertError(msg, file, line);
@@ -55,7 +55,7 @@ void godotAssertHandlerEditorDebug(string file, size_t line, string msg) {
     buffer[file.length + 1 .. $ - 1] = msg[];
     buffer[$ - 1] = '\0';
 
-    _godot_api.print_error(&buffer.ptr[file.length + 1], "", buffer.ptr, cast(int) line);
+    _godot_api.print_error(&buffer.ptr[file.length + 1], "", buffer.ptr, cast(int) line, true);
 
     //version(assert) // any `assert(x)` gets compiled; usually a debug version
     //{
@@ -100,5 +100,5 @@ void print(Args...)(Args args, string fn = __FUNCTION__, string f = __FILE__, in
             static assert(0, "Unable to print type " ~ typeof(arg).stringof);
     }
     auto utfstr = str.utf8;
-    _godot_api.print_warning(cast(char*) utfstr.data, &fn[0], &f[0], l);
+    _godot_api.print_warning(cast(char*) utfstr.data, &fn[0], &f[0], l, true);
 }

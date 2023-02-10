@@ -636,7 +636,8 @@ string escapeDType(string s, string godotType = "") {
         "auto",
         "init",
         "version",
-        "body", // for now at least...
+        "body",
+        "debug",
     );
     switch (s) {
     case "Object":
