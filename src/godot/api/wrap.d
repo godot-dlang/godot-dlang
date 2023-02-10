@@ -40,7 +40,23 @@ private string overloadError(methods...)() {
 }
 
 package(godot) template godotMethods(T) {
-    alias mfs(alias mName) = MemberFunctionsTuple!(T, mName);
+    // Makes tuple of member functions excluding function pointers
+    // this is basically std.traits.MemberFunctionsTuple but with static methods
+    template mfs(alias mName) {
+        static if (isSomeFunction!(__traits(getMember, T, mName)) 
+               && !isFunctionPointer!(__traits(getMember, T, mName))) {
+            static if (__traits(getOverloads, T, mName).length) {
+                alias mfs = __traits(getOverloads, T, mName);
+            }
+            else {
+                alias mfs = __traits(getMember, T, mName);
+            }
+        }
+        else {
+            alias mfs = AliasSeq!();
+        }
+    }
+    
     alias allMfs = staticMap!(mfs, __traits(derivedMembers, T));
     enum bool isMethod(alias mf) = hasUDA!(mf, Method);
 
@@ -236,7 +252,7 @@ package(godot) struct MethodWrapper(T, alias mf) {
         // TODO: check types for Variant compatibility, give a better error here
         // TODO: check numArgs, accounting for D arg defaults
 
-        if (!instance) {
+        if (!(__traits(isStaticFunction, mf) || instance)) {
             r_error.error = GDEXTENSION_CALL_ERROR_INSTANCE_IS_NULL;
             return;
         }
@@ -267,7 +283,14 @@ package(godot) struct MethodWrapper(T, alias mf) {
                 va[max(0, numArgs) + i] = &defaults[i];
         }
 
-        T obj = cast(T) instance;
+        // it seems to work with static calls without this alias,
+        // but let's make it a bit more safe
+        static if (__traits(isStaticFunction, mf)) {
+            alias obj = T;
+        }
+        else {
+            T obj = cast(T) instance;
+        } 
 
         A[ai] variantToArg(size_t ai)() {
             // should also be string and array?

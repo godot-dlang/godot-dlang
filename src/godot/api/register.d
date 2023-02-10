@@ -302,6 +302,9 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
         if (__traits(identifier, mf)[0] == '_')
             flags |= GDEXTENSION_METHOD_FLAG_VIRTUAL;
 
+        if (__traits(isStaticFunction, mf))
+            flags = GDEXTENSION_METHOD_FLAG_STATIC;
+
         enum isOnReady = godotName!mf == "_ready" && onReadyFieldNames!T.length;
 
         StringName snFunName = StringName(mfn);
