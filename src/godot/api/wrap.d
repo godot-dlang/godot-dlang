@@ -320,7 +320,13 @@ package(godot) struct MethodWrapper(T, alias mf) {
         static if (is(R == void)) {
             mixin("obj." ~ name ~ "(argCall);");
         } else {
-            mixin("v = Variant(obj." ~ name ~ "(argCall));");
+            // allow Variant to be returned as is, i.e. no wrapping
+            static if (is(R == Variant)) {
+                mixin("v = obj." ~ name ~ "(argCall);");
+            }
+            else {
+                mixin("v = Variant(obj." ~ name ~ "(argCall));");
+            }
 
             if (r_return && v._godot_variant._opaque.ptr) {
                 //*cast(godot_variant*) r_return = vd;   // since alpha 12 instead of this now have to copy it
@@ -421,6 +427,15 @@ package(godot) struct MethodWrapperMeta(alias mf) {
     extern (C)
     static GDExtensionPropertyInfo[2] getReturnInfo() {
         // FIXME: StringName makes it no longer CTFE-able
+        static if (is(R == Variant)) {
+            import godot.globalenums : PropertyUsageFlags;
+            enum propUsageFlags = PropertyUsageFlags.propertyUsageNilIsVariant;
+            // fallback value in case for some reason this enum will go away
+            //enum propUsageFlags = 131072;
+        }
+        else {
+            enum propUsageFlags = 0;
+        }
         GDExtensionPropertyInfo[2] retInfo = [ 
             GDExtensionPropertyInfo(
                 cast(uint32_t) Variant.variantTypeOf!R,
@@ -428,7 +443,7 @@ package(godot) struct MethodWrapperMeta(alias mf) {
                 cast(GDExtensionStringNamePtr) (Variant.variantTypeOf!R == VariantType.object ? stringName() : StringName(R.stringof)),
                 0, // aka PropertyHint.propertyHintNone
                 cast(GDExtensionStringNamePtr) stringName(),
-                GDEXTENSION_METHOD_FLAGS_DEFAULT
+                propUsageFlags
             ), 
             GDExtensionPropertyInfo.init 
         ];

@@ -133,6 +133,9 @@ class Test : GodotScript!Label {
     @Method
     static int getSomeNumber() { return 42; }
 
+    @Method
+    static Variant getNumberAsVariant() { return Variant(42); }
+    
     @Signal @Rename("send_message")
     static void function(String message) sendMessage;
 
