@@ -8,6 +8,7 @@ func _ready():
 	# t.test()
 	# t._ready()
 	# print("using static method: ", TestD.get_some_number())
+	# print("int in variant: ", TestD.get_number_as_variant())
 	pass # Replace with function body.
 
 
