@@ -64,6 +64,14 @@ struct String {
     // }
 
     /++
+	Numeric constructor. S can be a built-in numeric type.
+	+/
+    this(S)(in S num) if (isNumeric!S) {
+        import std.conv : text;
+        this(num.text);
+    }
+
+    /++
 	wchar_t constructor. S can be a slice or a null-terminated pointer.
 	+/
     this(S)(in S str) if (isImplicitlyConvertible!(S, const(wchar_t)[]) ||
