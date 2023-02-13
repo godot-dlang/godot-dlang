@@ -36,6 +36,14 @@ struct StringName {
         auto str = String(s);
         this(str);
     }
+    
+    /++
+	Numeric constructor. S can be a built-in numeric type.
+	+/
+    this(S)(in S num) if (isNumeric!S) {
+        import std.conv : text;
+        this(num.text);
+    }
 
     deprecated("Default struct ctor is not allowed, please use `stringName()` instead")
     @disable this();
