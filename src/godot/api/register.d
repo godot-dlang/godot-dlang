@@ -253,6 +253,7 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
                 enum string baseName = __traits(identifier, Base);
     }
 
+    // NOTE: Keep in sync with script.d createFunc(T) template
     static if (hasUDA!(T, Rename))
         enum string name = godotName!T;
     else

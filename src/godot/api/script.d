@@ -207,6 +207,12 @@ extern (C) package(godot) void* createFunc(T)(void* data) //nothrow @nogc
     import std.exception;
     import godot.api.register : _GODOT_library;
 
+    // NOTE: Keep in sync with register.d register(T) template
+    static if (hasUDA!(T, Rename))
+        enum string name = godotName!T;
+    else 
+        enum string name = __traits(identifier, T);
+
     T t = cast(T) _godot_api.mem_alloc(__traits(classInstanceSize, T));
 
     emplace(t);
@@ -215,7 +221,7 @@ extern (C) package(godot) void* createFunc(T)(void* data) //nothrow @nogc
 
     //static if(extendsGodotBaseClass!T)
     {
-        StringName classname = godotName!T;
+        StringName classname = name;
         StringName snInternalName = (GodotClass!T)._GODOT_internal_name;
         if (!t.owner._godot_object.ptr)
             t.owner._godot_object.ptr = _godot_api.classdb_construct_object(cast(GDExtensionStringNamePtr) snInternalName);
