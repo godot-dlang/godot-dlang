@@ -589,10 +589,18 @@ package(godot) struct OnReadyWrapper(T, alias mf) if (is(GodotClass!T : Node)) {
         }
 
         // Finally, call the actual _ready() if it exists.
-        MethodWrapper!(T, mf).callMethod(null, methodData, args, numArgs, r_return, r_error); // note that method_data here is actually D object instance
-        //enum bool isReady(alias func) = "_ready" == godotName!func;
-        //alias readies = Filter!(isReady, godotMethods!T);
-        //static if(readies.length) mixin("t."~__traits(identifier, readies[0])~"();");
+        static if (__traits(hasMember, T, "_ready") 
+                && __traits(compiles, __traits(getDerivedMember, T, "_ready"))) {
+            // superbelko: note that method_data here is actually D object instance 
+            //
+            // Explanation:
+            //   IIRC I just took some existing function that is for regular calls,
+            //   but then there is a special dedicated function for that or something like that,
+            //   but because we already have too much template heavy code 
+            //   adding yet another special case was too cumbersome.
+            //   But... it was quite some time ago and I forgot the details so I maybe wrong.
+            MethodWrapper!(T, mf).callMethod(null, methodData, args, numArgs, r_return, r_error); 
+        }
     }
 }
 
