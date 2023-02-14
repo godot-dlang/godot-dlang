@@ -143,6 +143,8 @@ package(godot) void initializeClassBinding(C)() {
                                 getUDAs!(mixin("C.GDExtensionClassBinding." ~ n), MethodHash)[0].hash,
                             );
                         }
+                    } else static if (C.stringof.endsWith("Singleton")) {
+                        // do nothing, let singleton load all methods on demand through getter check
                     } else {
                         //enum immutable(char*) cn = C._GODOT_internal_name;
                         __traits(getMember, C.GDExtensionClassBinding, n).bind(
