@@ -304,6 +304,11 @@ mixin template baseCasts() {
         return cast(inout) ret;
     }
 
+    inout(To) as(To)() inout if (extendsGodotBaseClass!To) {
+        godot_object go = cast() _godot_object;
+        return cast(inout(To)) _godot_api.object_get_instance_binding(go.ptr, _GODOT_library, &_instanceCallbacks);
+    }
+
     template opCast(To) if (isGodotBaseClass!To) {
         alias opCast = as!To;
     }
