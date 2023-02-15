@@ -542,6 +542,11 @@ class StringHelperGodotMethod : GodotMethod {
                 ret ~= arg.name.escapeDType; 
             }
         }
+        if (has_varargs) {
+            if (arguments.length != 0)
+                ret ~= ", ";
+            ret ~= "varArgs";
+        }
         ret ~= ");\n";
         return ret;
     }

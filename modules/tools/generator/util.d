@@ -77,6 +77,8 @@ class Type {
             return "godot_node_path";
         case "Dictionary":
             return "godot_dictionary";
+        case "Callable":
+            return "godot_callable";
         case "PackedByteArray":
         case "PackedInt32Array":
         case "PackedInt64Array":
@@ -140,7 +142,7 @@ class Type {
     bool canBeCopied() const {
         return only("Vector2", "Vector2i", "Vector3", "Vector3i", "Vector4", "Vector4i",
             "Transform2D", "Transform3D", "Projection", "Rect2", "Rect2i",
-            "Color", "Plane", "AABB", "Quaternion", "Basis", "RID"
+            "Color", "Plane", "AABB", "Quaternion", "Basis", "RID", "Nil"
         ).canFind(stripConstPointer.godotType);
     }
 
