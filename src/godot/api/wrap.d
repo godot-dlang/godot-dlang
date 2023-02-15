@@ -436,13 +436,27 @@ package(godot) struct MethodWrapperMeta(alias mf) {
         else {
             enum propUsageFlags = 0;
         }
+        __gshared static StringName snName = void;
+        __gshared static StringName snClassName = void;
+        __gshared static StringName snHint = void;
+
+        // shouldn't this be the opposite?
+        static if (Variant.variantTypeOf!R == VariantType.object) {
+            snClassName = stringName();
+        } 
+        else {
+            snClassName = StringName(R.stringof);
+        }
+        snName = stringName();
+        snHint = stringName();
+
         GDExtensionPropertyInfo[2] retInfo = [ 
             GDExtensionPropertyInfo(
                 cast(uint32_t) Variant.variantTypeOf!R,
-                cast(GDExtensionStringNamePtr) stringName(),
-                cast(GDExtensionStringNamePtr) (Variant.variantTypeOf!R == VariantType.object ? stringName() : StringName(R.stringof)),
+                cast(GDExtensionStringNamePtr) snName,
+                cast(GDExtensionStringNamePtr) snClassName,
                 0, // aka PropertyHint.propertyHintNone
-                cast(GDExtensionStringNamePtr) stringName(),
+                cast(GDExtensionStringNamePtr) snHint,
                 propUsageFlags
             ), 
             GDExtensionPropertyInfo.init 
