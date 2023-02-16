@@ -8,12 +8,12 @@ buildType "doc-json" {
 	buildRequirements "allowWarnings"
 	buildOptions "syntaxOnly"
 }
-dependency "sumtype" version="~>1.2.7"
 dependency "utf_bc" version="~>0.2.1"
 dependency "godot-dlang:util" version="*"
 targetType "library"
 dflags "-fPIC" platform="linux-dmd"
 dflags "-relocation-model=pic" platform="linux-ldc2"
+dflags "-dllimport=defaultLibsOnly" platform="windows-ldc2"
 sourcePaths "src" "classes"
 importPaths "src" "classes"
 subPackage {
@@ -27,7 +27,6 @@ subPackage {
 	description "Godot API binder for use with godot-dlang"
 	dependency "dxml" version="~>0.4.3"
 	dependency "godot-dlang:util" version="*"
-	dependency "sumtype" version="~>1.2.7"
 	dependency "libdparse" version="~>0.20.0"
 	dependency "asdf" version="~>0.7.15"
 	targetType "executable"

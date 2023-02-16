@@ -7,7 +7,7 @@
 	"copyright": "Copyright © 2018, sheepandshepherd",
 	"license": "MIT",
     
-    "dflags-windows-ldc": ["-link-defaultlib-shared=false"],
+    "dflags-windows-ldc": ["-dllimport=defaultLibsOnly"],
 	
 	"targetType": "dynamicLibrary",
 	"targetPath": "project",

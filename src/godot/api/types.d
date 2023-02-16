@@ -10,7 +10,7 @@ import godot.script, godot.object;
 
 import std.meta;
 
-import sumtype;
+import std.sumtype;
 
 /// 
 struct BuiltInClass {
