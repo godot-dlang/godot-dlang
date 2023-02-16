@@ -3,7 +3,7 @@
 	"description": "Minimal example to test Godot-D",
 	"targetType": "dynamicLibrary",
 	"targetPath": "project",
-	"dflags-windows-ldc": ["-link-defaultlib-shared=false"],
+	"dflags-windows-ldc": ["-dllimport=defaultLibsOnly"],
 	"libs-windows-debug-dmd": ["libcmtd"],
 	"libs-windows-release-dmd": ["libcmt"],
 	"dependencies":

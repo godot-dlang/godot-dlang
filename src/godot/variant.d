@@ -339,7 +339,7 @@ struct Variant {
 
     ///
     static Variant from(T : GodotType)(T t) {
-        import sumtype : match;
+        import std.sumtype : match;
 
         Variant ret;
         t.match!(
@@ -676,7 +676,7 @@ struct Variant {
 
     /// Is this Variant of the specified `type` or of a subclass of `type`?
     bool isType(GodotType type) const {
-        import sumtype : match;
+        import std.sumtype : match;
 
         return type.match!(
             (Ref!Script script) {
