@@ -303,7 +303,7 @@ package(godot) struct MethodWrapper(T, alias mf) {
             //else
             //return (cast(Variant*)args[ai]).as!(A[ai]);
             // TODO: properly fix double, it returns pointer instead of value itself
-            static if (is(A[ai] : real)) {
+            static if (isFloatingPoint!(A[ai])) {
                 return **cast(A[ai]**)&va[ai];
             } else {
                 return va[ai].as!(A[ai]);
