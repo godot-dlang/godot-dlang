@@ -476,8 +476,9 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
             pinfo.type = vt;
             pinfo.name = cast(GDExtensionStringNamePtr) snPropName;
             pinfo.hint = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE;
-            //pinfo.usage = GDEXTENSION_METHOD_FLAGS_DEFAULT | GDEXTENSION_METHOD_FLAG_EDITOR;
-            pinfo.usage = 7; // godot-cpp uses 7 as value which is default|const|editor currently, doesn't shows up in inspector without const. WTF?
+            //import godot.globalenums : PropertyUsageFlags;
+            //pinfo.usage = PropertyUsageFlags.propertyUsageDefault; // godot-cpp uses value 7 which is default|1 currently but there is no flag for 1
+            pinfo.usage = 7;
             pinfo.hint_string = cast(GDExtensionStringNamePtr) snHintString;
 
             // register acessor methods for that property
@@ -507,6 +508,7 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
     static foreach (pName; godotPropertyVariableNames!T) {
         {
             import std.string;
+            import godot.globalenums : PropertyUsageFlags;
 
             alias P = typeof(mixin("T." ~ pName));
             enum Variant.Type vt = Variant.variantTypeOf!P;
@@ -525,7 +527,7 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
             pinfo.class_name = cast(GDExtensionStringNamePtr) snPName;
             pinfo.type = vt;
             pinfo.name = cast(GDExtensionStringNamePtr) snPropName;
-            pinfo.usage = GDEXTENSION_METHOD_FLAGS_DEFAULT | GDEXTENSION_METHOD_FLAG_EDITOR;
+            pinfo.usage = PropertyUsageFlags.propertyUsageDefault; // godot-cpp uses value 7 which is default|1 currently but there is no flag for 1, works for now
             static if (uda.hintString.length)
                 StringName snHintString = StringName(uda.hintString);
             else
