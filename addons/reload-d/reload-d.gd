@@ -90,6 +90,9 @@ func _handle_requests():
 				# sometimes it receives junk as well, skip it
 				if json.parse(jsonstr) != OK:
 					continue
+				# skip any potential garbage
+				if typeof(json.data) != TYPE_DICTIONARY:
+					continue
 				var request = json.data
 				var action = request.get("action")
 				var extension = request.get("target")
@@ -104,9 +107,9 @@ func _handle_requests():
 ## Unload extension with a given name, e.g. "myextension"
 ## note that there is no file extension or file path
 func _unload_extension(s: String):
-	for ext in NativeExtensionManager.get_loaded_extensions():
+	for ext in GDExtensionManager.get_loaded_extensions():
 		if ext.contains(s):
-			NativeExtensionManager.unload_extension(ext)
+			GDExtensionManager.unload_extension(ext)
 			get_editor_interface()
 			print("reload-d: unloaded ext ", ext)
 
@@ -120,7 +123,7 @@ func _load_extension(s: String):
 	var extname = s.to_lower() + ".gdextension"
 	var extpath = find_file(rootpath, extname)
 	if extpath:
-		NativeExtensionManager.load_extension(extpath)
+		GDExtensionManager.load_extension(extpath)
 		print("reload-d: loaded ext ", extpath)
 	else:
 		printerr("reload-d: extension not found: ", s)
