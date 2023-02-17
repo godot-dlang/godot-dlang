@@ -194,9 +194,10 @@ mixin template GodotNativeLibrary(string symbolPrefix, Args...) {
         import godot.api.output;
         import godot.api.traits;
 
+        // FIXME: level 3 for some reason not happens
         // currently only scene-level scripts supported
-        if (level != GDEXTENSION_INITIALIZATION_SCENE)
-            return;
+        //if (level != GDEXTENSION_INITIALIZATION_SCENE)
+        //    return;
 
         // TODO: this will likely crash in a real project, classes has to be sorted in such way that
         // descendants unregistered before parent

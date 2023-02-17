@@ -90,7 +90,16 @@ void main(string[] args)
 {
     if (!parseArgs(args))
         return;
-    run();
+
+    try
+    {
+        run();
+    }
+    catch (Exception e)
+    {
+        //writeln(e);
+        writeln("reload-d: exception occurred, ignoring...");
+    }
 }
 
 /// Parses argument, returns true if app can continue or false if it should abort immediately
