@@ -461,11 +461,10 @@ struct Array {
     ///
     /// Note: `end` is non-inclusive, as in D slice operations, not as in Godot.
     Array slice(size_t start, size_t end, size_t stride = 1, bool deep = false) const {
-        Array ret = void;
+        //Array ret = void;
         //ret._godot_array = _godot_api.array_slice(&_godot_array,
         //	cast(int)start, cast(int)(end-1), cast(int)stride, deep);
-        ret._godot_array = _bind.slice(start, end, stride, deep)._godot_array;
-        return ret;
+        return _bind.slice(start, end, stride, deep);
     }
 
     /++

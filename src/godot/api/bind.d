@@ -75,6 +75,9 @@ Return callBuiltinMethod(Return, Args...)(in GDExtensionPtrBuiltInMethod method,
     else
         typeof(null) ret = null;
 
+    import core.stdc.string;
+    memset(&ret, 0, Return.sizeof);
+
     GDExtensionTypePtr[Args.length + 1] _args;
     foreach (i, a; args) {
         _args[i] = &a;
