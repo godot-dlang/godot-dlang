@@ -79,6 +79,13 @@ class Type {
             return "godot_dictionary";
         case "Callable":
             return "godot_callable";
+        case "Signal":
+            return "godot_signal";
+        case "RID":
+            return "godot_rid";
+        case "Object":
+        case "Nil": // we don't need Nil at all but for now let just make it work
+            return "godot_object";
         case "PackedByteArray":
         case "PackedInt32Array":
         case "PackedInt64Array":
@@ -173,6 +180,7 @@ class Type {
             "Rect2",
             "Rect2i",
             "RID",
+            "Signal",
             "String",
             "Transform3D",
             "Transform2D",
@@ -569,7 +577,7 @@ string escapeGodotType(string t) {
     if (t == "Callable")
         return "GodotCallable";
     if (t == "Signal")
-        return "Signal";
+        return "GodotSignal";
     if (t == "float")
         return "double";
     if (t == "int")
