@@ -338,7 +338,14 @@ class GodotMethod {
 
             ret ~= "\t\tVariant ret;\n";
             ret ~= "\t\tGDExtensionCallError err;\n";
-            ret ~= "\t\t_godot_api.object_method_bind_call(GDExtensionClassBinding." ~ wrapperIdentifier ~ ".mb, cast(void*) _godot_object.ptr, cast(void**) _args.ptr, _GODOT_args.length, cast(void*) &ret, &err);\n";
+
+            // there is subtle difference, we pass &godot_object for builtins and .ptr for any other object
+            // but normally they should work just with &godot_object, we had issues with that in the past though
+            // so here we now use real ptr value instead
+            if (parent.isBuiltinClass)
+                ret ~= "\t\t_godot_api.object_method_bind_call(GDExtensionClassBinding." ~ wrapperIdentifier ~ ".mb, cast(void*) &_godot_object, cast(void**) _args.ptr, _GODOT_args.length, cast(void*) &ret, &err);\n";
+            else
+                ret ~= "\t\t_godot_api.object_method_bind_call(GDExtensionClassBinding." ~ wrapperIdentifier ~ ".mb, cast(void*) _godot_object.ptr, cast(void**) _args.ptr, _GODOT_args.length, cast(void*) &ret, &err);\n";
             // ret ~= "\t\t";
             // DMD 2.101 complains about Type* pointers escaping function scope
             // So instead of returning it directly make a temporary pointer variable

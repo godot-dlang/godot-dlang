@@ -304,48 +304,50 @@ public import godot.classdb;`;
             ret ~= " _GODOT_base; }\n\talias _GODOT_base this;\n";
             ret ~= "\talias BaseClasses = AliasSeq!(typeof(_GODOT_base), typeof(_GODOT_base).BaseClasses);\n";
         } else {
-            ret ~= "\tgodot_object _godot_object;\n";
+            ret ~= "\t" ~ name.asOpaqueType ~ "  _godot_object;\n";
             ret ~= "\talias BaseClasses = AliasSeq!();\n";
         }
 
         ret ~= bindingStruct;
 
-        // equality
-        ret ~= "\t/// \n";
-        ret ~= "\tpragma(inline, true) bool opEquals(in " ~ className ~ " other) const {\n";
-        ret ~= "\t\treturn _godot_object.ptr is other._godot_object.ptr; \n\t}\n";
-        // null assignment to simulate D class references
-        ret ~= "\t/// \n";
-        ret ~= "\tpragma(inline, true) typeof(null) opAssign(typeof(null) n) {\n";
-        ret ~= "\t\t_godot_object.ptr = n; return null; \n\t}\n";
-        // equality with null; unfortunately `_godot_object is null` doesn't work with structs
-        ret ~= "\t/// \n";
-        ret ~= "\tpragma(inline, true) bool opEquals(typeof(null) n) const {\n";
-        ret ~= "\t\treturn _godot_object.ptr is n; \n\t}\n";
-        // comparison operator
-        if (name.godotType == "Object") {
+        if (!isBuiltinClass) {
+            // equality
             ret ~= "\t/// \n";
-            ret ~= "\tpragma(inline, true) int opCmp(in GodotObject other) const {\n";
-            ret ~= "\t\tconst void* a = _godot_object.ptr, b = other._godot_object.ptr; return a is b ? 0 : a < b ? -1 : 1; \n\t}\n";
+            ret ~= "\tpragma(inline, true) bool opEquals(in " ~ className ~ " other) const {\n";
+            ret ~= "\t\treturn _godot_object.ptr is other._godot_object.ptr; \n\t}\n";
+            // null assignment to simulate D class references
             ret ~= "\t/// \n";
-            ret ~= "\tpragma(inline, true) int opCmp(T)(in T other) const if(extendsGodotBaseClass!T) {\n";
-            ret ~= "\t\tconst void* a = _godot_object.ptr, b = other.owner._godot_object.ptr; return a is b ? 0 : a < b ? -1 : 1; \n\t}\n";
+            ret ~= "\tpragma(inline, true) typeof(null) opAssign(typeof(null) n) {\n";
+            ret ~= "\t\t_godot_object.ptr = n; return null; \n\t}\n";
+            // equality with null; unfortunately `_godot_object is null` doesn't work with structs
+            ret ~= "\t/// \n";
+            ret ~= "\tpragma(inline, true) bool opEquals(typeof(null) n) const {\n";
+            ret ~= "\t\treturn _godot_object.ptr is n; \n\t}\n";
+            // comparison operator
+            if (name.godotType == "Object") {
+                ret ~= "\t/// \n";
+                ret ~= "\tpragma(inline, true) int opCmp(in GodotObject other) const {\n";
+                ret ~= "\t\tconst void* a = _godot_object.ptr, b = other._godot_object.ptr; return a is b ? 0 : a < b ? -1 : 1; \n\t}\n";
+                ret ~= "\t/// \n";
+                ret ~= "\tpragma(inline, true) int opCmp(T)(in T other) const if(extendsGodotBaseClass!T) {\n";
+                ret ~= "\t\tconst void* a = _godot_object.ptr, b = other.owner._godot_object.ptr; return a is b ? 0 : a < b ? -1 : 1; \n\t}\n";
+            }
+            // hash function
+            ret ~= "\t/// \n";
+            ret ~= "\textern(D) size_t toHash() const nothrow @trusted { return cast(size_t)_godot_object.ptr; }\n";
+
+            ret ~= "\tmixin baseCasts;\n";
+
+            // Godot constructor.
+            ret ~= "\t/// Construct a new instance of " ~ className ~ ".\n";
+            ret ~= "\t/// Note: use `memnew!" ~ className ~ "` instead.\n";
+            ret ~= "\tstatic " ~ className ~ " _new() {\n";
+            ret ~= "\t\tStringName godotname = StringName(\"" ~ name.godotType ~ "\");\n";
+            ret ~= "\t\tif(auto obj = _godot_api.classdb_construct_object(cast(GDExtensionStringNamePtr) godotname))\n";
+            ret ~= "\t\t\treturn " ~ className ~ "(godot_object(obj));\n";
+            ret ~= "\t\treturn typeof(this).init;\n";
+            ret ~= "\t}\n";
         }
-        // hash function
-        ret ~= "\t/// \n";
-        ret ~= "\textern(D) size_t toHash() const nothrow @trusted { return cast(size_t)_godot_object.ptr; }\n";
-
-        ret ~= "\tmixin baseCasts;\n";
-
-        // Godot constructor.
-        ret ~= "\t/// Construct a new instance of " ~ className ~ ".\n";
-        ret ~= "\t/// Note: use `memnew!" ~ className ~ "` instead.\n";
-        ret ~= "\tstatic " ~ className ~ " _new() {\n";
-        ret ~= "\t\tStringName godotname = StringName(\"" ~ name.godotType ~ "\");\n";
-        ret ~= "\t\tif(auto obj = _godot_api.classdb_construct_object(cast(GDExtensionStringNamePtr) godotname))\n";
-        ret ~= "\t\t\treturn " ~ className ~ "(godot_object(obj));\n";
-        ret ~= "\t\treturn typeof(this).init;\n";
-        ret ~= "\t}\n";
 
         foreach (ct; constructors) {
             //ret ~= "\tstatic "~name.dType~" "~ ct.name ~ ct.templateArgsString ~ ct.argsString ~ " {\n";
