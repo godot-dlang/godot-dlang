@@ -15,30 +15,35 @@ confusing or undocumented features on the GitHub page.
 
 ### Dependencies
 - D compiler:
-  - [DMD 2.082+](https://dlang.org/download.html#dmd) or
-  - [LDC 1.11.0+](https://github.com/ldc-developers/ldc#from-a-pre-built-package)
+  - [DMD 2.096+](https://dlang.org/download.html#dmd) or
+  - [LDC 1.26.0+](https://github.com/ldc-developers/ldc#from-a-pre-built-package)
 - [DUB](https://dub.pm) package/build tool (usually included with both compilers)
 
 Before you start please keep in mind that this is purely experimental unstable volatile WIP project not officially maintained (or maintained at all) intented for those brave people who would like to try D and Godot.
 
 In no situation do not use it to ship your product, doing so of course is possible but by no means the author is responsible for the consequences.
 
-In order to proceed you will need D compiler (`dmd` or `ldc2`) with `dub`, `git`, and `godot editor beta4` (x64 version assumed)
+In order to proceed you will need D compiler (`dmd` or `ldc2`) with `dub`, `git`, and `godot editor` (x64 version assumed)
 
-### Manually building
+### Install godot-dlang using dub
+
+This will download and cache dub package
+- run `dub fetch godot-dlang`
+
+Proceed to (Creating dub project)[#creating-dub-project] for adding it to your D project.
+
+### Manually building (advanced)
+
+_Normaly one would use dub package, this section is for advanced users who would like to develop or hack godot-dlang_
+
 - clone git repo `git clone https://github.com/godot-dlang/godot-dlang.git`
 - switch it to master branch `git checkout master`
-- add local package `dub add-local .`, or if you have package from dub `dub add-override godot-dlang ~master .`
-- you should see that dub package version "~master" is registered
+- use dub local project version lock file `dub.selections.json` to specify where to look for your local copy
 
 > Note that if you have strange errors in `dub run` you might have godot-dlang cached in dub, you might need to remove it by using `dub remove godot-dlang`
 >
-> Also note that `dub add-local` might sometimes not works and throws `Non-optional dependency not found` error ([dlang/dub#986](https://github.com/dlang/dub/issues/986)). In that case do `dub remove-local .` in "godot-dlang" folder and then `dub add-path .` instead.
 
-### Using dub
-- run `dub fetch godot-dlang`
-
-### Binding API
+### Generating Godot Bindings
 - download godot beta4 editor and place it in somewhere like `C:\godot`
 - step into that directory and open terminal
 - generate script API information with command `godot.exe --dump-extension-api`
@@ -46,7 +51,7 @@ In order to proceed you will need D compiler (`dmd` or `ldc2`) with `dub`, `git`
 
 > This step is one time process, though you would need to re-generate API and bindings for every godot release
 
-### Creating godot project
+### Creating Godot project
 - open godot editor, and create a new project in some known location like `C:\godot\mycoolgame`
 - open it now and let godot do initial loading
 
@@ -54,7 +59,7 @@ In order to proceed you will need D compiler (`dmd` or `ldc2`) with `dub`, `git`
 - open your newly created project in terminal
 - run `dub init`, make sure to give it a name for example `mydplugin`
 - add godot-dlang master dependency `dub add godot-dlang@~master`
-- if you use `ldc2` as compiler, then add `"dflags-windows-ldc": ["-link-defaultlib-shared=false"]` to your `dub.json`
+- (optional) (Windows) if you use `ldc2` as compiler, then add `"dflags-windows-ldc": ["-dllimport=defaultLibsOnly"]` to your `dub.json`, or you will have linker errors
 - open up `dub.json` and add `"targetType": "dynamicLibrary",` after `authors` field
 your dub.json file should look like this now:
 
@@ -65,7 +70,7 @@ __dub.json__:
         "Godot-DLang"
     ],
     "targetType": "dynamicLibrary",
-    "dflags-windows-ldc": ["-link-defaultlib-shared=false"],
+    "dflags-windows-ldc": ["-dllimport=defaultLibsOnly"],
     "copyright": "Copyright © 2022, Godot-DLang",
     "dependencies": {
         "godot-dlang": "~master",
@@ -95,7 +100,9 @@ class Greeter : GodotScript!Node {
     // this method is a special godot entry point when object is added to the scene
     @Method 
     void _ready() {
-        print(gs!"Hello from D");
+        // 'gs' is a string wrapper that converts D string to godot string
+        // usually there is helper functions that takes regular D strings and do this for you
+        print(gs!"Hello from D"); 
     }
 }
 
@@ -149,6 +156,8 @@ Enjoy your new game!
 
 ### Automatic reloading of native extension
 
+_This feature is experimental_
+
 Copy `addons/reload-d` editor plugin to your godot project `addons` folder and enable `reload-d` plugin in `Project -> Project Settings -> Plugins` menu.
 
 Next update your `dub.json` project and add following lines, this will automatically tells editor to unload library and then load it again after build.
@@ -162,7 +171,7 @@ Next update your `dub.json` project and add following lines, this will automatic
 ### Godot API
 Godot's full [script API](http://docs.godotengine.org/) can be used from D:  
 - `godot` submodules contain container, math, and engine structs like `Vector3` and `String`.
-- Other submodules of `godot` contain bindings to Godot classes, auto-generated from the engine's API. These are the C++ classes scripts can be attached to.
+- Other submodules of `godot` contain bindings to Godot classes, auto-generated from the engine's API. These are the native classes scripts can be attached to.
 - These bindings use camelCase instead of snake_case.
     ```D
     // Change window to fullscreen example:
@@ -177,25 +186,20 @@ Godot's full [script API](http://docs.godotengine.org/) can be used from D:
 
 ## Versioning
 
-The GDExtension API is binary-compatible between Godot versions, so a D library
-can be used with a Godot build older or newer than the one used to generate the
-bindings. D bindings must still be generated with the most recent GDExtension API
-(`godot.exe --dump-extension-api`) even if an older Godot binary will be used.
+The GDExtension API should be binary-compatible between Godot minor versions as in SemVer convention, so a D library
+built for Godot v4.0.0 should work with any v4.0.x versions but not guaranteed to work with v4.1.0 or later. 
+
+D bindings must be generated for your target Godot minor release version
+(`godot.exe --dump-extension-api`).
 
 Extension version properties can be checked to prevent newer functions from
 being called with older Godot binaries. For example:
 ```D
-if(GDNativeVersion.hasNativescript!(1, 1)) useNewNativescriptFunctions();
+import godot.apiinfo; // contains version information about bindings
+
+if(VERSION_MINOR > 0) useNewGodotFunctions();
 else doNothing();
 ```
-
-A D library can also specify minimum required extensions using a compiler flag
-or the `versions` property in their DUB project. The format of the version flag
-is `GDNativeRequire<Extension name or "Core">_<major version>_<minor version>`.
-
-For example, with `"versions": [ "GDNativeRequireNativescript_1_1" ]` in
-`dub.json`, runtime checks and non-1.1 code such as the example above can be
-safely optimized out in both library code and binding-internal code.
 
 License
 -------
