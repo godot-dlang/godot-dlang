@@ -188,6 +188,20 @@ package(godot) template godotPropertyVariableNames(T) {
     alias godotPropertyVariableNames = Filter!(isVariable, fieldNames);
 }
 
+package(godot) template godotSingletonVariableNames(T) {
+    import std.traits;
+    alias fieldNames = AliasSeq!(__traits(derivedMembers, T));
+    alias field(string name) = Alias!(__traits(getMember, T, name));
+    template isSingleton(string name) {
+        static if (__traits(getProtection, __traits(getMember, T, name)) == "public" && hasStaticMember!(T, name))
+            enum bool isSingleton = hasUDA!(field!name, Singleton);
+        else
+            enum bool isSingleton = false;
+    }
+
+    alias godotSingletonVariableNames = Filter!(isSingleton, fieldNames);
+}
+
 /// get the common Variant type for a set of function or variable aliases
 package(godot) template extractPropertyVariantType(seq...) {
     template Type(alias a) {
