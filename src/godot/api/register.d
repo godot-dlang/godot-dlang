@@ -592,6 +592,26 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
         }
     }
 
+    static foreach (pName; godotSingletonVariableNames!T) {
+        {
+            import std.string;
+            import godot.globalenums : PropertyUsageFlags;
+
+            alias P = typeof(mixin("T." ~ pName));
+            alias storageField = mixin("T."~pName);
+            enum Variant.Type vt = Variant.variantTypeOf!P;
+            alias udas = getUDAs!(mixin("T." ~ pName), Singleton);
+            enum Singleton uda = is(udas[0]) ? Singleton.init : udas[0];
+
+            StringName snPropName = StringName(pName);
+
+            storageField = memnew!P;
+            
+            import godot.engine;
+            Engine.registerSingleton(snPropName, storageField);
+        }
+    }
+
 }
 
 /++
@@ -623,6 +643,20 @@ void unregister(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
         enum string name = __traits(identifier, T);
 
     void unregister() {
+        static foreach (pName; godotSingletonVariableNames!T) {{
+            import std.string;
+            import godot.engine;
+
+            alias P = typeof(mixin("T." ~ pName));
+            alias storageField = mixin("T."~pName);
+            alias udas = getUDAs!(mixin("T." ~ pName), Singleton);
+            enum Singleton uda = is(udas[0]) ? Singleton.init : udas[0];
+
+            StringName snPropName = StringName(pName);
+            Engine.unregisterSingleton(snPropName);
+            memdelete(storageField);
+        }}
+
         StringName snClass = StringName(name);
         _godot_api.classdb_unregister_extension_class(lib, cast(GDExtensionStringNamePtr) snClass);
     }

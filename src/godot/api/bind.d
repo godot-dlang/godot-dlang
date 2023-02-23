@@ -80,6 +80,12 @@ Return callBuiltinMethod(Return, Args...)(in GDExtensionPtrBuiltInMethod method,
 
     GDExtensionTypePtr[Args.length + 1] _args;
     foreach (i, a; args) {
+        // TODO: remove this static_if hack thing once the object casts mess will be resolved
+        static if (is(typeof(a) == GodotObject))
+          _args[i] = cast(void*) a;
+        else static if (is(typeof(a) == void*))
+          _args[i] = a;
+        else
         _args[i] = &a;
     }
 

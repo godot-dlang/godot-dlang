@@ -142,13 +142,18 @@ Allocate a new T and attach it to a new Godot object.
 RefOrT!T memnew(T)() if (extendsGodotBaseClass!T) {
     import godot.refcounted;
 
+    // NOTE: Keep in sync with register.d register(T) template
+    static if (hasUDA!(T, Rename))
+        enum string name = godotName!T;
+    else 
+        enum string name = __traits(identifier, T);
+
     //GodotClass!T o = GodotClass!T._new();
-    auto name = StringName(godotName!T);
-    auto obj = _godot_api.classdb_construct_object(cast(GDExtensionStringNamePtr) name);
+    auto snName = StringName(name);
+    auto obj = _godot_api.classdb_construct_object(cast(GDExtensionStringNamePtr) snName);
     assert(obj !is null);
 
-    auto id = _godot_api.object_get_instance_id(obj);
-    T o = cast(T) _godot_api.object_get_instance_from_id(id);
+    T o = cast(T) _godot_api.object_get_instance_binding(obj, _GODOT_library, &_instanceCallbacks);
     //static if(extends!(T, RefCounted))
     //{
     //	bool success = o.initRef();

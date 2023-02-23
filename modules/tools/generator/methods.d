@@ -396,7 +396,14 @@ class GodotMethod {
             foreach (ai, const arg; arguments) {
                 // FIXME: const cast hack
                 // FIXME: make auto-cast in escapeDType?
-                ret ~= ", cast() " ~ arg.name.escapeDType(arg.type.godotType); 
+                // FIXME: StringName pointer wrapping should be in call handlers
+                //        it also relies on that ugly cast.
+                //        The problem is that for some reason that call expects StringName**
+                //        and unlike C++ I haven't come with a way to do that
+                if (arg.type.godotType == "StringName" && callType == "callBuiltinMethod")
+                    ret ~= ", cast(void*) " ~ arg.name.escapeDType(arg.type.godotType); 
+                else
+                    ret ~= ", cast() " ~ arg.name.escapeDType(arg.type.godotType); 
             }
             ret ~= ");\n";
             // wrap temporary object

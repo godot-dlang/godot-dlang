@@ -226,6 +226,10 @@ struct OnInit {
         return ret;
     }
 }
-// TODO: support static arrays
 
-deprecated alias RAII = OnInit;
+/++
+A UDA to mark a static field to be used by Godot as a global singleton object.
++/
+struct Singleton {
+
+}

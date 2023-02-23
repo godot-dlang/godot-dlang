@@ -20,7 +20,10 @@ struct Ref(T) {
         package(godot) T _self;
         pragma(inline, true)
         package(godot) GodotClass!T _reference() {
-            return (_self) ? _self.owner : GodotClass!T.init;
+            // TODO: check again when object casts will be fixed
+            //       for now it has to be this way or _self will point at random garbage
+            //       causing unexpected failures, see test project "RefTest t = n;" aroung line 356
+            return (_self) ? *cast(typeof(return)*) &_self : GodotClass!T.init;
         }
     }
 
