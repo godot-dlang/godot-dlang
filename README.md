@@ -2,6 +2,11 @@
 
 # Godot-DLang
 
+[![dub](https://img.shields.io/dub/v/godot-dlang.svg?logo=d&style=flat-square)](https://code.dlang.org/packages/godot-dlang)
+[![git](https://img.shields.io/github/v/release/godot-dlang/godot-dlang?label=git&logo=github&style=flat-square)](https://github.com/godot-dlang/godot-dlang)
+![dub rating](https://badgen.net/dub/rating/godot-dlang?style=flat)
+![dub rating](https://badgen.net/github/stars/godot-dlang/godot-dlang?style=flat)
+
 D language bindings for the [Godot Engine](https://godotengine.org/)'s
 [GDExtension API](https://github.com/godotengine/godot-headers).
 
