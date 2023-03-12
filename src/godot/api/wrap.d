@@ -319,7 +319,13 @@ package(godot) struct MethodWrapper(T, alias mf) {
             // TODO: properly fix double, it returns pointer instead of value itself
             static if (isFloatingPoint!(A[ai])) {
                 return **cast(A[ai]**)&va[ai];
-            } else {
+            } 
+            else static if (isGodotClass!(A[ai])) {
+                if (args)
+                    return *cast(A[ai]*)args[ai];
+                return A[ai].init;
+            }
+            else {
                 return va[ai].as!(A[ai]);
             }
         }
