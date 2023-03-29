@@ -16,6 +16,7 @@ dflags "-relocation-model=pic" platform="linux-ldc2"
 dflags "-dllimport=defaultLibsOnly" platform="windows-ldc2"
 sourcePaths "src" "classes"
 importPaths "src" "classes"
+/* sourceFiles "src/godot/abi/gdnative_interface.i" */
 subPackage {
 	name "util"
 	targetType "library"

@@ -33,11 +33,11 @@
  */
 // Obsolete since now usage of ImportC with new godot's --dump-gdextension-interface option is available
 
-module godot.abi.gdextension;
+module godot.abi.gdextension_old;
 
 import godot.abi.types;
 import core.stdc.config;
-// import core.stdc.stddef : wchar_t;
+import core.stdc.stddef : wchar_t;
 
 extern (C):
 //@nogc nothrow:
