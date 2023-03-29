@@ -505,7 +505,8 @@ struct Variant {
             
             // auto fn = _godot_api.get_variant_to_type_constructor(VarType);
             auto fn = _godot_api.get_variant_from_type_constructor(cast(GDExtensionVariantType) VarType);
-            fn(cast(void*)&ret, cast(void*)&_godot_variant);
+            // fn(cast(void*)&ret, cast(void*)&_godot_variant); // old
+            fn(cast(void*)&_godot_variant, cast(void*)&ret); // new
 
             static if (directlyCompatible!R)
                 return ret;
