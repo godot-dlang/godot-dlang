@@ -2,7 +2,13 @@ module godot.abi.types;
 
 //import godot.abi.api;
 import godot.api.types;
+<<<<<<< HEAD
 // import core.stdc.stddef : wchar_t;
+||||||| 3a73fd4
+import core.stdc.stddef : wchar_t;
+=======
+public import core.stdc.stddef : wchar_t;
+>>>>>>> b2fec35c077b09ef053c45c235e04f3b64e96ecf
 
 @nogc nothrow:
 extern (C):
