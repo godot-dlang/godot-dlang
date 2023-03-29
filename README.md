@@ -35,7 +35,7 @@ In order to proceed you will need D compiler (`dmd` or `ldc2`) with `dub`, `git`
 This will download and cache dub package
 - run `dub fetch godot-dlang`
 
-Proceed to (Creating dub project)[#creating-dub-project] for adding it to your D project.
+Proceed to [Creating dub project](#creating-dub-project) for adding it to your D project.
 
 ### Manually building (advanced)
 
