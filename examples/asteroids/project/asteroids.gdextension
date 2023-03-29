@@ -4,5 +4,5 @@ entry_symbol = "asteroids_gdextension_entry"
 
 [libraries]
 
-linux.64 = "libasteroids.so"
+linux.64 = "libgodot-dlang_asteroids.so"
 windows.64 = "godot-dlang_asteroids.dll"

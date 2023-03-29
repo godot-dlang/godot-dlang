@@ -4,22 +4,23 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dbehya0gcas5a"
 path.s3tc="res://.godot/imported/eso0932a.jpg-bea40a6caa6a9d427963dfbb93c38504.s3tc.ctex"
+path.etc2="res://.godot/imported/eso0932a.jpg-bea40a6caa6a9d427963dfbb93c38504.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc", "etc2"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://eso0932a.jpg"
-dest_files=["res://.godot/imported/eso0932a.jpg-bea40a6caa6a9d427963dfbb93c38504.s3tc.ctex"]
+dest_files=["res://.godot/imported/eso0932a.jpg-bea40a6caa6a9d427963dfbb93c38504.s3tc.ctex", "res://.godot/imported/eso0932a.jpg-bea40a6caa6a9d427963dfbb93c38504.etc2.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
 compress/lossy_quality=0.7
 compress/hdr_compression=1
+compress/bptc_ldr=0
 compress/normal_map=0
 compress/channel_pack=0
 mipmaps/generate=true

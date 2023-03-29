@@ -8,11 +8,6 @@ script = ExtResource("1_nbra5")
 [node name="Panel" type="Panel" parent="."]
 
 [node name="Label" type="TestD" parent="Panel"]
-_import_path = NodePath("")
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-editor_description = ""
 number = 24
 long_node_path = NodePath("One/Looooong/Incredibly/Unbroken/Node/Path/Label")
 layout_mode = 1
@@ -20,9 +15,9 @@ offset_right = 211.0
 offset_bottom = 26.0
 size_flags_vertical = 0
 text = "Old text set in Godot editor"
-script = null
 
 [node name="ColorRect" type="ColorRect" parent="Panel/Label"]
+layout_mode = 1
 anchors_preset = 11
 anchor_left = 1.0
 anchor_right = 1.0
@@ -32,6 +27,7 @@ grow_vertical = 2
 color = Color(0, 1, 0, 1)
 
 [node name="One" type="Panel" parent="Panel/Label"]
+layout_mode = 0
 
 [node name="Looooong" type="Panel" parent="Panel/Label/One"]
 layout_mode = 0
@@ -60,3 +56,5 @@ offset_top = 100.0
 offset_right = 1.0
 offset_bottom = 123.0
 text = "label2"
+
+[connection signal="send_message" from="Panel/Label" to="." method="_on_label_send_message"]
