@@ -32,11 +32,11 @@
  * Together with the JSON file, you should be able to generate any binder.
  */
 
-module godot.abi.gdextension_old;
+module godot.abi.gdextension;
 
 import godot.abi.types;
 import core.stdc.config;
-import core.stdc.stddef : wchar_t;
+// import core.stdc.stddef : wchar_t;
 
 extern (C):
 //@nogc nothrow:

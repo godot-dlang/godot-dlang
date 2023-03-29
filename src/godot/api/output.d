@@ -9,7 +9,7 @@ import godot.abi, godot;
 The release-mode Godot-D assert handler redirects assert messages to the Godot
 error handlers and terminates the program.
 +/
-// nothrow
+nothrow
 void godotAssertHandlerCrash(string file, size_t line, string msg) {
     import core.exception;
     import std.experimental.allocator.mallocator;
@@ -41,7 +41,7 @@ Unlike the default D assert handler, this one doesn't terminate the program,
 allowing the messages to remain in Godot's Debugger tab and matching how Godot
 error macros behave.
 +/
-// nothrow
+nothrow
 void godotAssertHandlerEditorDebug(string file, size_t line, string msg) {
     import core.exception;
     import std.experimental.allocator.mallocator;

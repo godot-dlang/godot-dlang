@@ -14,9 +14,6 @@ bin/
 *.exe
 *.pdb
 
-# Linux Binaries
-generator
-
 # Generated
 extension_api.json
 docs.json

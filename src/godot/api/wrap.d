@@ -261,7 +261,7 @@ package(godot) struct MethodWrapper(T, alias mf) {
 	+/
     extern (C) // for calling convention
     static void callMethod(void* methodData, void* instance,
-        const(void**) args, long numArgs, void* r_return, GDExtensionCallError* r_error) //@nogc nothrow
+        const(void**) args, const long numArgs, void* r_return, GDExtensionCallError* r_error) //@nogc nothrow
         {
         // TODO: check types for Variant compatibility, give a better error here
         // TODO: check numArgs, accounting for D arg defaults
@@ -436,7 +436,7 @@ package(godot) struct MethodWrapperMeta(alias mf) {
             snHintStrings[i] = stringName();
             argInfo[i].class_name = cast(GDExtensionStringNamePtr) snClassNames[i];
             argInfo[i].name = cast(GDExtensionStringNamePtr) snArgNames[i];
-            argInfo[i].type = cast(GDExtensionVariantType) Variant.variantTypeOf!(A[i]);
+            argInfo[i].type = Variant.variantTypeOf!(A[i]);
             argInfo[i].usage = GDEXTENSION_METHOD_FLAGS_DEFAULT;
             argInfo[i].hint_string = cast(GDExtensionStringNamePtr) snHintStrings[i];
         }
@@ -472,7 +472,7 @@ package(godot) struct MethodWrapperMeta(alias mf) {
 
         GDExtensionPropertyInfo[2] retInfo = [ 
             GDExtensionPropertyInfo(
-                cast(GDExtensionVariantType) Variant.variantTypeOf!R,
+                cast(uint32_t) Variant.variantTypeOf!R,
                 cast(GDExtensionStringNamePtr) snName,
                 cast(GDExtensionStringNamePtr) snClassName,
                 0, // aka PropertyHint.propertyHintNone
