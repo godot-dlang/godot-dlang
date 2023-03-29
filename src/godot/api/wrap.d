@@ -261,7 +261,7 @@ package(godot) struct MethodWrapper(T, alias mf) {
 	+/
     extern (C) // for calling convention
     static void callMethod(void* methodData, void* instance,
-        const(void**) args, long numArgs, void* r_return, GDExtensionCallError* r_error) //@nogc nothrow
+        const(void*)* args, long numArgs, void* r_return, GDExtensionCallError* r_error) //@nogc nothrow
         {
         // TODO: check types for Variant compatibility, give a better error here
         // TODO: check numArgs, accounting for D arg defaults
@@ -660,7 +660,7 @@ package(godot) struct VariableWrapper(T, alias var) {
 
     extern (C) // for calling convention
     static void callPropertyGet(void* methodData, void* instance,
-        const(void**) args, const long numArgs, void* r_return, GDExtensionCallError* r_error) {
+        const(void*)* args, long numArgs, void* r_return, GDExtensionCallError* r_error) {
         auto obj = cast(T) instance;
         if (!obj) {
             r_error.error = GDEXTENSION_CALL_ERROR_INSTANCE_IS_NULL;
@@ -676,7 +676,7 @@ package(godot) struct VariableWrapper(T, alias var) {
 
     extern (C) // for calling convention
     static void callPropertySet(void* methodData, void* instance,
-        const(void**) args, const long numArgs, void* r_return, GDExtensionCallError* r_error) {
+        const(void*)* args, long numArgs, void* r_return, GDExtensionCallError* r_error) {
         auto obj = cast(T) instance;
         if (!obj) {
             r_error.error = GDEXTENSION_CALL_ERROR_INSTANCE_IS_NULL;

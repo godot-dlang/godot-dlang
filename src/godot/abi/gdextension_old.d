@@ -31,6 +31,7 @@
 /* This is a C class header, you can copy it and use it directly in your own binders.
  * Together with the JSON file, you should be able to generate any binder.
  */
+// Obsolete since now usage of ImportC with new godot's --dump-gdextension-interface option is available
 
 module godot.abi.gdextension_old;
 

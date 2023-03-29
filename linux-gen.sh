@@ -1,13 +1,17 @@
 #!/bin/bash
+# TODO: add arg option
+# echo "Dumping GDExtension interface"
 
-#Godot path
-GODOT="godot"
+# godot --dump-gdextension-interface
+# clang -E gdextension_interface.h -o src/godot/abi/gdextension.i
 
-echo "==== Getting api.json ====="
-$GODOT --gdnative-generate-json-api api.json
+echo "Dumping GDExtension API" 
 
-echo "==== Downloading gdnative_api.json ===="
-curl -O https://raw.githubusercontent.com/godotengine/godot/master/modules/gdnative/gdnative_api.json
+godot --dump-extension-api
 
-echo "==== Generating ===="
-dub run godot-dlang:generator
+echo "Generating API"
+
+dub run godot-dlang:generator -- -j extension_api.json -o
+
+
+
