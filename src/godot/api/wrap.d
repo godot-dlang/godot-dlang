@@ -358,7 +358,7 @@ package(godot) struct MethodWrapper(T, alias mf) {
 
     extern (C)
     static void callPtrMethod(void* methodData, void* instance,
-        const(void**) args, void* r_return) {
+        const(void*)* args, void* r_return) {
         //GDExtensionCallError err;
         //callMethod(methodData, instance, args, A.length, r_return, &err);
 
@@ -541,7 +541,7 @@ package(godot) struct MethodWrapperMeta(alias mf) {
 package(godot) struct OnReadyWrapper(T, alias mf) if (is(GodotClass!T : Node)) {
     extern (C) // for calling convention
     static void callOnReady(void* methodData, void* instance,
-        const(void**) args, const long numArgs, void* r_return, GDExtensionCallError* r_error) {
+        const(void*)* args, long numArgs, void* r_return, GDExtensionCallError* r_error) {
         //if (!instance)
         //{
         //	*r_error = cast(GDExtensionCallError) GDEXTENSION_CALL_ERROR_INSTANCE_IS_NULL;
