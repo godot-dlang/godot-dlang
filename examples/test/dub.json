@@ -6,8 +6,16 @@
 	"dflags-windows-ldc": ["-dllimport=defaultLibsOnly"],
 	"libs-windows-debug-dmd": ["libcmtd"],
 	"libs-windows-release-dmd": ["libcmt"],
+    "targetName": "godot-dlang_test",
 	"dependencies":
 	{
 		"godot-dlang": { "path": "../../" }
-	}
+	},
+    "buildTypes": {
+        "debugImportC": {
+            "buildOptions": ["debugMode", "debugInfo"],
+            "dflags": ["-version=importc"]
+        }
+    }
+
 }
