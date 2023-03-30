@@ -31,13 +31,12 @@
 /* This is a C class header, you can copy it and use it directly in your own binders.
  * Together with the JSON file, you should be able to generate any binder.
  */
-// Obsolete since now usage of ImportC with new godot's --dump-gdextension-interface option is available
 
-module godot.abi.gdextension_old;
+module godot.abi.gdextension_binding;
 
 import godot.abi.types;
 import core.stdc.config;
-import core.stdc.stddef : wchar_t;
+public import core.stdc.stddef : wchar_t;
 
 extern (C):
 //@nogc nothrow:
@@ -308,8 +307,8 @@ enum : GDExtensionClassMethodArgumentMetadata {
     GDEXTENSION_METHOD_ARGUMENT_METADATA_REAL_IS_DOUBLE
 }
 
-alias GDExtensionClassMethodCall = void function(void* method_userdata, GDExtensionClassInstancePtr p_instance, const GDExtensionVariantPtr* p_args, const GDExtensionInt p_argument_count, GDExtensionVariantPtr r_return, GDExtensionCallError* r_error);
-alias GDExtensionClassMethodPtrCall = void function(void* method_userdata, GDExtensionClassInstancePtr p_instance, const GDExtensionTypePtr* p_args, GDExtensionTypePtr r_ret);
+alias GDExtensionClassMethodCall = void function(void* method_userdata, GDExtensionClassInstancePtr p_instance, const(GDExtensionVariantPtr)* p_args, GDExtensionInt p_argument_count, GDExtensionVariantPtr r_return, GDExtensionCallError* r_error);
+alias GDExtensionClassMethodPtrCall = void function(void* method_userdata, GDExtensionClassInstancePtr p_instance, const(GDExtensionTypePtr)* p_args, GDExtensionTypePtr r_ret);
 
 /* passing -1 as argument in the following functions refers to the return type */
 alias GDExtensionClassMethodGetArgumentType = GDExtensionVariantType function(
