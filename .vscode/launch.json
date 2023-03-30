@@ -55,6 +55,42 @@
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
+            "console":"internalConsole"
+        },
+        {
+            "name": "Linux (test project) GD4 editor",
+            "type": "lldb",
+            "request": "launch",
+            "program": "/bin/godot",
+            "args": ["${workspaceFolder}/examples/test/project/project.godot"],
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole"
+        },
+        {
+            "name": "Linux (asteroids) GD4 editor",
+            "type": "lldb",
+            "request": "launch",
+            "program": "/bin/godot",
+            "args": ["${workspaceFolder}/examples/asteroids/project/project.godot"],
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole"
+        },
+        {
+            "name": "Linux (test project) GD4 instance",
+            "type": "lldb",
+            "request": "launch",
+            "program": "/bin/godot",
+            "args": ["--path", "${workspaceFolder}/examples/test/project"],
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole"
+        },
+        {
+            "name": "Linux (asteroids) GD4 instance",
+            "type": "lldb",
+            "request": "launch",
+            "program": "/bin/godot",
+            "args": ["--path", "${workspaceFolder}/examples/asteroids/project"],
+            "cwd": "${workspaceFolder}",
             "console": "internalConsole"
         }
     ]
