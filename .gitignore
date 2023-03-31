@@ -5,6 +5,7 @@ dub.userprefs
 
 # Binaries
 bin/
+lib/
 *.o
 *.obj
 *.a

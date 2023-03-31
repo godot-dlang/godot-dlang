@@ -15,10 +15,11 @@ import asdf;
 import std.string : toLower, chompPrefix;
 import std.stdio : writeln, writefln;
 import std.file : exists, readText, mkdirRecurse, isDir, writeFile = write, dirEntries, SpanMode, rmdirRecurse;
-import std.path : buildPath, dirName, extension, stripExtension, baseName;
+import std.path : buildPath, dirName, extension, stripExtension, baseName, dirSeparator;
 import std.format : format;
 import std.getopt : defaultGetoptPrinter, getopt, GetoptResult;
 import std.range : empty;
+import std.array: split;
 
 void usage(GetoptResult opt) {
     defaultGetoptPrinter("Usage: [OPTION]... [outputDir]\n", opt.options);
@@ -45,7 +46,7 @@ int main(string[] args) {
     if (args.length >= 2)
         outputDir = args[1];
     else {
-        outputDir = args[0].dirName.buildPath("classes");
+        outputDir = args[0].dirName.split(dirSeparator ~ "lib")[0].buildPath("classes");
         writefln("Outputting to default directory %s...", outputDir);
     }
     if (outputDir.exists) {

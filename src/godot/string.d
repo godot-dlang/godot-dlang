@@ -2,10 +2,10 @@
 Godot's ref-counted wchar_t String class.
 
 Copyright:
-Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.
-Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md)
-Copyright (c) 2017-2018 Godot-D contributors
-Copyright (c) 2022-2022 Godot-DLang contributors
+Copyright (c) 2007 Juan Linietsky, Ariel Manzur.
+Copyright (c) 2014 Godot Engine contributors (cf. AUTHORS.md)
+Copyright (c) 2017 Godot-D contributors
+Copyright (c) 2022 Godot-DLang contributors
 
 License: $(LINK2 https://opensource.org/licenses/MIT, MIT License)
 
