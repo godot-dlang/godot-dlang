@@ -16,6 +16,25 @@ Originally a fork of [godot-d](https://github.com/godot-d/godot-d)
 breaking changes, bugs, and missing documentation. Please report any issues and
 confusing or undocumented features on the GitHub page.
 
+<!--toc:start-->
+- [Usage](#usage)
+- [Dependencies](#dependencies)
+- [Install](#install-godot-dlang-using-dub)
+- [Manually building (advanced)](#manually-building-advanced)
+- [Generating Godot Bindings](#generating-godot-bindings)
+- [Manually creating project](#manually-creating-project)
+  - [Creating Godot project](#creating-godot-project)
+  - [Creating dub project](#creating-dub-project)
+  - [Creating your first D script](#creating-your-first-d-script)
+  - [Register GDExtension](#register-gdextension)
+  - [Use D scripts in godot](#use-d-scripts-in-godot )
+- [Creating project by using init script](#creating-project-by-using-init-script)
+- [Extend as you wish!](#extend-as-you-wish)
+<!-- - [Automatic reloading of native extension](#automatic-reloading-of-native-extension) -->
+- [Godot API](#godot-api)
+- [Versioning](#versioning)
+<!--toc:end-->
+
 ## Usage
 
 ### Dependencies
@@ -23,49 +42,50 @@ confusing or undocumented features on the GitHub page.
   - [DMD 2.096+](https://dlang.org/download.html#dmd) or
   - [LDC 1.26.0+](https://github.com/ldc-developers/ldc#from-a-pre-built-package)
 - [DUB](https://dub.pm) package/build tool (usually included with both compilers)
+- [Godot 4](https://godotengine.org) editor (standard version)
 
-Before you start please keep in mind that this is purely experimental unstable volatile WIP project not officially maintained (or maintained at all) intented for those brave people who would like to try D and Godot.
+Before you start please keep in mind that this is purely experimental unstable volatile WIP project intended for those brave people who would like to try D and Godot.
 
 In no situation do not use it to ship your product, doing so of course is possible but by no means the author is responsible for the consequences.
 
-In order to proceed you will need D compiler (`dmd` or `ldc2`) with `dub`, `git`, and `godot editor` (x64 version assumed)
+<!-- In order to proceed you will need D compiler (`dmd` or `ldc2`) with `dub`, `git`, and `godot editor` (x64 version assumed) -->
 
 ### Install godot-dlang using dub
 
 This will download and cache dub package
-- run `dub fetch godot-dlang`
+- Run `dub fetch godot-dlang`
 
-Proceed to [Creating dub project](#creating-dub-project) for adding it to your D project.
+Proceed to [Manually creating project](#manually-creating-project) for adding it to your D project.
 
 ### Manually building (advanced)
 
-_Normaly one would use dub package, this section is for advanced users who would like to develop or hack godot-dlang_
+_Normaly one would use dub package, this section is for advanced users who would like to develop or hack godot-dlang._
 
-- clone git repo `git clone https://github.com/godot-dlang/godot-dlang.git`
-- switch it to master branch `git checkout master`
-- use dub local project version lock file `dub.selections.json` to specify where to look for your local copy
+- Clone git repo `git clone https://github.com/godot-dlang/godot-dlang.git`
+- Switch it to master branch `git checkout master`
+- Use dub local project version lock file `dub.selections.json` to specify where to look for your local copy
 
 > Note that if you have strange errors in `dub run` you might have godot-dlang cached in dub, you might need to remove it by using `dub remove godot-dlang`
->
 
 ### Generating Godot Bindings
-- download godot beta4 editor and place it in somewhere like `C:\godot`
-- step into that directory and open terminal
-- generate script API information with command `godot.exe --dump-extension-api`
-- run binding generator (-j tells where to look for script api and -o tells to overwrite any existing bindings) `dub run godot-dlang:generator -- -j extension_api.json -o`
+- Download godot 4 editor and place it in somewhere like `C:\godot`
+- Step into that directory and open terminal
+- Generate script API information with command `godot.exe --dump-extension-api`
+- Run binding generator (-j tells where to look for script API and -o tells to overwrite any existing bindings) `dub run godot-dlang:generator -- -j extension_api.json -o`
 
 > This step is one time process, though you would need to re-generate API and bindings for every godot release
 
-### Creating Godot project
-- open godot editor, and create a new project in some known location like `C:\godot\mycoolgame`
-- open it now and let godot do initial loading
+### Manually creating project
+#### Creating Godot project
+- Open Godot editor, and create a new project in some known location like `C:\godot\mycoolgame`
+- Open it now and let Godot do initial loading
 
-### Creating dub project
-- open your newly created project in terminal
-- run `dub init`, make sure to give it a name for example `mydplugin`
-- add godot-dlang master dependency `dub add godot-dlang@~master`
-- (optional) (Windows) if you use `ldc2` as compiler, then add `"dflags-windows-ldc": ["-dllimport=defaultLibsOnly"]` to your `dub.json`, or you will have linker errors
-- open up `dub.json` and add `"targetType": "dynamicLibrary",` after `authors` field
+#### Creating dub project
+- Open your newly created project in terminal
+- Run `dub init`, make sure to give it a name for example `mydplugin`
+- Add Godot-dlang master dependency `dub add godot-dlang@~master` <!--DEPRECATED-->
+- (optional) (Windows) If you use `ldc2` as compiler, then add `"dflags-windows-ldc": ["-dllimport=defaultLibsOnly"]` to your `dub.json`, or you will have linker errors
+- Open up `dub.json` and add `"targetType": "dynamicLibrary",` after `authors` field
 your dub.json file should look like this now:
 
 __dub.json__:
@@ -78,18 +98,18 @@ __dub.json__:
     "dflags-windows-ldc": ["-dllimport=defaultLibsOnly"],
     "copyright": "Copyright © 2022, Godot-DLang",
     "dependencies": {
-        "godot-dlang": "~master",
+        "godot-dlang": "~master", <!--DEPRECATED-->
     },
     "description": "A minimal D application.",
     "license": "proprietary",
     "name": "mydplugin"
 }
 ```
-- do a test build `dub build`, you might see some warnings but that's ok
+- Do a test build `dub build`, you might see some warnings but that's ok
 
-### Creating your first D script
-- rename `source/app.d` file into something like `source/greeter.d`
-- open `source/greeter.d` in your favorite text/code editor and add following content:
+#### Creating your first D script
+- Rename `source/app.d` file into something like `source/greeter.d`
+- Open `source/greeter.d` in your favorite text/code editor and add following content:
 
 __source/greeter.d__:
 ```d
@@ -122,15 +142,15 @@ mixin GodotNativeLibrary!(
     Greeter,
 );
 ```
-- build plugin again `dub build`, in some rare cases you might do a full rebuild by adding `--force` switch, build should be ok
+- Build plugin again `dub build`, in some rare cases you might do a full rebuild by adding `--force` switch, build should be ok
 
 > You would need to build your plugin every time you have modified the code in order to see changes
 
-> Currently AFAIK there is no way to unload/reload GDNativeExtension, because of that on Windows it will prevent rebuilding plugin until you close the editor!
+> Currently AFAIK there is no way to unload/reload GDExtension, because of that on Windows it will prevent rebuilding plugin until you close the editor!
 
-### Register GDNativeExtension
+#### Register GDExtension
 - Currently there is no UI for that AFAIK, so lets do that manually
-- create a file in your godot project root called `mydplugin.gdextension` and fill with following content:
+- Create a file in your Godot project root called `mydplugin.gdextension` and fill with following content:
 
 __mydplugin.gdextension__:
 ```
@@ -146,7 +166,7 @@ windows.64 = "mydplugin.dll"
 
 > Note that entry_symbol should match class registration in D inside of `GodotNativeLibrary` declaration
 
-### Use D scripts in godot
+#### Use D scripts in godot
 - If you still have godot editor open reload project by using main menu `Project->Reload Current Project`
 - In editor now create an empty `3D Node` scene
 - Select root object and attach new `Node` entity, navigate and pick `Greeter` class
@@ -154,11 +174,45 @@ windows.64 = "mydplugin.dll"
 
 ![hellod](hellogd4.jpg)
 
+### Creating project by using init script
+Run command `dub run godot-dlang:init` to initialize new project in current folder. This script will walk you through standard dub project set up and will create dub config, library entrypoint and gdextension plugin.
+
+It is important that you use this script **after** creating godot project since you can't create godot project in non-empty directory.
+
+Arguments:
+- `-p, --path` - Sets path for project to be initialized in.
+- `-i, --importc` - Adds dflag to use C header instead of D bindings (advanced, use only if you know what you're doing).
+- `-c, --custom` - Sets custom path for godot-dlang, can be used if you've cloned master branch.
+
+Example:
+```bash
+# Initialize project in current directory: 
+dub run godot-dlang:init
+
+# Initialize project in custom directory:
+dub run godot-dlang:init -- --path path/to/folder
+
+# Initialize project with custom godot-dlang path:
+dub run godot-dlang:init -- --custom path/to/godot/dlang
+
+# Initialize project with custom godot-dlang path in custom directory:
+dub run godot-dlang:init -- -p folder/ -c godot-dlang/
+```
+
+After running this script you'll have theese new files in selected folder:
+```python
+├── dub.json/sdl # - Your dub config
+├── projectname.gdextension # - GDExtension plugin
+└── source/
+    └── lib.d # - Library entrypoint that contains "mixin GodotNativeLibrary!"
+```
+
 ### Extend as you wish!
-- remember that there still might be some bugs, sometimes confusing, sometimes blocking your progress, and sometimes even missing features
+- Remember that there still might be some bugs, sometimes confusing, sometimes blocking your progress, and sometimes even missing features
 
 Enjoy your new game!
 
+<!-- TODO:
 ### Automatic reloading of native extension
 
 _This feature is experimental_
@@ -172,11 +226,12 @@ Next update your `dub.json` project and add following lines, this will automatic
 
 "postGenerateCommands": ["dub run godot-dlang:reloader -- --action load -e $DUB_TARGET_NAME"],
 ```
+-->
 
 ### Godot API
 Godot's full [script API](http://docs.godotengine.org/) can be used from D:  
-- `godot` submodules contain container, math, and engine structs like `Vector3` and `String`.
-- Other submodules of `godot` contain bindings to Godot classes, auto-generated from the engine's API. These are the native classes scripts can be attached to.
+- `Godot` submodules contain container, math, and engine structs like `Vector3` and `String`.
+- Other submodules of `Godot` contain bindings to Godot classes, auto-generated from the engine's API. These are the native classes scripts can be attached to.
 - These bindings use camelCase instead of snake_case.
     ```D
     // Change window to fullscreen example:
@@ -188,6 +243,11 @@ Godot's full [script API](http://docs.godotengine.org/) can be used from D:
     OS.setWindowFullscreen(false);
     ```
 - D code should use D naming conventions (PascalCase for classes, camelCase for properties and methods). 
+
+<!--
+### ImportC
+WIP
+-->
 
 ## Versioning
 
