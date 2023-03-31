@@ -1,13 +1,13 @@
 #!/bin/bash
 # TODO: add arg option
-# echo "Dumping GDExtension interface"
+# echo "[Dumping GDExtension interface]"
 
-# godot --dump-gdextension-interface
-# clang -E gdextension_interface.h -o src/godot/abi/gdextension.i
+godot --dump-gdextension-interface -q --headless
+clang -E gdextension_interface.h -o src/godot/abi/gdextension_header.i
 
-echo "Dumping GDExtension API" 
+# echo "[Dumping GDExtension API]" 
 
-godot --dump-extension-api
+godot --dump-extension-api -q --headless
 
 echo "Generating API"
 

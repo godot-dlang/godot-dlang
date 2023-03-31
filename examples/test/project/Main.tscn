@@ -8,7 +8,9 @@ script = ExtResource("1_nbra5")
 [node name="Panel" type="Panel" parent="."]
 
 [node name="Label" type="TestD" parent="Panel"]
-number = 2
+property = " ~ hello from the getter! ~ hello from the setter! ~ hello from the getter! ~ hello from the setter! ~ hello from the getter!"
+number = 10
+long_node_path = NodePath("One/Looooong/Incredibly/Unbroken/Node/Path/Label")
 layout_mode = 1
 offset_right = 211.0
 offset_bottom = 26.0
