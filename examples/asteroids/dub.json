@@ -4,7 +4,7 @@
 		"Godot-DLang"
 	],
 	"description": "Example of a complete Godot-D project",
-	"copyright": "Copyright © 2018, sheepandshepherd",
+    "copyright": "Copyright © 2022, Godot-DLang",
 	"license": "MIT",
     
     "dflags-windows-ldc": ["-dllimport=defaultLibsOnly"],

@@ -1,7 +1,7 @@
 name "godot-dlang"
 description "D bindings for godot"
 authors "godot-dlang"
-copyright "Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.;\n Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md);\n Copyright (c) 2017-2018 Godot-D contributors;\n Copyright (c) 2022-2022 Godot-DLang contributors"
+copyright "Copyright (c) 2007 Juan Linietsky, Ariel Manzur.;\n Copyright (c) 2014 Godot Engine contributors (cf. AUTHORS.md);\n Copyright (c) 2017 Godot-D contributors;\n Copyright (c) 2022 Godot-DLang contributors"
 license "MIT"
 buildType "doc-json" {
 	dflags "-c" "-Df__dummy.html" "-Xfdocs.json"
