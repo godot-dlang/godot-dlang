@@ -18,10 +18,18 @@ sourcePaths "src" "classes"
 importPaths "src" "classes"
 /* sourceFiles "src/godot/abi/gdnative_interface.i" */
 subPackage {
+	name "init"
+	targetType "executable"
+	sourcePaths "modules/tools/init"
+    importPaths "modules/tools/init"
+    targetPath "lib"
+}
+subPackage {
 	name "util"
 	targetType "library"
 	sourcePaths "modules/util/"
 	importPaths "modules/util/"
+    targetPath "lib"
 }
 subPackage {
 	name "generator"
@@ -34,6 +42,7 @@ subPackage {
 	targetName "generator"
 	dflags "--link-internally" platform="windows-ldc"
 	sourcePaths "modules/tools/generator"
+    targetPath "lib"
 }
 subPackage {
 	name "classfinder"
@@ -45,6 +54,7 @@ subPackage {
 	targetType "library"
 	sourcePaths "modules/tools/classfinder"
 	importPaths "modules/tools/classfinder"
+    targetPath "lib"
 }
 subPackage {
 	name "pregenerate"
@@ -55,6 +65,7 @@ subPackage {
 	targetName "godot-dlang-pregenerate"
 	sourcePaths "modules/tools/pregenerate"
 	importPaths "modules/tools/pregenerate"
+    targetPath "lib"
 }
 subPackage {
 	name "reloader"
@@ -65,6 +76,7 @@ subPackage {
     targetPath "bin/"
 	sourcePaths "modules/tools/reloader"
 	importPaths "modules/tools/reloader"
+    targetPath "lib"
 }
 subPackage "examples/asteroids"
 subPackage "examples/test"
