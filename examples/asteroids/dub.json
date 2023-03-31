@@ -11,9 +11,16 @@
 	
 	"targetType": "dynamicLibrary",
 	"targetPath": "project",
+    "targetName": "godot-dlang_asteroids",
 	
 	"dependencies":
 	{
 		"godot-dlang": { "path": "../../"}
-	}
+	},
+    "buildTypes": {
+        "debugImportC": {
+            "buildOptions": ["debugMode", "debugInfo"],
+            "dflags": ["-version=importc"]
+        }
+    }
 }

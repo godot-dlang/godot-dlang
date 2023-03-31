@@ -36,7 +36,7 @@ class Asteroids : GodotScript!Node3D {
             addAsteroid();
     }
 
-    @Method _process(float delta) {
+    @Method _process(double delta) {
         cameraTarget.position = player.position;
 
         foreach (ch; getChildren(false)) {

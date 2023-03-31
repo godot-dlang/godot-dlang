@@ -421,7 +421,7 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
 
                 snHintStrings[i] = stringName();
                 prop[i].hint_string = cast(GDExtensionStringNamePtr) snHintStrings[i];
-                prop[i].type = Variant.variantTypeOf!p;
+                prop[i].type = cast(GDExtensionVariantType) Variant.variantTypeOf!p;
                 prop[i].hint = 0;
                 prop[i].usage = GDEXTENSION_METHOD_FLAGS_DEFAULT;
             }
@@ -474,7 +474,7 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
             }
 
             pinfo.class_name = cast(GDExtensionStringNamePtr) snParamClassName;
-            pinfo.type = vt;
+            pinfo.type = cast(GDExtensionVariantType) vt;
             pinfo.name = cast(GDExtensionStringNamePtr) snPropName;
             pinfo.hint = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE;
             //import godot.globalenums : PropertyUsageFlags;
@@ -526,7 +526,7 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
                 StringName snPName = StringName("");
             }
             pinfo.class_name = cast(GDExtensionStringNamePtr) snPName;
-            pinfo.type = vt;
+            pinfo.type = cast(GDExtensionVariantType) vt;
             pinfo.name = cast(GDExtensionStringNamePtr) snPropName;
             pinfo.usage = PropertyUsageFlags.propertyUsageDefault; // godot-cpp uses value 7 which is default|1 currently but there is no flag for 1, works for now
             static if (uda.hintString.length)

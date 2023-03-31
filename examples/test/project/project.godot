@@ -15,10 +15,6 @@ run/main_scene="res://Main.tscn"
 config/features=PackedStringArray("4.0")
 config/icon="res://icon.png"
 
-[editor]
-
-export/convert_text_resources_to_binary=true
-
 [memory]
 
 multithread/thread_rid_pool_prealloc=60

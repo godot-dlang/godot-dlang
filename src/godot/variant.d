@@ -503,7 +503,7 @@ struct Variant {
             import core.stdc.string;
             memset(&ret, 0, ret.sizeof);
             
-            auto fn = _godot_api.get_variant_to_type_constructor(VarType);
+            auto fn = _godot_api.get_variant_to_type_constructor(cast(GDExtensionVariantType) VarType);
             fn(cast(void*)&ret, cast(void*)&_godot_variant);
 
             static if (directlyCompatible!R)
@@ -522,7 +522,8 @@ struct Variant {
             this = conversionToGodot!R(input);
         } else {
             //mixin("auto Fn = _godot_api.variant_new_"~FunctionNew!VarType~";");
-            auto Fn = _godot_api.get_variant_from_type_constructor(VarType);
+            // auto Fn = _godot_api.get_variant_from_type_constructor(VarType);
+            auto Fn = _godot_api.get_variant_from_type_constructor(cast(GDExtensionVariantType) VarType);
             alias PassType = Parameters!Fn[1]; // second param is the value
 
             alias IT = InternalType[VarType];
@@ -647,7 +648,7 @@ struct Variant {
 
     private void evaluate(int op, ref const Variant a, ref const Variant b, ref Variant ret, ref bool isValid) const {
         GDExtensionBool res;
-        _godot_api.variant_evaluate(op, &a._godot_variant, &b._godot_variant, &ret._godot_variant, &res);
+        _godot_api.variant_evaluate(cast(GDExtensionVariantOperator) op, &a._godot_variant, &b._godot_variant, &ret._godot_variant, &res);
         isValid = !!res;
     }
 
