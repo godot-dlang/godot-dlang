@@ -135,7 +135,12 @@ enum GodotError {
     wtf = omfgThisIsVeryVeryBad,
 }
 
-alias real_t = float;
+// Note that this is only used in struct types such as Vector, Plane, etc...
+// Plain floats are double by default (see godot.abi.types.godot_float).
+version(GODOT_REAL_T_DOUBLE)
+    alias real_t = double;
+else
+    alias real_t = float;
 
 enum real_t CMP_EPSILON = 0.00001;
 enum real_t CMP_EPSILON2 = (CMP_EPSILON * CMP_EPSILON);

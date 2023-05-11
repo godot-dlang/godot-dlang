@@ -75,12 +75,15 @@ enum GODOT_FALSE = 0;
 alias godot_int = int;
 
 /////// real
-version (GODOT_USE_DOUBLE)
+// note that this one is used in math structs types such as Vector2 or Plane
+// also see godot.api.types.real_t
+version (GODOT_REAL_T_DOUBLE)
     alias godot_real_t = double;
 else
     alias godot_real_t = float;
 
 // TODO: use proper config for GODOT_USE_DOUBLE
+/// Regular Godot floating point, used in methods such as `_process(float delta)` 
 alias godot_float = double;
 
 alias uint64 = ulong;
@@ -100,9 +103,7 @@ alias uint8_t = uint8;
 alias int8 = byte;
 alias int8_t = int8;
 
-// FIXME overriding D alias?
-// AFAIK this is not related to godot_float and always has fixed size
-//alias real_t = double;
+// This is for struct types only, not to be confused with plain floating point variables
 alias real_t = godot.api.types.real_t;
 
 // internal godot id

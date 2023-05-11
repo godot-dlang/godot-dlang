@@ -307,18 +307,8 @@ package(godot) struct MethodWrapper(T, alias mf) {
         } 
 
         A[ai] variantToArg(size_t ai)() {
-            // should also be string and array?
-            //static if (is(A[ai] == NodePath))
-            //{
-            //	import godot.api;
-            //	print(*va[ai]);
-            //	return (*va[ai]).as!(A[ai]);
-            //}
-            //else
-            //return (cast(Variant*)args[ai]).as!(A[ai]);
-            // TODO: properly fix double, it returns pointer instead of value itself
             static if (isFloatingPoint!(A[ai])) {
-                return **cast(A[ai]**)&va[ai];
+                return (cast(Variant*)args[ai]).as!(A[ai]);
             } 
             else static if (isGodotClass!(A[ai])) {
                 if (args)
@@ -359,13 +349,15 @@ package(godot) struct MethodWrapper(T, alias mf) {
     extern (C)
     static void callPtrMethod(void* methodData, void* instance,
         const(void*)* args, void* r_return) {
-        //GDExtensionCallError err;
-        //callMethod(methodData, instance, args, A.length, r_return, &err);
 
         T obj = cast(T) instance;
 
         A[ai] nativeToArg(size_t ai)() {
-            return (*cast(A[ai]*) args[ai]);
+            static if (isFloatingPoint!(A[ai])) {
+                return cast(A[ai]) (*cast(godot_float*)args[ai]);
+            } 
+            else 
+                return (*cast(A[ai]*) args[ai]);
         }
 
         template ArgCall(size_t ai) {
@@ -384,8 +376,7 @@ package(godot) struct MethodWrapper(T, alias mf) {
 
     extern (C)
     static void virtualCall(GDExtensionClassInstancePtr instance, const GDExtensionTypePtr* args, GDExtensionTypePtr ret) {
-        GDExtensionCallError err;
-        callMethod(&mf, instance, args, Parameters!mf.length, ret, &err);
+        callPtrMethod(&mf, instance, args, ret);
     }
 }
 
