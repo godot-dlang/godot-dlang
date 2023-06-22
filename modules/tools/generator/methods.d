@@ -115,6 +115,8 @@ class GodotMethod {
                 ret ~= text(arg.type.dCallParamPrefix, arg.type.godotType, "Arg", i);
                 typeString = text(arg.type.godotType, "Arg", i);
             } else {
+                if (isConstructor)
+                    ret ~= "in ";
                 ret ~= text(arg.type.dCallParamPrefix, arg.type.dType);
                 typeString = arg.type.dType;
             }
@@ -156,6 +158,8 @@ class GodotMethod {
         string ret;
 
         ret ~= "\t\t@GodotName(\"" ~ name ~ "\") GodotMethod!(" ~ return_type.dType;
+        if (return_type.isSingleton)
+            ret ~= "Singleton";
         foreach (ai, const arg; arguments) {
             ret ~= ", " ~ arg.type.dType;
         }
@@ -248,7 +252,10 @@ class GodotMethod {
         }
         // note that even though it strips constness of return type the method is still marked const
         // const in D is transitive, which means compiler should disallow modifying returned reference types
-        ret ~= return_type.stripConst.dRef ~ " ";
+        ret ~= return_type.stripConst.dRef;
+        if (return_type.isSingleton)
+            ret ~= "Singleton";
+        ret ~= " ";
         // none of the types (Classes/Core/Primitive) are pointers in D
         // Classes are reference types; the others are passed by value.
         ret ~= name.snakeToCamel.escapeDType;
@@ -382,7 +389,10 @@ class GodotMethod {
                 ret ~= "\t\t";
             }
 
-            ret ~= callType() ~ "!(" ~ return_type.dType ~ ")(";
+            ret ~= callType() ~ "!(" ~ return_type.dType;
+            if (return_type.isSingleton)
+                ret ~= "Singleton";
+            ret ~= ")(";
             if (parent.isBuiltinClass)
                 ret ~= "cast(GDExtensionPtrBuiltInMethod) ";
             ret ~= "GDExtensionClassBinding." ~ wrapperIdentifier;

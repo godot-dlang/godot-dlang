@@ -140,7 +140,7 @@ struct PackedArray(T) {
     }
 
     ///
-    void pushBack(in ref PackedArray arr) {
+    void pushBack(PackedArray arr) {
         _bind.appendArray(arr);
         //mixin("auto a = gdextension_interface_"~(typeName!T)~"_append_array;");
         //a(&_godot_array, &arr._godot_array);
