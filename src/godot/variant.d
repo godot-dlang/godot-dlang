@@ -486,14 +486,14 @@ struct Variant {
                 godot_node_path str;
             else
                 godot_string str;
-            _godot_api.variant_stringify(&_godot_variant, cast(void*)&str);
+            gdextension_interface_variant_stringify(&_godot_variant, cast(void*)&str);
             return R(str);
         } else {
             DType[VarType] ret = void;
-            //*cast(InternalType[VarType]*)&ret = mixin("_godot_api.variant_as_"~FunctionAs!VarType~"(&_godot_variant)");
+            //*cast(InternalType[VarType]*)&ret = mixin("gdextension_interface_variant_as_"~FunctionAs!VarType~"(&_godot_variant)");
 
             // this gives wrong result, try the other way around
-            //auto fn = _godot_api.get_variant_from_type_constructor(VarType);
+            //auto fn = gdextension_interface_get_variant_from_type_constructor(VarType);
             //fn(cast(GDExtensionVariantPtr) &_godot_variant, &ret);
 
             // special case such as calling function with null optional parameter
@@ -503,7 +503,7 @@ struct Variant {
             import core.stdc.string;
             memset(&ret, 0, ret.sizeof);
             
-            auto fn = _godot_api.get_variant_to_type_constructor(cast(GDExtensionVariantType) VarType);
+            auto fn = gdextension_interface_get_variant_to_type_constructor(cast(GDExtensionVariantType) VarType);
             fn(cast(void*)&ret, cast(void*)&_godot_variant);
 
             static if (directlyCompatible!R)
@@ -521,9 +521,9 @@ struct Variant {
         static if (VarType == Type.nil) {
             this = conversionToGodot!R(input);
         } else {
-            //mixin("auto Fn = _godot_api.variant_new_"~FunctionNew!VarType~";");
-            // auto Fn = _godot_api.get_variant_from_type_constructor(VarType);
-            auto Fn = _godot_api.get_variant_from_type_constructor(cast(GDExtensionVariantType) VarType);
+            //mixin("auto Fn = gdextension_interface_variant_new_"~FunctionNew!VarType~";");
+            // auto Fn = gdextension_interface_get_variant_from_type_constructor(VarType);
+            auto Fn = gdextension_interface_get_variant_from_type_constructor(cast(GDExtensionVariantType) VarType);
             alias PassType = Parameters!Fn[1]; // second param is the value
 
             alias IT = InternalType[VarType];
@@ -546,7 +546,7 @@ struct Variant {
             if (!is(T : Variant) && !is(T : typeof(null)) && !is(Unqual!T : void*)) {
         import std.conv : emplace;
 
-        _godot_api.variant_destroy(&_godot_variant);
+        gdextension_interface_variant_destroy(&_godot_variant);
         static if (is(T : TypedArray!Args, Args...)) {
             // hacky way, for some reasons 'alias this' was ignored
             emplace!(Variant)(&this, input._array);
@@ -596,30 +596,30 @@ struct Variant {
     //@nogc nothrow:
     this(this) {
         godot_variant other = _godot_variant; // source Variant still owns this
-        _godot_api.variant_new_copy(&_godot_variant, &other);
+        gdextension_interface_variant_new_copy(&_godot_variant, &other);
     }
 
     static Variant nil() {
         Variant v = void;
-        _godot_api.variant_new_nil(&v._godot_variant);
+        gdextension_interface_variant_new_nil(&v._godot_variant);
         return v;
     }
 
     this(in ref Variant other) {
-        _godot_api.variant_new_copy(&_godot_variant, &other._godot_variant);
+        gdextension_interface_variant_new_copy(&_godot_variant, &other._godot_variant);
     }
 
     this(T : typeof(null))(in T nil) {
-        _godot_api.variant_new_nil(&_godot_variant);
+        gdextension_interface_variant_new_nil(&_godot_variant);
     }
 
     ~this() {
         // TODO: need to check this, causes broken values after several Variant to variant assignments
-        _godot_api.variant_destroy(&_godot_variant);
+        gdextension_interface_variant_destroy(&_godot_variant);
     }
 
     Type type() const {
-        return cast(Type) _godot_api.variant_get_type(&_godot_variant);
+        return cast(Type) gdextension_interface_variant_get_type(&_godot_variant);
     }
 
     inout(T) as(T : Variant)() inout {
@@ -628,14 +628,14 @@ struct Variant {
 
     pragma(inline, true)
     void opAssign(T : typeof(null))(in T nil) {
-        _godot_api.variant_destroy(&_godot_variant);
-        _godot_api.variant_new_nil(&_godot_variant);
+        gdextension_interface_variant_destroy(&_godot_variant);
+        gdextension_interface_variant_new_nil(&_godot_variant);
     }
 
     pragma(inline, true)
     void opAssign(T : Variant)(in T other) {
-        _godot_api.variant_destroy(&_godot_variant);
-        _godot_api.variant_new_copy(&_godot_variant, &other._godot_variant);
+        gdextension_interface_variant_destroy(&_godot_variant);
+        gdextension_interface_variant_new_copy(&_godot_variant, &other._godot_variant);
     }
 
     bool opEquals(in ref Variant other) const {
@@ -643,12 +643,12 @@ struct Variant {
         bool valid;
         evaluate(GDEXTENSION_VARIANT_OP_EQUAL, this, other, ret, valid);
         return ret.as!bool;
-        //return cast(bool)_godot_api.variant_operator_equal(&_godot_variant, &other._godot_variant);
+        //return cast(bool)gdextension_interface_variant_operator_equal(&_godot_variant, &other._godot_variant);
     }
 
     private void evaluate(int op, ref const Variant a, ref const Variant b, ref Variant ret, ref bool isValid) const {
         GDExtensionBool res;
-        _godot_api.variant_evaluate(cast(GDExtensionVariantOperator) op, &a._godot_variant, &b._godot_variant, &ret._godot_variant, &res);
+        gdextension_interface_variant_evaluate(cast(GDExtensionVariantOperator) op, &a._godot_variant, &b._godot_variant, &ret._godot_variant, &res);
         isValid = !!res;
     }
 
@@ -660,14 +660,14 @@ struct Variant {
             return 0;
         evaluate(GDEXTENSION_VARIANT_OP_LESS, this, other, res, valid);
         return res.as!bool ? -1 : 1;
-        //if(_godot_api.variant_operator_equal(&_godot_variant, &other._godot_variant))
+        //if(gdextension_interface_variant_operator_equal(&_godot_variant, &other._godot_variant))
         //	return 0;
-        //return _godot_api.variant_operator_less(&_godot_variant, &other._godot_variant)?
+        //return gdextension_interface_variant_operator_less(&_godot_variant, &other._godot_variant)?
         //	-1 : 1;
     }
 
     bool booleanize() const {
-        return cast(bool) _godot_api.variant_booleanize(&_godot_variant);
+        return cast(bool) gdextension_interface_variant_booleanize(&_godot_variant);
     }
 
     auto toString() const {

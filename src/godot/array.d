@@ -116,7 +116,7 @@ struct Array {
     //@disable this(this);
     //{
     //	const godot_array tmp = _godot_array;
-    //	_godot_api.get_variant_from_type_constructor(GDEXTENSION_VARIANT_TYPE_ARRAY)(cast(GDExtensionTypePtr) &_godot_array, cast(GDExtensionTypePtr) &tmp);
+    //	gdextension_interface_get_variant_from_type_constructor(GDEXTENSION_VARIANT_TYPE_ARRAY)(cast(GDExtensionTypePtr) &_godot_array, cast(GDExtensionTypePtr) &tmp);
     //	this = _bind.duplicate(false);
     //}
 
@@ -131,8 +131,8 @@ struct Array {
         //	_bind._destructor();
         this = _bind.new1(other); // do we actually need a copy here?
         return this;
-        //_godot_api.variant_destroy(&_godot_array);
-        //_godot_api.variant_new_copy(&_godot_array, &other._godot_array);
+        //gdextension_interface_variant_destroy(&_godot_array);
+        //gdextension_interface_variant_new_copy(&_godot_array, &other._godot_array);
         //return this;
     }
 
@@ -151,7 +151,7 @@ struct Array {
             if (allSatisfy!(Variant.compatibleToGodot, Args)) {
         Array ret = void;
         ret._godot_array = godot_array.init;
-        auto ct = _godot_api.variant_get_ptr_constructor(GDEXTENSION_VARIANT_TYPE_ARRAY, 0);
+        auto ct = gdextension_interface_variant_get_ptr_constructor(GDEXTENSION_VARIANT_TYPE_ARRAY, 0);
         ct(cast(GDExtensionTypePtr)&ret._godot_array, null);
 
         static if (args.length)
@@ -165,55 +165,55 @@ struct Array {
     deprecated("Use Array.make() with 0 args instead.")
     static Array empty_array() {
         Array ret = void;
-        _godot_api.variant_new_nil(&ret._godot_array);
+        gdextension_interface_variant_new_nil(&ret._godot_array);
         return ret;
     }
 
     this(in typeof(null) n) {
-        //_godot_api.variant_new_nil(&_godot_array);
+        //gdextension_interface_variant_new_nil(&_godot_array);
         _bind.new0();
     }
 
     // TODO: verify the following array constructors, since previous API's are gone
     // it now uses overloads of Array.from() extension method
     this(in PackedByteArray a) {
-        _godot_api.variant_new_copy(&_godot_array, &a._godot_array);
+        gdextension_interface_variant_new_copy(&_godot_array, &a._godot_array);
     }
 
     this(in PackedInt32Array a) {
-        _godot_api.variant_new_copy(&_godot_array, &a._godot_array);
+        gdextension_interface_variant_new_copy(&_godot_array, &a._godot_array);
     }
 
     this(in PackedInt64Array a) {
-        _godot_api.variant_new_copy(&_godot_array, &a._godot_array);
+        gdextension_interface_variant_new_copy(&_godot_array, &a._godot_array);
     }
 
     this(in PackedFloat32Array a) {
-        _godot_api.variant_new_copy(&_godot_array, &a._godot_array);
+        gdextension_interface_variant_new_copy(&_godot_array, &a._godot_array);
     }
 
     this(in PackedFloat64Array a) {
-        _godot_api.variant_new_copy(&_godot_array, &a._godot_array);
+        gdextension_interface_variant_new_copy(&_godot_array, &a._godot_array);
     }
 
     this(in PackedStringArray a) {
-        _godot_api.variant_new_copy(&_godot_array, &a._godot_array);
+        gdextension_interface_variant_new_copy(&_godot_array, &a._godot_array);
     }
 
     this(in PackedVector2Array a) {
-        _godot_api.variant_new_copy(&_godot_array, &a._godot_array);
+        gdextension_interface_variant_new_copy(&_godot_array, &a._godot_array);
     }
 
     this(in PackedVector3Array a) {
-        _godot_api.variant_new_copy(&_godot_array, &a._godot_array);
+        gdextension_interface_variant_new_copy(&_godot_array, &a._godot_array);
     }
 
     this(in PackedColorArray a) {
-        _godot_api.variant_new_copy(&_godot_array, &a._godot_array);
+        gdextension_interface_variant_new_copy(&_godot_array, &a._godot_array);
     }
 
     auto ref inout(Variant) opIndex(size_t idx) inout {
-        godot_variant* v = cast(godot_variant*) _godot_api.array_operator_index(
+        godot_variant* v = cast(godot_variant*) gdextension_interface_array_operator_index(
             cast(godot_array*)&_godot_array, cast(int) idx);
         return *cast(inout(Variant)*) v;
     }
@@ -221,7 +221,7 @@ struct Array {
     void opIndexAssign(T)(auto ref T value, in size_t idx)
             if (is(T : Variant) || Variant.compatibleToGodot!T) {
         Variant v = Variant(value);
-        godot_variant* val = cast(godot_variant*) _godot_api.array_operator_index(
+        godot_variant* val = cast(godot_variant*) gdextension_interface_array_operator_index(
             &_godot_array, cast(int) idx);
         *val = v._godot_variant;
     }
@@ -235,7 +235,7 @@ struct Array {
         import godot.string;
 
         Variant v = Variant(t);
-        //_godot_api.array_append(&_godot_array, &v._godot_variant);
+        //gdextension_interface_array_append(&_godot_array, &v._godot_variant);
         _bind.append(v);
     }
 
@@ -246,7 +246,7 @@ struct Array {
         a._godot_array = _godot_array;
         // TODO: implement me
         //Variant v = Variant.from(a);
-        //_godot_api.array_append(&_godot_array, &v._godot_variant);
+        //gdextension_interface_array_append(&_godot_array, &v._godot_variant);
         //v.as!Array.append(nativeObjectPtr);
     }
     /// ditto
@@ -315,30 +315,30 @@ struct Array {
     }
 
     size_t count(in Variant v) {
-        //return _godot_api.array_count(&_godot_array, &v._godot_variant);
+        //return gdextension_interface_array_count(&_godot_array, &v._godot_variant);
         return _bind.count(v);
     }
 
     bool empty() const {
-        //return cast(bool)_godot_api.array_empty(&_godot_array);
+        //return cast(bool)gdextension_interface_array_empty(&_godot_array);
         return _bind.isEmpty();
     }
 
     void erase(T)(T v) if (is(T : Variant) || Variant.compatibleToGodot!T) {
         Variant vv = v;
-        //_godot_api.array_erase(&_godot_array, &vv._godot_variant);
+        //gdextension_interface_array_erase(&_godot_array, &vv._godot_variant);
         _bind.erase(v);
     }
 
     Variant front() const {
         godot_variant v = void;
         v = _bind.front()._godot_variant;
-        //godot_variant v = _godot_api.array_front(&_godot_array);
+        //godot_variant v = gdextension_interface_array_front(&_godot_array);
         return cast(Variant) v;
     }
 
     Variant back() const {
-        //godot_variant v = _godot_api.array_back(&_godot_array);
+        //godot_variant v = gdextension_interface_array_back(&_godot_array);
         //return cast(Variant)v;
         return _bind.back();
     }
@@ -346,26 +346,26 @@ struct Array {
     int find(T)(in T what, size_t from) const 
             if (is(T : Variant) || Variant.compatibleToGodot!T) {
         const Variant vv = what;
-        //return _godot_api.array_find(&_godot_array, &vv._godot_variant, cast(int)from);
+        //return gdextension_interface_array_find(&_godot_array, &vv._godot_variant, cast(int)from);
         return _bind.find(vv, from);
     }
 
     int findLast(T)(in T what) const 
             if (is(T : Variant) || Variant.compatibleToGodot!T) {
         const Variant vv = what;
-        //return _godot_api.array_find_last(&_godot_array, &vv._godot_variant);
+        //return gdextension_interface_array_find_last(&_godot_array, &vv._godot_variant);
         return _bind.findLast(vv);
     }
 
     bool has(T)(in T what) const if (is(T : Variant) || Variant.compatibleToGodot!T) {
         const Variant vv = what;
-        //return cast(bool)_godot_api.array_has(&_godot_array, &vv._godot_variant);
+        //return cast(bool)gdextension_interface_array_has(&_godot_array, &vv._godot_variant);
         return _bind.has(vv);
     }
 
     @trusted
     uint hash() const nothrow {
-        //return _godot_api.array_hash(&_godot_array);
+        //return gdextension_interface_array_hash(&_godot_array);
         return cast(uint) assumeWontThrow(_bind.hash());
     }
 
@@ -377,46 +377,46 @@ struct Array {
     void insert(T)(const size_t pos, T value)
             if (is(T : Variant) || Variant.compatibleToGodot!T) {
         Variant vv = value;
-        //_godot_api.array_insert(&_godot_array, cast(int)pos, &vv._godot_variant);
+        //gdextension_interface_array_insert(&_godot_array, cast(int)pos, &vv._godot_variant);
         _bind.insert(pos, vv);
     }
 
     void invert() {
-        //_godot_api.array_invert(&_godot_array);
+        //gdextension_interface_array_invert(&_godot_array);
         _bind.reverse();
     }
 
     Variant popBack() {
-        //godot_variant v = _godot_api.array_pop_back(&_godot_array);
+        //godot_variant v = gdextension_interface_array_pop_back(&_godot_array);
         //return cast(Variant)v;
         return _bind.popBack();
     }
 
     Variant popFront() {
-        //godot_variant v = _godot_api.array_pop_front(&_godot_array);
+        //godot_variant v = gdextension_interface_array_pop_front(&_godot_array);
         //return cast(Variant)v;
         return _bind.popFront();
     }
 
     void pushBack(T)(T v) if (is(T : Variant) || Variant.compatibleToGodot!T) {
         Variant vv = v;
-        //_godot_api.array_push_back(&_godot_array, &vv._godot_variant);
+        //gdextension_interface_array_push_back(&_godot_array, &vv._godot_variant);
         _bind.pushBack(vv);
     }
 
     void pushFront(T)(T v) if (is(T : Variant) || Variant.compatibleToGodot!T) {
         Variant vv = v;
-        //_godot_api.array_push_front(&_godot_array, &vv._godot_variant);
+        //gdextension_interface_array_push_front(&_godot_array, &vv._godot_variant);
         _bind.pushFront(vv);
     }
 
     void remove(size_t idx) {
-        //_godot_api.array_remove(&_godot_array, cast(int)idx);
+        //gdextension_interface_array_remove(&_godot_array, cast(int)idx);
         _bind.removeAt(idx);
     }
 
     size_t size() const {
-        //return _godot_api.array_size(&_godot_array);
+        //return gdextension_interface_array_size(&_godot_array);
         return _bind.size();
     }
 
@@ -424,25 +424,25 @@ struct Array {
     alias opDollar = size;
 
     void resize(size_t size) {
-        //_godot_api.array_resize(&_godot_array, cast(int)size);
+        //gdextension_interface_array_resize(&_godot_array, cast(int)size);
         _bind.resize(size);
     }
 
     int rfind(T)(in T what, size_t from) const 
             if (is(T : Variant) || Variant.compatibleToGodot!T) {
         const Variant vv = what;
-        //return _godot_api.array_rfind(&_godot_array, &vv._godot_variant, cast(int)from);
+        //return gdextension_interface_array_rfind(&_godot_array, &vv._godot_variant, cast(int)from);
         return _bind.rfind(vv, from);
     }
 
     void sort() {
-        //_godot_api.array_sort(&_godot_array);
+        //gdextension_interface_array_sort(&_godot_array);
         _bind.sort();
     }
 
     /+void sort_custom(godot.Object obj, in ref String func)
 	{
-		_godot_api.array_sort_custom(&_godot_array, obj, &func._godot_string);
+		gdextension_interface_array_sort_custom(&_godot_array, obj, &func._godot_string);
 	}+/
 
     /// Allocate a new separate copy of the Array
@@ -462,7 +462,7 @@ struct Array {
     /// Note: `end` is non-inclusive, as in D slice operations, not as in Godot.
     Array slice(size_t start, size_t end, size_t stride = 1, bool deep = false) const {
         //Array ret = void;
-        //ret._godot_array = _godot_api.array_slice(&_godot_array,
+        //ret._godot_array = gdextension_interface_array_slice(&_godot_array,
         //	cast(int)start, cast(int)(end-1), cast(int)stride, deep);
         return _bind.slice(start, end, stride, deep);
     }
@@ -473,12 +473,12 @@ struct Array {
 	out of scope or is resized.
 	+/
     Variant[] opSlice(size_t start, size_t end) {
-        Variant* ret = cast(Variant*) _godot_api.array_operator_index(&_godot_array, 0);
+        Variant* ret = cast(Variant*) gdextension_interface_array_operator_index(&_godot_array, 0);
         return ret[start .. end];
     }
     /// ditto
     const(Variant)[] opSlice(size_t start, size_t end) const {
-        const(Variant)* ret = cast(const(Variant)*) _godot_api.array_operator_index_const(
+        const(Variant)* ret = cast(const(Variant)*) gdextension_interface_array_operator_index_const(
             &_godot_array, 0);
         return ret[start .. end];
     }
@@ -496,7 +496,7 @@ struct Array {
         //if (&_godot_array)
         //	_bind._destructor();
         _array = _array.init;
-        //_godot_api.variant_destroy(&_godot_array);
+        //gdextension_interface_variant_destroy(&_godot_array);
     }
 }
 

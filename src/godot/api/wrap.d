@@ -272,7 +272,7 @@ package(godot) struct MethodWrapper(T, alias mf) {
         }
 
         //godot_variant vd;
-        //_godot_api.variant_new_nil(&vd);
+        //gdextension_interface_variant_new_nil(&vd);
         //Variant* v = cast(Variant*)&vd; // just a pointer; no destructor will be called
         Variant v;
 
@@ -340,7 +340,7 @@ package(godot) struct MethodWrapper(T, alias mf) {
 
             if (r_return && v._godot_variant._opaque.ptr) {
                 //*cast(godot_variant*) r_return = vd;   // since alpha 12 instead of this now have to copy it
-                _godot_api.variant_new_copy(r_return, &v._godot_variant); // since alpha 12 this is now the case
+                gdextension_interface_variant_new_copy(r_return, &v._godot_variant); // since alpha 12 this is now the case
             }
         }
         //return vd;
@@ -539,8 +539,8 @@ package(godot) struct OnReadyWrapper(T, alias mf) if (is(GodotClass!T : Node)) {
         //	return;
         //}
         //
-        //auto id = _godot_api.object_get_instance_id(instance);
-        //auto obj = _godot_api.object_get_instance_from_id(id);
+        //auto id = gdextension_interface_object_get_instance_id(instance);
+        //auto obj = gdextension_interface_object_get_instance_from_id(id);
         T t = cast(T) methodData; // method data is an actual D object backing godot instance
 
         if (!t)
@@ -692,7 +692,7 @@ extern (C) package(godot) godot_variant emptyGetter(godot_object self, void* met
     void* userData) {
     assert(0, "Can't call empty property getter");
     /+godot_variant v;
-	_godot_api.variant_new_nil(&v);
+	gdextension_interface_variant_new_nil(&v);
 	return v;+/
 }
 

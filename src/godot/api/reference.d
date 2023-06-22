@@ -60,7 +60,7 @@ struct Ref(T) {
 
     void unref() {
         if (_self && _reference.unreference()) {
-            _godot_api.object_destroy(&_reference._godot_object);
+            gdextension_interface_object_destroy(&_reference._godot_object);
         }
         _self = T.init;
     }

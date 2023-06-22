@@ -183,7 +183,7 @@ class GodotMethod {
     ```d
     string getSlice(in string delimiter, in long slice) const {
 		if (!GDExtensionClassBinding.method_getSlice.mb)
-			GDExtensionClassBinding.method_getSlice.mb = _godot_api.variant_get_ptr_builtin_method(GDEXTENSION_VARIANT_TYPE_STRING, "get_slice", 3535100402);
+			GDExtensionClassBinding.method_getSlice.mb = gdextension_interface_variant_get_ptr_builtin_method(GDEXTENSION_VARIANT_TYPE_STRING, "get_slice", 3535100402);
 		return toDString(callBuiltinMethod!(String)(cast(GDExtensionPtrBuiltInMethod) GDExtensionClassBinding.method_getSlice.mb, cast(void*) &_godot_object, cast() toGodotString(delimiter), cast() slice));
     }
     ```
@@ -295,7 +295,7 @@ class GodotMethod {
 	}
 	Variant ret;
 	GDExtensionCallError err;
-	_godot_api.object_method_bind_call(GDExtensionClassBinding.method_emitSignal.mb, _godot_object.ptr, cast(void**) _args.ptr, _GODOT_args.length, cast(void*) &ret, &err);
+	gdextension_interface_object_method_bind_call(GDExtensionClassBinding.method_emitSignal.mb, _godot_object.ptr, cast(void**) _args.ptr, _GODOT_args.length, cast(void*) &ret, &err);
 	debug if (int code = ret.as!int()) {
 		import godot.api;
 		print("signal error: ", signal, " code: ", code);
@@ -343,9 +343,9 @@ class GodotMethod {
             // but normally they should work just with &godot_object, we had issues with that in the past though
             // so here we now use real ptr value instead
             if (parent.isBuiltinClass)
-                ret ~= "\t\t_godot_api.object_method_bind_call(GDExtensionClassBinding." ~ wrapperIdentifier ~ ".mb, cast(void*) &_godot_object, cast(void**) _args.ptr, _GODOT_args.length, cast(void*) &ret, &err);\n";
+                ret ~= "\t\tgdextension_interface_object_method_bind_call(GDExtensionClassBinding." ~ wrapperIdentifier ~ ".mb, cast(void*) &_godot_object, cast(void**) _args.ptr, _GODOT_args.length, cast(void*) &ret, &err);\n";
             else
-                ret ~= "\t\t_godot_api.object_method_bind_call(GDExtensionClassBinding." ~ wrapperIdentifier ~ ".mb, cast(void*) _godot_object.ptr, cast(void**) _args.ptr, _GODOT_args.length, cast(void*) &ret, &err);\n";
+                ret ~= "\t\tgdextension_interface_object_method_bind_call(GDExtensionClassBinding." ~ wrapperIdentifier ~ ".mb, cast(void*) _godot_object.ptr, cast(void**) _args.ptr, _GODOT_args.length, cast(void*) &ret, &err);\n";
             // ret ~= "\t\t";
             // DMD 2.101 complains about Type* pointers escaping function scope
             // So instead of returning it directly make a temporary pointer variable
@@ -429,21 +429,21 @@ class GodotMethod {
     }
 
     /// formats function pointer loader, e.g.
-    /// 	GDExtensionClassBinding.method_append.mb = _godot_api.clasdb_get_methodbind("class", "method", hash);
+    /// 	GDExtensionClassBinding.method_append.mb = gdextension_interface_clasdb_get_methodbind("class", "method", hash);
     string loader() const {
         char[] buf;
         buf ~= "StringName classname = StringName(\"" ~ parent.name.godotType ~ "\");\n";
         buf ~= "StringName methodname = StringName(\"" ~ name ~ "\");\n";
         // probably better to move in its own subclass
         if (parent.isBuiltinClass) {
-            return cast(string) buf ~ format(`GDExtensionClassBinding.%s.mb = _godot_api.variant_get_ptr_builtin_method(%s, cast(GDExtensionStringNamePtr) methodname, %d);`,
+            return cast(string) buf ~ format(`GDExtensionClassBinding.%s.mb = gdextension_interface_variant_get_ptr_builtin_method(%s, cast(GDExtensionStringNamePtr) methodname, %d);`,
                 wrapperIdentifier,
                 parent.name.asNativeVariantType,
                 hash
             );
         }
 
-        return cast(string) buf ~ format(`GDExtensionClassBinding.%s.mb = _godot_api.classdb_get_method_bind(cast(GDExtensionStringNamePtr) classname, cast(GDExtensionStringNamePtr) methodname, %d);`,
+        return cast(string) buf ~ format(`GDExtensionClassBinding.%s.mb = gdextension_interface_classdb_get_method_bind(cast(GDExtensionStringNamePtr) classname, cast(GDExtensionStringNamePtr) methodname, %d);`,
             wrapperIdentifier,
             hash,
         );

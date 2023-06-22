@@ -16,7 +16,7 @@ struct CharString {
 
     ~this() {
         if (data)
-            _godot_api.mem_free(cast(void*) data);
+            gdextension_interface_mem_free(cast(void*) data);
         data = null;
         length = 0;
     }
@@ -28,7 +28,7 @@ struct Char16String {
 
     ~this() {
         if (data)
-            _godot_api.mem_free(cast(void*) data);
+            gdextension_interface_mem_free(cast(void*) data);
         data = null;
         length = 0;
     }
@@ -40,7 +40,7 @@ struct Char32String {
 
     ~this() {
         if (data)
-            _godot_api.mem_free(cast(void*) data);
+            gdextension_interface_mem_free(cast(void*) data);
         data = null;
         length = 0;
     }
@@ -52,7 +52,7 @@ struct CharWideString {
 
     ~this() {
         if (data)
-            _godot_api.mem_free(cast(void*) data);
+            gdextension_interface_mem_free(cast(void*) data);
         data = null;
         length = 0;
     }
