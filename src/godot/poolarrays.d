@@ -101,8 +101,8 @@ struct PackedArray(T) {
     this(this) {
         import std.array;
 
-        //mixin("auto n = _godot_api."~(typeName!T)~"_new_copy;");
-        auto ctor = _godot_api.variant_get_ptr_constructor(VARIANT_TYPE, 1);
+        //mixin("auto n = gdextension_interface_"~(typeName!T)~"_new_copy;");
+        auto ctor = gdextension_interface_variant_get_ptr_constructor(VARIANT_TYPE, 1);
         const auto args = [_godot_array].staticArray;
         ctor(_godot_array, args.ptr);
 
@@ -115,8 +115,8 @@ struct PackedArray(T) {
     }
 
     PackedArray opAssign(in PackedArray other) {
-        auto dtor = _godot_api.variant_get_ptr_destructor(VARIANT_TYPE);
-        auto ctor = _godot_api.variant_get_ptr_constructor(VARIANT_TYPE, 1);
+        auto dtor = gdextension_interface_variant_get_ptr_destructor(VARIANT_TYPE);
+        auto ctor = gdextension_interface_variant_get_ptr_constructor(VARIANT_TYPE, 1);
         dtor(&_godot_array);
         ctor(&_godot_array, &other._godot_array);
         return this;
@@ -135,14 +135,14 @@ struct PackedArray(T) {
         private alias InternalType = T;
 
     this(Array arr) {
-        auto n = _godot_api.variant_get_ptr_constructor(VARIANT_TYPE, 2);
+        auto n = gdextension_interface_variant_get_ptr_constructor(VARIANT_TYPE, 2);
         n(&_godot_array, cast(void**)&arr._godot_array);
     }
 
     ///
     void pushBack(in ref PackedArray arr) {
         _bind.appendArray(arr);
-        //mixin("auto a = _godot_api."~(typeName!T)~"_append_array;");
+        //mixin("auto a = gdextension_interface_"~(typeName!T)~"_append_array;");
         //a(&_godot_array, &arr._godot_array);
     }
 
@@ -150,25 +150,25 @@ struct PackedArray(T) {
 
     void invert() {
         _bind.reverse();
-        //mixin("auto i = _godot_api."~(typeName!T)~"_invert;");
+        //mixin("auto i = gdextension_interface_"~(typeName!T)~"_invert;");
         //i(&_godot_array);
     }
 
     void remove(size_t idx) {
         _bind.removeAt(idx);
-        //mixin("auto r = _godot_api."~(typeName!T)~"_remove;");
+        //mixin("auto r = gdextension_interface_"~(typeName!T)~"_remove;");
         //r(&_godot_array, cast(int)idx);
     }
 
     void resize(size_t size) {
         _bind.resize(size);
-        //mixin("auto r = _godot_api."~(typeName!T)~"_resize;");
+        //mixin("auto r = gdextension_interface_"~(typeName!T)~"_resize;");
         //r(&_godot_array, cast(int)size);
     }
 
     size_t size() const {
         return _bind.size();
-        //mixin("auto s = _godot_api."~(typeName!T)~"_size;");
+        //mixin("auto s = gdextension_interface_"~(typeName!T)~"_size;");
         //return s(&_godot_array);
     }
 
@@ -181,8 +181,8 @@ struct PackedArray(T) {
     }
 
     ~this() {
-        //auto d = _godot_api.variant_get_ptr_destructor(GDEXTENSION_VARIANT_TYPE_PACKED_BYTE_ARRAY)
-        auto d = _godot_api.variant_get_ptr_destructor(VARIANT_TYPE);
+        //auto d = gdextension_interface_variant_get_ptr_destructor(GDEXTENSION_VARIANT_TYPE_PACKED_BYTE_ARRAY)
+        auto d = gdextension_interface_variant_get_ptr_destructor(VARIANT_TYPE);
         d(&_godot_array);
     }
 
@@ -191,24 +191,24 @@ struct PackedArray(T) {
     //{
     //	void pushBack(in String data)
     //	{
-    //		_godot_api.packed_string_array_push_back(&_godot_array, &data._godot_string);
+    //		gdextension_interface_packed_string_array_push_back(&_godot_array, &data._godot_string);
     //	}
     //	void insert(size_t idx, in String data)
     //	{
-    //		_godot_api.packed_string_array_insert(&_godot_array, cast(int)idx, &data._godot_string);
+    //		gdextension_interface_packed_string_array_insert(&_godot_array, cast(int)idx, &data._godot_string);
     //	}
     //	void set(size_t idx, in String data)
     //	{
-    //		_godot_api.packed_string_array_operator_index(&_godot_array, cast(int)idx) = &data._godot_string;
+    //		gdextension_interface_packed_string_array_operator_index(&_godot_array, cast(int)idx) = &data._godot_string;
     //	}
     //	void opIndexAssign(in String data, size_t idx)
     //	{
-    //		_godot_api.packed_string_array_operator_index(&_godot_array, cast(int)idx) = &data._godot_string;
+    //		gdextension_interface_packed_string_array_operator_index(&_godot_array, cast(int)idx) = &data._godot_string;
     //	}
     //	String opIndex(size_t idx) const
     //	{
     //		String ret = void;
-    //		ret._godot_string = godot_string(cast(size_t)  _godot_api.packed_string_array_operator_index_const(&_godot_array, cast(int)idx));
+    //		ret._godot_string = godot_string(cast(size_t)  gdextension_interface_packed_string_array_operator_index_const(&_godot_array, cast(int)idx));
     //		return ret;
     //	}
     //}
@@ -216,7 +216,7 @@ struct PackedArray(T) {
     //{
     void pushBack(in T data) {
         _bind.pushBack(data);
-        //mixin("auto p = _godot_api."~(typeName!T)~"_push_back;");
+        //mixin("auto p = gdextension_interface_"~(typeName!T)~"_push_back;");
         //static if(is(T==Vector2) || is(T==Vector3) || is(T==Color))
         //	p(&_godot_array, cast(InternalType*)&data);
         //else p(&_godot_array, data);
@@ -224,7 +224,7 @@ struct PackedArray(T) {
 
     void insert(size_t idx, in T data) {
         _bind.insert(idx, data);
-        //mixin("auto i = _godot_api."~(typeName!T)~"_insert;");
+        //mixin("auto i = gdextension_interface_"~(typeName!T)~"_insert;");
         //static if(is(T==Vector2) || is(T==Vector3) || is(T==Color))
         //	i(&_godot_array, cast(int)idx, cast(InternalType*)&data);
         //else i(&_godot_array, cast(int)idx, data);
@@ -232,7 +232,7 @@ struct PackedArray(T) {
 
     void set(size_t idx, in T data) {
         _bind.set(idx, data);
-        //mixin("auto s = _godot_api."~(typeName!T)~"_set;");
+        //mixin("auto s = gdextension_interface_"~(typeName!T)~"_set;");
         //static if(is(T==Vector2) || is(T==Vector3) || is(T==Color))
         //	s(&_godot_array, cast(int)idx, cast(InternalType*)&data);
         //else s(&_godot_array, cast(int)idx, data);
@@ -240,14 +240,14 @@ struct PackedArray(T) {
 
     void opIndexAssign(in T data, size_t idx) {
         _bind.set(idx, data);
-        //mixin("auto s = _godot_api."~(typeName!T)~"_set;");
+        //mixin("auto s = gdextension_interface_"~(typeName!T)~"_set;");
         //static if(is(T==Vector2) || is(T==Vector3) || is(T==Color))
         //	s(&_godot_array, cast(int)idx, cast(InternalType*)&data);
         //else s(&_godot_array, cast(int)idx, data);
     }
 
     T opIndex(size_t idx) const {
-        mixin("auto g = _godot_api." ~ (typeName!T) ~ "_operator_index_const;");
+        mixin("auto g = gdextension_interface_" ~ (typeName!T) ~ "_operator_index_const;");
         static union V {
             T t;
             InternalType r;
@@ -315,22 +315,22 @@ struct PackedArray(T) {
         alias data this;
 
         this(PackedArray!T p) {
-            mixin("_access = _godot_api." ~ typeName!T ~ "_" ~ rw ~ "(&p._godot_array);");
-            mixin("void* _ptr = cast(void*)_godot_api." ~ access ~ "_ptr(_access);");
+            mixin("_access = gdextension_interface_" ~ typeName!T ~ "_" ~ rw ~ "(&p._godot_array);");
+            mixin("void* _ptr = cast(void*)gdextension_interface_" ~ access ~ "_ptr(_access);");
             _data = (cast(T*) _ptr)[0 .. p.length];
         }
 
         this(this) {
-            mixin("_access = _godot_api." ~ access ~ "_copy(_access);");
+            mixin("_access = gdextension_interface_" ~ access ~ "_copy(_access);");
         }
 
         void opAssign(const ref typeof(this) other) {
-            mixin("_godot_api." ~ access ~ "_destroy(_access);");
-            mixin("_access = _godot_api." ~ access ~ "_copy(other._access);");
+            mixin("gdextension_interface_" ~ access ~ "_destroy(_access);");
+            mixin("_access = gdextension_interface_" ~ access ~ "_copy(other._access);");
         }
 
         ~this() {
-            mixin("_godot_api." ~ access ~ "_destroy(_access);");
+            mixin("gdextension_interface_" ~ access ~ "_destroy(_access);");
         }
     }
 

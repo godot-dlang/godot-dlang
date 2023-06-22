@@ -75,7 +75,7 @@ class Constructor : GodotMethod {
     }
 
     override string loader() const {
-        return format(`GDExtensionClassBinding.%s.mb = _godot_api.variant_get_ptr_constructor(%s, %d);`,
+        return format(`GDExtensionClassBinding.%s.mb = gdextension_interface_variant_get_ptr_constructor(%s, %d);`,
             wrapperIdentifier,
             parent.name.asNativeVariantType(),
             index
@@ -343,7 +343,7 @@ public import godot.classdb;`;
             ret ~= "\t/// Note: use `memnew!" ~ className ~ "` instead.\n";
             ret ~= "\tstatic " ~ className ~ " _new() {\n";
             ret ~= "\t\tStringName godotname = StringName(\"" ~ name.godotType ~ "\");\n";
-            ret ~= "\t\tif(auto obj = _godot_api.classdb_construct_object(cast(GDExtensionStringNamePtr) godotname))\n";
+            ret ~= "\t\tif(auto obj = gdextension_interface_classdb_construct_object(cast(GDExtensionStringNamePtr) godotname))\n";
             ret ~= "\t\t\treturn " ~ className ~ "(godot_object(obj));\n";
             ret ~= "\t\treturn typeof(this).init;\n";
             ret ~= "\t}\n";
@@ -351,7 +351,7 @@ public import godot.classdb;`;
 
         foreach (ct; constructors) {
             //ret ~= "\tstatic "~name.dType~" "~ ct.name ~ ct.templateArgsString ~ ct.argsString ~ " {\n";
-            //ret ~= "\t\tif(auto fn = _godot_api.variant_get_ptr_constructor(GDEXTENSION_VARIANT_TYPE_"~name.godotType.snakeToCamel.toUpper ~ ", " ~ text(ct.index) ~"))\n";
+            //ret ~= "\t\tif(auto fn = gdextension_interface_variant_get_ptr_constructor(GDEXTENSION_VARIANT_TYPE_"~name.godotType.snakeToCamel.toUpper ~ ", " ~ text(ct.index) ~"))\n";
             //ret ~= "\t\t\treturn "~name.dType~"(godot_object(fn(...)));\n";
             //ret ~= "\t\treturn typeof(this).init;\n";
             //ret ~= "\t}\n";
@@ -362,7 +362,7 @@ public import godot.classdb;`;
         if (has_destructor) {
             ret ~= "\tvoid _destructor() {\n";
             ret ~= "\t\tif (!GDExtensionClassBinding.destructor)\n";
-            ret ~= "\t\t\tGDExtensionClassBinding.destructor = _godot_api.variant_get_ptr_destructor(GDEXTENSION_VARIANT_TYPE_" ~ name
+            ret ~= "\t\t\tGDExtensionClassBinding.destructor = gdextension_interface_variant_get_ptr_destructor(GDEXTENSION_VARIANT_TYPE_" ~ name
                 .godotType.camelToSnake.toUpper ~ ");\n";
             ret ~= "\t\tGDExtensionClassBinding.destructor(&_godot_object);\n";
             ret ~= "\t}\n";

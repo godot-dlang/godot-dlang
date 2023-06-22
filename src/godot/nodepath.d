@@ -46,7 +46,7 @@ struct NodePath {
         if (_node_path._opaque.ptr) {
             godot_node_path other = _node_path;
             //emplace(&this, _bind.new1(other));
-            //_godot_api.variant_new_copy(&_node_path, &other);
+            //gdextension_interface_variant_new_copy(&_node_path, &other);
         }
     }
 
@@ -56,12 +56,12 @@ struct NodePath {
 
     this(in String from) {
         emplace(&this, _bind.new2(from));
-        // //_godot_api.node_path_new(&_node_path, &from._godot_string);
+        // //gdextension_interface_node_path_new(&_node_path, &from._godot_string);
     }
 
     this(in string name) {
         String from = String(name);
-        // // _godot_api.node_path_new(&_node_path, &from._godot_string);
+        // // gdextension_interface_node_path_new(&_node_path, &from._godot_string);
         emplace(&this, _bind.new2(from));
     }
 
@@ -73,45 +73,45 @@ struct NodePath {
     bool opEquals(in NodePath other) const {
         if (_node_path == other._node_path)
             return true;
-        //return _godot_api.node_path_operator_equal(&_node_path, &other._node_path);
+        //return gdextension_interface_node_path_operator_equal(&_node_path, &other._node_path);
         return _bind == other._bind;
     }
 
     StringName getName(in int idx) const {
         return _bind.getName(idx);
-        //godot_string str = _godot_api.node_path_get_name(&_node_path, idx);
+        //godot_string str = gdextension_interface_node_path_get_name(&_node_path, idx);
         //return String(str);
     }
 
     int getNameCount() const {
-        //return _godot_api.node_path_get_name_count(&_node_path);
+        //return gdextension_interface_node_path_get_name_count(&_node_path);
         return cast(int) _bind.getNameCount();
     }
 
     StringName getSubname(in int idx) const {
         return _bind.getSubname(idx);
-        //godot_string str = _godot_api.node_path_get_subname(&_node_path, idx);
+        //godot_string str = gdextension_interface_node_path_get_subname(&_node_path, idx);
         //return String(str);
     }
 
     int getSubnameCount() const {
         return cast(int) _bind.getSubnameCount();
-        //return _godot_api.node_path_get_subname_count(&_node_path);
+        //return gdextension_interface_node_path_get_subname_count(&_node_path);
     }
 
     bool isAbsolute() const {
         return _bind.isAbsolute();
-        //return cast(bool)_godot_api.node_path_is_absolute(&_node_path);
+        //return cast(bool)gdextension_interface_node_path_is_absolute(&_node_path);
     }
 
     bool isEmpty() const {
         return _bind.isEmpty();
-        //return cast(bool)_godot_api.node_path_is_empty(&_node_path);
+        //return cast(bool)gdextension_interface_node_path_is_empty(&_node_path);
     }
 
     String str() const {
         return String_Bind.new3(cast() this);
-        //godot_string str = _godot_api.node_path_as_string(&_node_path);
+        //godot_string str = gdextension_interface_node_path_as_string(&_node_path);
         //return String(str);
     }
 
@@ -195,7 +195,7 @@ struct NodePath {
     }
 
     ~this() {
-        //_godot_api.variant_destroy(&_node_path);
+        //gdextension_interface_variant_destroy(&_node_path);
         //if (_node_path._opaque)
         //	_bind._destructor();
         //_node_path._opaque = 0;

@@ -42,7 +42,7 @@ struct GodotMethod(Return, Args...) {
     void bind(in string className, in string methodName, in GDExtensionInt hash = 0) {
         if (mb)
             return;
-        mb = _godot_api.classdb_get_method_bind(cast(GDExtensionStringNamePtr) StringName(className), cast(GDExtensionStringNamePtr) StringName(methodName), hash);
+        mb = gdextension_interface_classdb_get_method_bind(cast(GDExtensionStringNamePtr) StringName(className), cast(GDExtensionStringNamePtr) StringName(methodName), hash);
         name = String(methodName);
     }
 
@@ -50,7 +50,7 @@ struct GodotMethod(Return, Args...) {
     void bind(in GDExtensionVariantType type, in string methodName, in GDExtensionInt hash = 0) {
         if (mb)
             return;
-        mb = _godot_api.variant_get_ptr_builtin_method(type, cast(GDExtensionStringNamePtr) StringName(methodName), hash);
+        mb = gdextension_interface_variant_get_ptr_builtin_method(type, cast(GDExtensionStringNamePtr) StringName(methodName), hash);
         name = String(methodName);
     }
 }
@@ -62,7 +62,7 @@ struct GodotConstructor(Return, Args...) {
     void bind(in GDExtensionVariantType type, in int index) {
         if (mb)
             return;
-        mb = _godot_api.variant_get_ptr_constructor(type, index);
+        mb = gdextension_interface_variant_get_ptr_constructor(type, index);
     }
 }
 
@@ -131,7 +131,7 @@ package(godot) void initializeClassBinding(C)() {
             static foreach (n; __traits(allMembers, C.GDExtensionClassBinding)) {
                 static if (n == "_singleton")
                     C.GDExtensionClassBinding._singleton = godot_object(
-                        _godot_api.global_get_singleton(
+                        gdextension_interface_global_get_singleton(
                             cast(GDExtensionStringNamePtr) StringName(C.GDExtensionClassBinding._singletonName)));
                 else static if (n == "_singletonName") {
                 } else {
@@ -211,7 +211,7 @@ do {
                     MBArgs[ai], GodotClass!A.GodotClass) != -1, "method" ~
                     " argument " ~ ai.text ~ " of type " ~ A.stringof ~
                     " does not inherit parameter type " ~ MBArgs[ai].stringof);
-            aarr[ai] = getGDExtensionObject(args[ai]).ptr;
+            aarr[ai] = &(args[ai]);
         } else static if (!needsConversion!(Args[ai], MBArgs[ai])) {
             aarr[ai] = cast(const(void)*)(&args[ai]);
         } else // needs conversion
@@ -239,7 +239,7 @@ do {
     else
         const(void)** aptr = aarr.ptr;
 
-    _godot_api.object_method_bind_ptrcall(method.mb, cast(GDExtensionObjectPtr) self.ptr, aptr, rptr);
+    gdextension_interface_object_method_bind_ptrcall(method.mb, cast(GDExtensionObjectPtr) self.ptr, aptr, rptr);
     static if (!is(Return : void))
         return r;
 }
@@ -317,7 +317,7 @@ mixin template baseCasts() {
 
     inout(To) as(To)() inout if (extendsGodotBaseClass!To) {
         godot_object go = cast() _godot_object;
-        return cast(inout(To)) _godot_api.object_get_instance_binding(go.ptr, _GODOT_library, &_instanceCallbacks);
+        return cast(inout(To)) gdextension_interface_object_get_instance_binding(go.ptr, _GODOT_library, &_instanceCallbacks);
     }
 
     template opCast(To) if (isGodotBaseClass!To) {
