@@ -402,11 +402,11 @@ class Test : GodotScript!Label {
             // it seems slice operator changes, assert here has 2 elements, but since godot 4 slice now returns only one
             Array b = a.slice(1, a.length, 2);
             print("Array b (a.slice(1, a.length, 2)): ", b);
-            assert(b[].equal([Variant("two")]));
+            assert(b[].equal([Variant("two"), Variant(4.01)]));
 
             Array c = a ~ b;
             print("Array c: ", c);
-            assert(c[].equal(Array.make(1, "two", NodePath("three"), 4.01, "two")[]));
+            assert(c[].equal(Array.make(1, "two", NodePath("three"), 4.01, "two", 4.01)[]));
             Array d = Array.make(5);
             d.appendRange([6, 7]);
             print("Array d: ", d);
