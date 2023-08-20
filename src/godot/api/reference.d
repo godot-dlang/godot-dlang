@@ -23,7 +23,7 @@ struct Ref(T) {
             // TODO: check again when object casts will be fixed
             //       for now it has to be this way or _self will point at random garbage
             //       causing unexpected failures, see test project "RefTest t = n;" aroung line 356
-            return (_self) ? *cast(typeof(return)*) &_self : GodotClass!T.init;
+            return *cast(typeof(return)*) &_self;
         }
     }
 
@@ -45,6 +45,9 @@ struct Ref(T) {
         _self = other;
         if (_self)
             _reference.reference();
+        else
+            static if (__traits(hasMember, T, "__xdtor"))
+            _self.__xdtor();
         return this;
     }
 

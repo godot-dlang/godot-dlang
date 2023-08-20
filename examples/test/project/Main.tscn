@@ -56,3 +56,5 @@ offset_top = 100.0
 offset_right = 1.0
 offset_bottom = 123.0
 text = "label2"
+
+[connection signal="send_message" from="Panel/Label" to="." method="_on_label_send_message"]

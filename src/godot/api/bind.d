@@ -79,7 +79,7 @@ Return callBuiltinMethod(Return, Args...)(in GDExtensionPtrBuiltInMethod method,
     memset(&ret, 0, Return.sizeof);
 
     GDExtensionTypePtr[Args.length + 1] _args;
-    foreach (i, a; args) {
+    foreach (i, ref a; args) {
         // TODO: remove this static_if hack thing once the object casts mess will be resolved
         static if (is(typeof(a) == GodotObject))
           _args[i] = cast(void*) a;
