@@ -6,9 +6,9 @@ name: D
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ main, master, develop, godot-4.1 ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ main, master, develop, godot-4.1 ]
 
 permissions:
   contents: read
@@ -21,12 +21,46 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - uses: dlang-community/setup-dlang@4c99aa991ce7d19dd3064de0a4f2f6b2f152e2d7
+      with:
+        compiler: ldc-latest
+        
+    - name: 'Godot doesnt works without X server'
+      run: export DISPLAY=:99
+           sudo Xvfb -ac :99 -screen 0 1280x1024x24 > /dev/null 2>&1 &
 
-    - name: 'Build & Test'
+    - name: 'Get godot & dump api'
       run: |
-        # Build the project, with its main file included, without unittests
-        dub build --compiler=$DC
-        # Build and run tests, as defined by `unittest` configuration
-        # In this mode, `mainSourceFile` is excluded and `version (unittest)` are included
-        # See https://dub.pm/package-format-json.html#configurations
-        dub test --compiler=$DC
+        curl -O https://downloads.tuxfamily.org/godotengine/4.1.1/Godot_v4.1.1-stable_linux.x86_64.zip
+        sudo apt-get install -y unzip
+        unzip Godot_v4.1.1-stable_linux.x86_64.zip
+        export GDEXE=./Godot_v4.1.1-stable_linux.x86_64
+        echo "GDEXE=$GDEXE" >> $GITHUB_ENV
+        $GDEXE --headless --dump-extension-api
+      
+    - name: 'Generate bindings'
+      run: dub run :generator --verbose -- -j extension_api.json -o
+      
+    - name: 'Build Test Project'
+      run: |
+        dub build :test --verbose --compiler=$DC
+
+    - name: 'Build Asteroids Project'
+      run: |
+        dub build :asteroids --verbose --compiler=$DC
+
+    - name: 'Run demo project'
+      # currently both godot and godot-dlang doesn't exits cleanly
+      # yet it is useful to see if there is any potential logic errors
+      continue-on-error: true
+      # a fancy workaround of an issue with being unable to generate assets required to run
+        # https://github.com/godotengine/godot-proposals/issues/1362#issuecomment-1379140108
+      run: |
+        timeout 60 "${{ env.GDEXE }}" --headless --path ./examples/test/project --export-debug "Linux/X11" /path/to/nonexistent/file
+        timeout 10 "${{ env.GDEXE }}" --verbose --headless --path ./examples/test/project
+
+    - name: 'Run Asteroids project'
+      # currently both godot and godot-dlang doesn't exits cleanly
+      continue-on-error: true
+      run: | 
+        timeout 60 "${{ env.GDEXE }}" --headless --path ./examples/asteroids/project --export-debug "Linux/X11" /path/to/nonexistent/file
+        timeout 10 "${{ env.GDEXE }}" --verbose --headless --path ./examples/asteroids/project
