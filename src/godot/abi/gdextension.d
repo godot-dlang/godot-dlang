@@ -2,7 +2,7 @@ module godot.abi.gdextension;
 
 import std.meta;
 import std.traits : isSomeFunction, isType;
-import std.algorithm : startsWith;
+import std.algorithm : startsWith, canFind;
 import godot.util.string;
 import godot.abi.core : _godot_get_proc_address;
 
@@ -14,10 +14,17 @@ version(importc) {
     alias gdextension_interface = godot.abi.gdextension_binding;
 }
 
+enum _exclude = [
+    "GDExtensionInterfaceFunctionPtr", // this one is a type
+    "GDExtensionInterfaceGetProcAddress" // ditto
+];
+
 /// helper method that filters out irrelevant functions
 /// e.g. GDExtensionInterfaceGetGodotVersion will be converted into:
 ///   GDExtensionInterfaceGetGodotVersion gdextension_interface_get_godot_version;
-enum bool isFunctionPtr(alias T) = T.startsWith("GDExtensionInterface") && isSomeFunction!(__traits(getMember, gdextension_interface, T)) && isType!(__traits(getMember, gdextension_interface, T));
+enum bool isFunctionPtr(alias T) = T.startsWith("GDExtensionInterface") 
+                                    && isSomeFunction!(__traits(getMember, gdextension_interface, T)) && isType!(__traits(getMember, gdextension_interface, T))
+                                    && !_exclude.canFind(T);
 
 /// this will convert function pointer declaration and create a variable
 static foreach(symname; Filter!(isFunctionPtr, __traits(derivedMembers, gdextension_interface))) {
