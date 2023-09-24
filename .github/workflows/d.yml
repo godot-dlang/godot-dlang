@@ -43,22 +43,24 @@ jobs:
     - name: 'Build Test Project'
       run: |
         dub build :test --verbose --compiler=$DC
-        # a fancy workaround of an issue with being unable to generate assets required to run
-        # https://github.com/godotengine/godot-proposals/issues/1362#issuecomment-1379140108
-        timeout 10 "${{ env.GDEXE }}" --headless --path ./examples/test/project --export-debug "Linux/X11" /path/to/nonexistent/file
 
     - name: 'Build Asteroids Project'
       run: |
         dub build :asteroids --verbose --compiler=$DC
-        timeout 10 "${{ env.GDEXE }}" --headless --path ./examples/asteroids/project --export-debug "Linux/X11" /path/to/nonexistent/file
 
     - name: 'Run demo project'
       # currently both godot and godot-dlang doesn't exits cleanly
       # yet it is useful to see if there is any potential logic errors
       continue-on-error: true
-      run: timeout 10 "${{ env.GDEXE }}" --verbose --headless --path ./examples/test/project
+      # a fancy workaround of an issue with being unable to generate assets required to run
+        # https://github.com/godotengine/godot-proposals/issues/1362#issuecomment-1379140108
+      run: |
+        timeout 60 "${{ env.GDEXE }}" --headless --path ./examples/test/project --export-debug "Linux/X11" /path/to/nonexistent/file
+        timeout 10 "${{ env.GDEXE }}" --verbose --headless --path ./examples/test/project
 
     - name: 'Run Asteroids project'
       # currently both godot and godot-dlang doesn't exits cleanly
       continue-on-error: true
-      run: timeout 10 "${{ env.GDEXE }}" --verbose --headless --path ./examples/asteroids/project
+      run: | 
+        timeout 60 "${{ env.GDEXE }}" --headless --path ./examples/asteroids/project --export-debug "Linux/X11" /path/to/nonexistent/file
+        timeout 10 "${{ env.GDEXE }}" --verbose --headless --path ./examples/asteroids/project
