@@ -45,6 +45,16 @@ subPackage {
     targetPath "lib"
 }
 subPackage {
+	name "makebind"
+	description "Godot GDExtension Interface binding generator for use with godot-dlang"
+	dependency "godot-dlang:util" version="*"
+	targetType "executable"
+	targetName "makebind"
+	dflags "--link-internally" platform="windows-ldc"
+	sourcePaths "modules/tools/makebind"
+    targetPath "lib"
+}
+subPackage {
 	name "classfinder"
 	description "A utility for scanning D files to find classes"
 	dependency "godot-dlang:util" version="*"
