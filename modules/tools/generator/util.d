@@ -127,6 +127,10 @@ class Type {
         return dType.indexOf("*") != -1;
     }
 
+    bool isSingleton() const {
+        return original && original.singleton;
+    }
+
     // Any type that is internally backed by godot string
     bool isGodotStringType() const {
         import std.algorithm : among;
@@ -276,7 +280,7 @@ class Type {
         auto found = searchInParent.enums.find!(s => s.name == innerName);
         if (!found.empty) {
             foreach (pair; found.front.values)
-                if (pair.value == to!int(value))
+                if (pair.value == to!long(value))
                     return dType ~ "." ~ snakeToCamel(pair.name);
         }
 
@@ -344,9 +348,9 @@ class Type {
     this(TypeStruct t) {
         // here t.name usually specifies old type like int, with meta describing actual length like int64
         if (t.meta)
-            this(t.meta);
+            this = Type.get(t.meta);
         else
-            this(t.name);
+            this = Type.get(t.name);
     }
 
     static Type get(string godotName) {
