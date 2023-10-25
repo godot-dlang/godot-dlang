@@ -407,6 +407,9 @@ string defaultTypeString(in Type type) {
         return type.dType ~ ".make()";
     case "Array":
         return type.dType ~ ".make()";
+    case "Callable":
+    case "GodotCallable":
+        return "GodotCallable()";
     default: { // all default-blittable types
             if (isPointer) {
                 return "(" ~ type.dType ~ ").init";
@@ -506,6 +509,13 @@ string escapeDefaultType(in Type type, string arg) {
             return "Variant.nil";
         else
             return arg;
+    case "Callable":
+    case "GodotCallable":
+        enum startpos = "Callable(".length;
+        if (arg.length == startpos + 1)
+            return "GodotCallable()";
+        else
+            return "GodotCallable(" ~ arg[startpos..$-1] ~ ")";
     case "String":
     case "StringName":
     case "NodePath": 

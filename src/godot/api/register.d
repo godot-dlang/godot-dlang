@@ -100,7 +100,7 @@ mixin template GodotNativeLibrary(string symbolPrefix, Args...) {
 
     /// This is the main entry point declared in your .gdextension file, it will be called by godot engine on load
     pragma(mangle, symbolPrefix ~ "_gdextension_entry")
-    export extern (C) static GDExtensionBool godot_gdextension_entry(GDExtensionInterface* p_interface,
+    export extern (C) static GDExtensionBool godot_gdextension_entry(GDExtensionInterfaceGetProcAddress p_get_proc_address,
         GDExtensionClassLibraryPtr p_library, GDExtensionInitialization* r_initialization) {
         import godot.abi.gdextension;
         import godot.api.reference;
@@ -120,15 +120,36 @@ mixin template GodotNativeLibrary(string symbolPrefix, Args...) {
                 Runtime.initialize();
         }
 
-        _godot_api = p_interface;
+        // ----------------- GRACEFULLY QUIT IF GODOT < 4.1 ------------
+        // Make sure we weren't passed the legacy struct.
+        uint32_t* raw_interface = cast(uint32_t*)cast(void*)p_get_proc_address;
+        if (raw_interface[0] == 4 && raw_interface[1] == 0) {
+            // Use the legacy interface only to give a nice error.
+            LegacyGDExtensionInterface* legacy_interface = cast(LegacyGDExtensionInterface*) p_get_proc_address;
+		    gdextension_interface_print_error_with_message = cast(GDExtensionInterfacePrintErrorWithMessage) legacy_interface.print_error_with_message;
+            printerr("Cannot load a GDExtension built for Godot 4.1+ in Godot 4.0.");
+            return false;
+        }
+
+        // Load the "print_error_with_message" function first (needed by the printerr).
+        gdextension_interface_print_error_with_message = cast(GDExtensionInterfacePrintErrorWithMessage)p_get_proc_address("print_error_with_message");
+        if (!gdextension_interface_print_error_with_message) {
+            import core.stdc.stdio : printf;
+            printf("ERROR: Unable to load GDExtension interface function print_error_with_message().\n");
+            return false;
+        }
+        // -------------------------------------------------------------
+
+        _godot_get_proc_address = p_get_proc_address;
         godot.api.register._GODOT_library = p_library;
+
+        loadGDExtensionInterface();
 
         //import core.exception : assertHandler;
         //assertHandler = (options.in_editor) ? (&godotAssertHandlerEditorDebug)
         //	: (&godotAssertHandlerCrash);
 
-        // TODO: explore various stages, for example for making core classes
-        r_initialization.minimum_initialization_level = GDEXTENSION_INITIALIZATION_SCENE;
+        r_initialization.minimum_initialization_level = GDEXTENSION_INITIALIZATION_CORE;
         r_initialization.initialize = &initializeLevel;
         r_initialization.deinitialize = &deinitializeLevel;
 
@@ -225,7 +246,7 @@ private extern (C)
 godot_variant _GODOT_nop(godot_object o, void* methodData,
     void* userData, int numArgs, godot_variant** args) {
     godot_variant n;
-    _godot_api.variant_new_nil(&n);
+    gdextension_interface_variant_new_nil(&n);
     return n;
 }
 
@@ -289,7 +310,7 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
 
     StringName snClass = StringName(name);
     StringName snBase = StringName(baseName);
-    _godot_api.classdb_register_extension_class(lib, cast(GDExtensionStringNamePtr) snClass, cast(GDExtensionStringNamePtr) snBase, &class_info);
+    gdextension_interface_classdb_register_extension_class(lib, cast(GDExtensionStringNamePtr) snClass, cast(GDExtensionStringNamePtr) snBase, &class_info);
 
     void registerMethod(alias mf, string nameOverride = null)() {
         static if (nameOverride.length) {
@@ -329,7 +350,7 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
             MethodWrapperMeta!mf.getDefaultArgs(), //GDExtensionVariantPtr *default_arguments;
         
         };
-        _godot_api.classdb_register_extension_class_method(lib, cast(GDExtensionStringNamePtr) snClass, &mi);
+        gdextension_interface_classdb_register_extension_class_method(lib, cast(GDExtensionStringNamePtr) snClass, &mi);
         // cache StringName for comparison later on
         MethodWrapper!(T, mf).funName = cast(GDExtensionStringNamePtr) snFunName;
     }
@@ -364,7 +385,7 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
             MethodWrapperMeta!propType.getDefaultArgs(), //GDExtensionVariantPtr *default_arguments;
         };
 
-        _godot_api.classdb_register_extension_class_method(lib, cast(GDExtensionStringNamePtr) snClass, &mi);
+        gdextension_interface_classdb_register_extension_class_method(lib, cast(GDExtensionStringNamePtr) snClass, &mi);
     }
 
     static foreach (mf; godotMethods!T) {
@@ -427,7 +448,7 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
             }
 
             StringName snExternalName = StringName(externalName);
-            _godot_api.classdb_register_extension_class_signal(
+            gdextension_interface_classdb_register_extension_class_signal(
                 lib, 
                 cast(GDExtensionStringNamePtr) snClass, 
                 cast(GDExtensionStringNamePtr) snExternalName, 
@@ -497,7 +518,7 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
 
             StringName snSetProp = StringName(set_prop);
             StringName snGetProp = StringName(get_prop);
-            _godot_api.classdb_register_extension_class_property(
+            gdextension_interface_classdb_register_extension_class_property(
                 lib, 
                 cast(GDExtensionStringNamePtr) snClass, 
                 &pinfo, 
@@ -546,7 +567,7 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
 
             StringName snSetProp = StringName(set_prop);
             StringName snGetProp = StringName(get_prop);
-            _godot_api.classdb_register_extension_class_property(
+            gdextension_interface_classdb_register_extension_class_property(
                 lib, 
                 cast(GDExtensionStringNamePtr) snClass, 
                 &pinfo, 
@@ -563,13 +584,13 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
                 // FIXME: static foreach scope complains about duplicate names
                 mixin("StringName snEnum" ~ i.stringof ~ " = StringName(__traits(identifier, E));");
                 mixin("StringName snVal" ~ i.stringof ~ "= StringName(ev);");
-                _godot_api.classdb_register_extension_class_integer_constant(
+                gdextension_interface_classdb_register_extension_class_integer_constant(
                     lib, 
                     cast(GDExtensionStringNamePtr) snClass, 
                     cast(GDExtensionStringNamePtr) mixin("snEnum"~i.stringof), 
                     cast(GDExtensionStringNamePtr) mixin("snVal"~i.stringof), 
-                    cast(int) __traits(getMember, E, ev), 
-                    false
+                    cast(int) __traits(getMember, E, ev), // constant value
+                    false // is a bitfield constant?
                 );
             }
         }
@@ -581,7 +602,7 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
             //pragma(msg, pName, ":", cast(int) E);
             // FIXME: static foreach scope complains about duplicate names
             mixin("StringName snProp" ~ pName ~ " = StringName(pName);");
-            _godot_api.classdb_register_extension_class_integer_constant(
+            gdextension_interface_classdb_register_extension_class_integer_constant(
                 lib, 
                 cast(GDExtensionStringNamePtr) snClass, 
                 cast(GDExtensionStringNamePtr) stringName(), 
@@ -658,6 +679,23 @@ void unregister(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
         }}
 
         StringName snClass = StringName(name);
-        _godot_api.classdb_unregister_extension_class(lib, cast(GDExtensionStringNamePtr) snClass);
+        gdextension_interface_classdb_unregister_extension_class(lib, cast(GDExtensionStringNamePtr) snClass);
     }
+}
+
+
+// Partial definition of the legacy interface so we can detect it and show an error.
+// same as in C++, because we want to print a nice error message instead of silently crash the editor
+struct LegacyGDExtensionInterface {
+	uint32_t version_major;
+	uint32_t version_minor;
+	uint32_t version_patch;
+	const(char)* version_string;
+
+	GDExtensionInterfaceFunctionPtr unused1;
+	GDExtensionInterfaceFunctionPtr unused2;
+	GDExtensionInterfaceFunctionPtr unused3;
+
+	GDExtensionInterfacePrintError print_error;
+	GDExtensionInterfacePrintErrorWithMessage print_error_with_message;
 }

@@ -150,10 +150,10 @@ RefOrT!T memnew(T)() if (extendsGodotBaseClass!T) {
 
     //GodotClass!T o = GodotClass!T._new();
     auto snName = StringName(name);
-    auto obj = _godot_api.classdb_construct_object(cast(GDExtensionStringNamePtr) snName);
+    auto obj = gdextension_interface_classdb_construct_object(cast(GDExtensionStringNamePtr) snName);
     assert(obj !is null);
 
-    T o = cast(T) _godot_api.object_get_instance_binding(obj, _GODOT_library, &_instanceCallbacks);
+    T o = cast(T) gdextension_interface_object_get_instance_binding(obj, _GODOT_library, &_instanceCallbacks);
     //static if(extends!(T, RefCounted))
     //{
     //	bool success = o.initRef();
@@ -181,7 +181,7 @@ RefOrT!T memnew(T)() if (isGodotBaseClass!T) {
 }
 
 void memdelete(T)(T t) if (isGodotClass!T) {
-    _godot_api.object_destroy(t.getGDExtensionObject.ptr);
+    gdextension_interface_object_destroy(t.getGDExtensionObject.ptr);
 }
 
 package(godot) extern (C) __gshared GDExtensionInstanceBindingCallbacks _instanceCallbacks = {
@@ -218,7 +218,7 @@ extern (C) package(godot) void* createFunc(T)(void* data) //nothrow @nogc
     else 
         enum string name = __traits(identifier, T);
 
-    T t = cast(T) _godot_api.mem_alloc(__traits(classInstanceSize, T));
+    T t = cast(T) gdextension_interface_mem_alloc(__traits(classInstanceSize, T));
 
     emplace(t);
     // class must have default ctor to be properly initialized
@@ -229,15 +229,15 @@ extern (C) package(godot) void* createFunc(T)(void* data) //nothrow @nogc
         StringName classname = name;
         StringName snInternalName = (GodotClass!T)._GODOT_internal_name;
         if (!t.owner._godot_object.ptr)
-            t.owner._godot_object.ptr = _godot_api.classdb_construct_object(cast(GDExtensionStringNamePtr) snInternalName);
-        _godot_api.object_set_instance(cast(void*) t.owner._godot_object.ptr, cast(GDExtensionStringNamePtr) classname, cast(
+            t.owner._godot_object.ptr = gdextension_interface_classdb_construct_object(cast(GDExtensionStringNamePtr) snInternalName);
+        gdextension_interface_object_set_instance(cast(void*) t.owner._godot_object.ptr, cast(GDExtensionStringNamePtr) classname, cast(
                 void*) t);
     }
     //else
     //	t.owner._godot_object.ptr = cast(void*) t;
     godot.initialize(t);
 
-    _godot_api.object_set_instance_binding(cast(void*) t.owner._godot_object.ptr, _GODOT_library, cast(
+    gdextension_interface_object_set_instance_binding(cast(void*) t.owner._godot_object.ptr, _GODOT_library, cast(
             void*) t, &_instanceCallbacks);
 
     return cast(void*) t.owner._godot_object.ptr;
@@ -249,6 +249,6 @@ extern (C) package(godot) void destroyFunc(T)(void* userData, void* instance) //
 
     T t = cast(T) instance;
     godot.finalize(t);
-    _godot_api.mem_free(cast(void*) t);
+    gdextension_interface_mem_free(cast(void*) t);
     //Mallocator.instance.dispose(t);
 }

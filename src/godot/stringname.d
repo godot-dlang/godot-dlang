@@ -65,9 +65,9 @@ struct StringName {
 
     /// Returns the length of the char32_t array, minus the zero terminator.
     size_t length() const {
-        auto len = _godot_api.string_to_utf8_chars(&_godot_string_name, null, 0);
+        auto len = gdextension_interface_string_to_utf8_chars(&_godot_string_name, null, 0);
         return len;
-        //return _godot_api.string_length(&_godot_string);
+        //return gdextension_interface_string_length(&_godot_string);
     }
 
     /// Returns: $(D true) if length is 0
@@ -77,7 +77,7 @@ struct StringName {
 
     /// Returns a pointer to the wchar_t data. Always zero-terminated.
     immutable(char32_t)* ptr() const {
-        return cast(immutable(char32_t)*) _godot_api.string_operator_index_const(
+        return cast(immutable(char32_t)*) gdextension_interface_string_operator_index_const(
             &_godot_string_name, 0);
     }
 
@@ -99,13 +99,13 @@ struct StringName {
             isImplicitlyConvertible!(S, const(char)*)) {
         static if (isImplicitlyConvertible!(S, const(char)[])) {
             const(char)[] contents = str;
-            _godot_api.string_new_with_latin1_chars_and_len(&_godot_string_name, contents.ptr, cast(
+            gdextension_interface_string_new_with_latin1_chars_and_len(&_godot_string_name, contents.ptr, cast(
                     int) contents.length);
         } else {
             import core.stdc.string : strlen;
 
             const(char)* contents = str;
-            _godot_api.string_new_with_latin1_chars_and_len(&_godot_string_name, contents, cast(int) strlen(
+            gdextension_interface_string_new_with_latin1_chars_and_len(&_godot_string_name, contents, cast(int) strlen(
                     contents));
         }
     }
@@ -126,7 +126,7 @@ struct StringName {
         //if (&_godot_string_name)
         //    _bind._destructor();
         godot_string gs;
-        _godot_api.string_new_with_utf8_chars_and_len(&gs, other.ptr, cast(int) other.length);
+        gdextension_interface_string_new_with_utf8_chars_and_len(&gs, other.ptr, cast(int) other.length);
         _godot_string_name = gs;
     }
 
@@ -134,7 +134,7 @@ struct StringName {
         if (_godot_string_name == other._godot_string_name)
             return true;
         // FIXME: no idea if there is actually such thing
-        //return _godot_api.string_name_operator_equal(&_godot_string_name, &other._godot_string_name);
+        //return gdextension_interface_string_name_operator_equal(&_godot_string_name, &other._godot_string_name);
         return false;
     }
 
@@ -149,8 +149,8 @@ struct StringName {
     @trusted
     hash_t toHash() const nothrow {
         return cast(hash_t) assumeWontThrow(_bind.hash());
-        //static if(hash_t.sizeof == uint.sizeof) return _godot_api.string_hash(&_godot_string);
-        //else return _godot_api.string_hash64(&_godot_string);
+        //static if(hash_t.sizeof == uint.sizeof) return gdextension_interface_string_hash(&_godot_string);
+        //else return gdextension_interface_string_hash64(&_godot_string);
     }
 
 }
@@ -164,7 +164,7 @@ struct StringName {
 StringName toGodotStringName(string str) {
     // FIXME: this is going to be slow as hell
     godot_string gs;
-    _godot_api.string_new_with_utf8_chars_and_len(&gs, str.ptr, cast(int) str.length);
+    gdextension_interface_string_new_with_utf8_chars_and_len(&gs, str.ptr, cast(int) str.length);
     String* p = cast(String*)&gs;
     return StringName(*p);
 }
@@ -188,21 +188,21 @@ struct GodotStringNameLiteral(string data) {
             if (gs == godot_string.init) {
                 synchronized {
                     if (gs == godot_string.init)
-                        _godot_api.string_new_with_utf8_chars_and_len(&gs, data.ptr, cast(int) data
+                        gdextension_interface_string_new_with_utf8_chars_and_len(&gs, data.ptr, cast(int) data
                                 .length);
                 }
             }
         // a pointer so it won't destroy itself ahead of time
         String* p = cast(String*)&gs;
         //String ret = void;
-        //_godot_api.variant_new_copy(&ret._godot_string, &gs);
+        //gdextension_interface_variant_new_copy(&ret._godot_string, &gs);
         //return ret;
         return StringName(*p);
     }
 
     static if (data.length) {
         shared static ~this() {
-            //if(gs != godot_string.init) _godot_api.variant_destroy(&gs);
+            //if(gs != godot_string.init) gdextension_interface_variant_destroy(&gs);
         }
     }
     alias str this;

@@ -17,6 +17,11 @@ dflags "-dllimport=defaultLibsOnly" platform="windows-ldc2"
 sourcePaths "src" "classes"
 importPaths "src" "classes"
 /* sourceFiles "src/godot/abi/gdnative_interface.i" */
+
+preBuildCommands "if [ ! -d \"classes/\" ]; then echo \"ERROR: 'classes' dir not found, did you forgot to generate bindings?\" && exit 1; fi" platform="posix"
+preBuildCommands "if not exist \"classes\\\" ( echo ERROR: 'classes' dir not found, did you forgot to generate bindings? & exit 1 )" platform="windows"
+// preBuildCommands "If (-not (Test-Path classes) ) { Write-Host \"No generated 'classes' dir found, did you forgot to generate bindings?\" -f Red ; exit 1 }" platform="windows"
+
 subPackage {
 	name "init"
 	targetType "executable"
@@ -42,6 +47,16 @@ subPackage {
 	targetName "generator"
 	dflags "--link-internally" platform="windows-ldc"
 	sourcePaths "modules/tools/generator"
+    targetPath "lib"
+}
+subPackage {
+	name "makebind"
+	description "Godot GDExtension Interface binding generator for use with godot-dlang"
+	dependency "godot-dlang:util" version="*"
+	targetType "executable"
+	targetName "makebind"
+	dflags "--link-internally" platform="windows-ldc"
+	sourcePaths "modules/tools/makebind"
     targetPath "lib"
 }
 subPackage {

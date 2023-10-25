@@ -7,10 +7,10 @@ import godot.api.types;
 @nogc nothrow:
 extern (C):
 
-alias godot_api = GDExtensionInterface;
+//alias godot_api = GDExtensionInterface;
 
 // TODO: make sure it is propely loaded within extensions
-__gshared GDExtensionInterface* _godot_api;
+__gshared GDExtensionInterfaceGetProcAddress _godot_get_proc_address;
 
 enum GODOT_API_VERSION = 1;
 
