@@ -20,9 +20,6 @@ import godot.stringname;
 import godot.abi;
 import godot.builtins;
 
-// HACK: string
-// There's basically a lot of those hacks
-
 /**
 A pre-parsed relative or absolute path in a scene tree, for use with $(D Node.getNode) and similar functions. It can reference a node, a resource within a node, or a property of a node or resource. For instance, `"Path2D/PathFollow2D/Sprite:texture:size"` would refer to the size property of the texture resource on the node named “Sprite” which is a child of the other named nodes in the path. Note that if you want to get a resource, you must end the path with a colon, otherwise the last element will be used as a property name.
 
@@ -41,13 +38,8 @@ struct NodePath {
     package(godot) nodepath _nodepath;
     alias _nodepath this;
 
-    this(this) {
-        // do a copy as godot might free it right after property set
-        if (_node_path._opaque.ptr) {
-            godot_node_path other = _node_path;
-            //emplace(&this, _bind.new1(other));
-            //gdextension_interface_variant_new_copy(&_node_path, &other);
-        }
+    this(ref const NodePath other) {
+        _node_path = _bind.new1(other._node_path);
     }
 
     package(godot) this(godot_node_path n) {
@@ -55,19 +47,12 @@ struct NodePath {
     }
 
     this(in String from) {
-        emplace(&this, _bind.new2(from));
-        // //gdextension_interface_node_path_new(&_node_path, &from._godot_string);
+        _node_path = _bind.new2(from);
     }
 
     this(in string name) {
         String from = String(name);
-        // // gdextension_interface_node_path_new(&_node_path, &from._godot_string);
-        emplace(&this, _bind.new2(from));
-    }
-
-    // quick hack for beta2+ changes
-    this(in NodePath other) {
-        _node_path = other._node_path;
+        this(from);
     }
 
     bool opEquals(in NodePath other) const {
@@ -110,9 +95,7 @@ struct NodePath {
     }
 
     String str() const {
-        return String_Bind.new3(cast() this);
-        //godot_string str = gdextension_interface_node_path_as_string(&_node_path);
-        //return String(str);
+        return String(this);
     }
 
     /// Splits a NodePath into a main node path and a property subpath (starting
@@ -166,38 +149,24 @@ struct NodePath {
 
     //this(ref return scope const NodePath other) // copy ctor
     NodePath opAssign(ref const NodePath other) {
-        _node_path = other._node_path;
-        //godot_node_path_copy(&_node_path, &other._node_path);
-        if (other._node_path._opaque.ptr) {
-            import godot.api;
-            return _bind.new1(other);
-        }
-
-        //print(this);
-
+        if (_node_path._opaque.ptr)
+            _bind._destructor();
+        
+        _node_path = _bind.new1(other._node_path);
         return this;
     }
 
     NodePath opAssign(in NodePath other) {
-        _node_path = other._node_path;
-        //godot_node_path_copy(&_node_path, &other._node_path);
-        if (other._node_path._opaque.ptr) {
-            import godot.api;
-
-            print(other);
-            return _bind.new1(other);
-        }
-        //import godot.api;
-        //print(other);
-        //print(this);
-
+        if (_node_path._opaque.ptr)
+            _bind._destructor();
+        
+        _node_path = _bind.new1(other._node_path);
         return this;
     }
 
     ~this() {
-        //gdextension_interface_variant_destroy(&_node_path);
-        //if (_node_path._opaque)
-        //	_bind._destructor();
-        //_node_path._opaque = 0;
+        if (_node_path._opaque.ptr)
+        	_bind._destructor();
+        _node_path = _node_path.init;
     }
 }

@@ -25,11 +25,7 @@ struct StringName {
     alias _stringName this;
 
     this(String s) {
-        this = _bind.new2(s);
-    }
-
-    this(this) {
-
+        _godot_string_name = _bind.new2(s);
     }
 
     this(string s) {
@@ -48,17 +44,17 @@ struct StringName {
     deprecated("Default struct ctor is not allowed, please use `stringName()` instead")
     @disable this();
 
-    //this(ref const StringName s)
-    //{
-    //	this = _bind.new1(s);
-    //}
+    this(ref const StringName other)
+    {
+    	_godot_string_name = _bind.new1(other._godot_string_name);
+    }
 
     void _defaultCtor() {
-        this = StringName_Bind.new0();
+        _godot_string_name = StringName_Bind.new0();
     }
     
     static StringName makeEmpty() {
-        StringName sn = void;
+        StringName sn = godot_string.init;
         sn._defaultCtor();
         return sn;
     }
@@ -111,23 +107,24 @@ struct StringName {
     }
 
     ~this() {
-        //_bind._destructor();
+        if (_godot_string_name._opaque)
+            _bind._destructor();
+            
         _godot_string_name = _godot_string_name.init;
     }
 
     void opAssign(in StringName other) {
-        //if (&_godot_string_name)
-        //    _bind._destructor();
+        if (_godot_string_name._opaque)
+            _bind._destructor();
 
-        _godot_string_name = other._godot_string_name;
+    	_godot_string_name = _bind.new1(other._godot_string_name);
     }
 
     void opAssign(in string other) {
-        //if (&_godot_string_name)
-        //    _bind._destructor();
-        godot_string gs;
-        gdextension_interface_string_new_with_utf8_chars_and_len(&gs, other.ptr, cast(int) other.length);
-        _godot_string_name = gs;
+        if (_godot_string_name._opaque)
+            _bind._destructor();
+
+        _godot_string_name = _bind.new2(String(other));
     }
 
     bool opEquals(in StringName other) const {

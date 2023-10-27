@@ -148,13 +148,12 @@ struct Variant {
     alias Type = VariantType;
 
     /// GDExtension type that gets passed to the C functions
-    // NOTE: godot 4 now uses default int as int32 and double precision by default
-    // TODO: verify this
+    // NOTE: godot 4 default build uses long and double for integers/floating point numbers
     alias InternalType = AliasSeq!(
         typeof(null),
 
         godot_bool,
-        int,
+        long,
         double,
         godot_string,
 

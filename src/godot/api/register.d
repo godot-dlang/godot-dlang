@@ -287,18 +287,16 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
     class_info.free_instance_func = &destroyFunc!T;
     class_info.class_userdata = cast(void*) name.ptr;
 
+    // This function will be called for any virtual script method, the returned pointer is then cached internally by godot
     extern (C) static GDExtensionClassCallVirtual getVirtualFn(void* p_userdata, const GDExtensionStringNamePtr p_name) {
         import core.stdc.stdio;
         import core.stdc.string;
         import std.conv : to;
 
         //print("requested method ", *cast(StringName*) p_name);
-        // FIXME: StringName issues
-        auto v = Variant(*cast(StringName*) p_name);
-        auto str = v.as!String.data();
+        auto name = *cast(StringName*) p_name;
         static if (__traits(compiles, __traits(getMember, T, "_ready"))) {
-            //if (MethodWrapper!(T, __traits(getMember, T, "_ready")).funName == p_name) {
-            if (str == "_ready") {
+            if (name == StringName("_ready")) {
                 return cast(GDExtensionClassCallVirtual) 
                     &OnReadyWrapper!(T, __traits(getMember, T, "_ready")).callOnReady;
             }
