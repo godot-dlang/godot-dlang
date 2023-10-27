@@ -22,21 +22,21 @@ struct GodotCallable {
     }
 
     this(ref scope const GodotCallable other) {
-        _callable = other._callable;
+        _godot_callable = _bind.new1(other._godot_callable);
     }
 
 
     this(in GodotObject object, in StringName method) {
-        this = _bind.new2(object, method);
+        _godot_callable = _bind.new2(object, method);
     }
 
     this(in GodotObject object, in string method) {
         StringName snMethod = method;
-        this = _bind.new2(object, snMethod);
+        _godot_callable = _bind.new2(object, snMethod);
     }
 
     void _defaultCtor() {
-        _bind.new0();
+        _godot_callable = _bind.new0();
     }
 
     ~this() {

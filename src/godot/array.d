@@ -121,19 +121,14 @@ struct Array {
     //}
 
     this(const scope ref Array other) {
-        //if (&_godot_array)
-        //	_bind._destructor();
-        _godot_array = other._godot_array;
+        _godot_array = _bind.new1(other._godot_array);
     }
 
     Array opAssign(in Array other) {
-        //if (&_godot_array)
-        //	_bind._destructor();
-        this = _bind.new1(other); // do we actually need a copy here?
+        if (_godot_array._opaque)
+        	_bind._destructor();
+        _godot_array = _bind.new1(other._godot_array); // do we actually need a copy here?
         return this;
-        //gdextension_interface_variant_destroy(&_godot_array);
-        //gdextension_interface_variant_new_copy(&_godot_array, &other._godot_array);
-        //return this;
     }
 
     /++
@@ -170,8 +165,9 @@ struct Array {
     }
 
     this(in typeof(null) n) {
-        //gdextension_interface_variant_new_nil(&_godot_array);
-        _bind.new0();
+        if (_godot_array._opaque)
+        	_bind._destructor();
+        _godot_array = _bind.new0();
     }
 
     // TODO: verify the following array constructors, since previous API's are gone
@@ -220,10 +216,9 @@ struct Array {
 
     void opIndexAssign(T)(auto ref T value, in size_t idx)
             if (is(T : Variant) || Variant.compatibleToGodot!T) {
-        Variant v = Variant(value);
-        godot_variant* val = cast(godot_variant*) gdextension_interface_array_operator_index(
+        Variant* val = cast(Variant*) gdextension_interface_array_operator_index(
             &_godot_array, cast(int) idx);
-        *val = v._godot_variant;
+        *val = value;
     }
 
     /// Append a single element.
@@ -493,10 +488,9 @@ struct Array {
     // TODO: `scope` for the returned slices?
 
     ~this() {
-        //if (&_godot_array)
-        //	_bind._destructor();
+        if (_godot_array._opaque)
+        	_bind._destructor();
         _array = _array.init;
-        //gdextension_interface_variant_destroy(&_godot_array);
     }
 }
 
