@@ -20,10 +20,7 @@ struct Ref(T) {
         package(godot) T _self;
         pragma(inline, true)
         package(godot) GodotClass!T _reference() {
-            // TODO: check again when object casts will be fixed
-            //       for now it has to be this way or _self will point at random garbage
-            //       causing unexpected failures, see test project "RefTest t = n;" aroung line 356
-            return *cast(typeof(return)*) &_self;
+            return (_self) ? _self.owner : GodotClass!T.init;
         }
     }
 
@@ -45,9 +42,6 @@ struct Ref(T) {
         _self = other;
         if (_self)
             _reference.reference();
-        else
-            static if (__traits(hasMember, T, "__xdtor"))
-            _self.__xdtor();
         return this;
     }
 
@@ -63,7 +57,9 @@ struct Ref(T) {
 
     void unref() {
         if (_self && _reference.unreference()) {
-            gdextension_interface_object_destroy(&_reference._godot_object);
+            gdextension_interface_object_destroy(_reference._godot_object.ptr);
+            static if (__traits(hasMember, T, "__xdtor"))
+                _self.__xdtor();
         }
         _self = T.init;
     }
@@ -129,7 +125,7 @@ struct Ref(T) {
     }
 
     ~this() {
-        //unref();
+        unref();
     }
 }
 
