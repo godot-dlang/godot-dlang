@@ -132,10 +132,8 @@ class GodotMethod {
                 ret ~= text(arg.type.dCallParamPrefix, arg.type.godotType, "Arg", i);
                 typeString = text(arg.type.godotType, "Arg", i);
             } else {
-                if (isConstructor)
-                    ret ~= "in ";
                 if (isCopyCtor) // allow copy construction avoiding recursion loop
-                    ret ~= arg.type.asOpaqueType;
+                    ret ~= "in " ~ arg.type.asOpaqueType;
                 else 
                     ret ~= text(arg.type.dCallParamPrefix, arg.type.dType);
                 typeString = arg.type.dType;

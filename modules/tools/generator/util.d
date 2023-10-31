@@ -346,11 +346,21 @@ class Type {
     }
 
     this(TypeStruct t) {
-        // here t.name usually specifies old type like int, with meta describing actual length like int64
+        // This constructor actually doing weird things, with DMD it is possible just to have
+        // this = Type.get(...) and be done with that, but it seems there is an issue in LDC.
+        // So now instead we are doing this hacky workaround of copying bytes from temp object to 'this'.
+
+        // t.name usually specifies plain type like int or float or some class,
+        // and t.meta is like a meta info about type size like int64 or float32
+        Type ty;
         if (t.meta)
-            this = Type.get(t.meta);
+            ty = Type.get(t.meta);
         else
-            this = Type.get(t.name);
+            ty = Type.get(t.name);
+        
+        // memcpy can be used here but why pulling in libc just for that?
+        enum len = __traits(classInstanceSize, typeof(this));
+        (cast(void*) this)[0..len] = (cast(void*) ty)[0..len];
     }
 
     static Type get(string godotName) {
