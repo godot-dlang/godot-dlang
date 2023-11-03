@@ -6,9 +6,9 @@ name: D
 
 on:
   push:
-    branches: [ main, master, develop, godot-4.1 ]
+    branches: [ main, master, develop, godot-4.2 ]
   pull_request:
-    branches: [ main, master, develop, godot-4.1 ]
+    branches: [ main, master, develop, godot-4.2 ]
 
 permissions:
   contents: read
@@ -30,10 +30,10 @@ jobs:
 
     - name: 'Get godot & dump api'
       run: |
-        curl -O https://downloads.tuxfamily.org/godotengine/4.1.1/Godot_v4.1.1-stable_linux.x86_64.zip
+        curl -O https://downloads.tuxfamily.org/godotengine/4.2/beta3/Godot_v4.2-beta3_linux.x86_64.zip
         sudo apt-get install -y unzip
-        unzip Godot_v4.1.1-stable_linux.x86_64.zip
-        export GDEXE=./Godot_v4.1.1-stable_linux.x86_64
+        unzip Godot_v4.2-beta3_linux.x86_64.zip
+        export GDEXE=./Godot_v4.2-beta3_linux.x86_64
         echo "GDEXE=$GDEXE" >> $GITHUB_ENV
         $GDEXE --headless --dump-extension-api
       
@@ -55,12 +55,12 @@ jobs:
       # a fancy workaround of an issue with being unable to generate assets required to run
         # https://github.com/godotengine/godot-proposals/issues/1362#issuecomment-1379140108
       run: |
-        timeout 60 "${{ env.GDEXE }}" --headless --path ./examples/test/project --export-debug "Linux/X11" /path/to/nonexistent/file
+        timeout 60 xvfb-run "${{ env.GDEXE }}" --audio-driver Dummy --editor --quit --headless --path ./examples/test/project
         timeout 10 "${{ env.GDEXE }}" --verbose --headless --path ./examples/test/project
 
     - name: 'Run Asteroids project'
       # currently both godot and godot-dlang doesn't exits cleanly
       continue-on-error: true
       run: | 
-        timeout 60 "${{ env.GDEXE }}" --headless --path ./examples/asteroids/project --export-debug "Linux/X11" /path/to/nonexistent/file
+        timeout 60 xvfb-run "${{ env.GDEXE }}" --audio-driver Dummy --editor --quit --headless --path ./examples/asteroids/project
         timeout 10 "${{ env.GDEXE }}" --verbose --headless --path ./examples/asteroids/project

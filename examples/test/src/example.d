@@ -443,6 +443,14 @@ class Test : GodotScript!Label {
             if (o < this)
                 assert(!(o > this));
         }
+
+        // test static method call
+        {
+            import godot.image;
+            auto im = Image.create(256, 256, false, Image.Format.formatRgb8);
+            assert(im.isValid());
+        }
+
     }
 }
 

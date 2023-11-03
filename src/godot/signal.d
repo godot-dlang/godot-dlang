@@ -22,20 +22,21 @@ struct GodotSignal {
     }
 
     this(in GodotObject object, in StringName signal) {
-        this = _bind.new2(object, signal);
+        _godot_signal = _bind.new2(object, signal);
     }
 
     this(in GodotObject object, in string signal) {
         StringName snSignal = signal;
-        this = _bind.new2(object, snSignal);
+        this(object, snSignal);
     }
 
     void _defaultCtor() {
-        _bind.new0();
+        _godot_signal = _bind.new0();
     }
 
     ~this() {
-        _bind._destructor();
+        if (_godot_signal._opaque.ptr)
+            _bind._destructor();
     }
 
     void emit(Args...)(Args args) {

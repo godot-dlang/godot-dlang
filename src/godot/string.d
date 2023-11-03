@@ -22,6 +22,7 @@ import godot.abi;
 import godot.abi.gdextension;
 import godot.abi.types;
 import godot.stringname;
+import godot.nodepath;
 import godot.charstring;
 
 import godot.variant;
@@ -44,14 +45,17 @@ struct String {
     }
 
     // TODO: deal with union problem
-    ref String_Bind _bind() const { return *cast(String_Bind*) s;}
+    ref String_Bind _bind() const { return *cast(String_Bind*) &this;}
 
     package(godot) _String _string;
     alias _string this;
 
     this(StringName n) {
-        this = _bind.new2(n);
-        //gdextension_interface_variant_new_copy(&_godot_string, &n._godot_string_name);
+        _godot_string = _bind.new2(n);
+    }
+
+    this(NodePath n) {
+        _godot_string = _bind.new3(n);
     }
 
     package(godot) this(in godot_string str) {
@@ -92,9 +96,11 @@ struct String {
 	+/
     this(S)(in S str) if (isImplicitlyConvertible!(S, const(char)[]) ||
                           isImplicitlyConvertible!(S, const(char)*)) {
+        // FIXME: check Variant where constructed String immediately freed (for example in Array.make due to variant releasing reference)
+        // this prevents enabling string destructor!!!
         static if (isImplicitlyConvertible!(S, const(char)[])) {
             const(char)[] contents = str;
-            gdextension_interface_string_new_with_utf8_chars_and_len(&_string, contents.ptr, cast(int) contents.length);
+            gdextension_interface_string_new_with_utf8_chars_and_len(&_godot_string, contents.ptr, cast(int) contents.length);
         } else {
             const(char)* contents = str;
             gdextension_interface_string_new_with_utf8_chars(&_godot_string, contents);
@@ -102,31 +108,43 @@ struct String {
     }
 
     void _defaultCtor() {
-        this = String_Bind.new0();
+        _godot_string = String_Bind.new0();
     }
 
     ~this() {
-        //_bind._destructor();
+        // see Variant issue in UTF-8 constructor
+        _bind._destructor();
+        _godot_string = _godot_string.init;
+    }
+
+    // causes tons of weird compiler errors in ptrcall() function:
+    // classes\godot\acceptdialog.d(78,26): Error: template `godot.api.bind.ptrcall` is not callable using argument types `!(Button)(GodotMethod!(Button), godot_object)`
+    // src\godot\api\bind.d(186,15):        Candidate is: `ptrcall(Return, MB, Args...)(MB method, in godot_object self, Args args)`
+    //
+    //this(ref const String other) {
+    //    if (_godot_string._opaque)
+    //        _bind._destructor();
+    //    _godot_string = _bind.new1(other._godot_string);
+    //}
+
+    this(this) {
+        auto other = _godot_string;
+        _godot_string = _bind.new1(other);
     }
 
     void opAssign(in String other) {
-        //_bind._destructor();
-        _godot_string = other._godot_string;
-        // other still owns the string, double free possible?
+        // see Variant issue
+        if (_godot_string._opaque)
+            _bind._destructor();
+        _godot_string = _bind.new1(other._godot_string);
     }
 
-    // TODO rewrite it with constructor?
     void opAssign(in string other) {
-        //_bind._destructor();
+        // see Variant issue
+        if (_godot_string._opaque)
+            _bind._destructor();
 
-        // godot_string gs;
-        // gdextension_interface_string_new_with_utf8_chars_and_len(&gs, other.ptr, cast(int) other.length);
-        // _godot_string = gs;
-
-        // FIXME: might allocate mem?
         this = String(other);
-        
-        // other still owns the string, double free possible?
     }
 
     /+String substr(int p_from,int p_chars) const
