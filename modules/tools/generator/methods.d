@@ -175,7 +175,12 @@ class GodotMethod {
     string binding() const {
         string ret;
 
-        ret ~= "\t\t@GodotName(\"" ~ name ~ "\") GodotMethod!(" ~ return_type.dType;
+        ret ~= "\t\t@GodotName(\"" ~ name ~ "\") ";
+        if (is_static)
+            ret ~= "GodotMethodStatic";
+        else
+            ret ~= "GodotMethod";
+        ret ~= "!(" ~ return_type.dType;
         if (return_type.isSingleton)
             ret ~= "Singleton";
         foreach (ai, const arg; arguments) {
@@ -265,7 +270,7 @@ class GodotMethod {
         string ret;
 
         // optional static modifier
-        if (isConstructor) {
+        if (isConstructor || is_static) {
             ret ~= "static ";
         }
         // core types is a bit tricky to deal with D copy constructors so return the reference as raw handle
@@ -425,10 +430,18 @@ class GodotMethod {
             if (parent.isBuiltinClass) // Adds method pointer accessor instead of template itself
                 ret ~= ".mb";
             ret ~= ", ";
-            if (parent.isBuiltinClass)
-                ret ~= "cast(void*) &_godot_object";
-            else
-                ret ~= "_godot_object";
+            if (is_static) {
+                if (parent.isBuiltinClass)
+                    ret ~= "null";
+                else
+                    ret ~= "godot_object.init";
+            }
+            else {
+                if (parent.isBuiltinClass)
+                    ret ~= "cast(void*) &_godot_object";
+                else
+                    ret ~= "_godot_object";
+            }
             foreach (ai, const arg; arguments) {
                 // FIXME: const cast hack
                 // FIXME: make auto-cast in escapeDType?
