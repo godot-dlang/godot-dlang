@@ -221,7 +221,18 @@ class Type {
     }
 
     bool isRef() const {
-        return objectClass && objectClass.is_reference;
+        if (!objectClass)
+            return false;
+        auto cls = cast() objectClass;
+        while (cls) {
+            if (cls.is_reference)
+                return true;
+            if (cls.base_class)
+                cls = cls.base_class.original;
+            else
+                break;
+        }
+        return false;
     }
 
     /// type should be taken as template arg by methods to allow implicit conversion in ptrcall
