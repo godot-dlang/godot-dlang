@@ -65,6 +65,23 @@ class GodotMethod {
     Constructor isConstructor() const {
         return null;
     }
+
+    // special constructor taking self type as the only parameter
+    bool isCopyCtor() const {
+        if (!isConstructor)
+            return false;
+        if (arguments.length != 1)
+            return false;
+
+        if (parent.name.godotType.canFind("Packed"))
+            return false;
+
+        auto ret = arguments[0].type.isCoreType 
+            && Type.get(parent.name.godotType) == Type.get(arguments[0].type.godotType);
+            //&& Type.get(parent.name.godotType) == Type.get(return_type.godotType);
+        return ret;
+    }
+
     // Operator isOperator() { return null; }
     // Indexer isIndexer() { return null; }
 
@@ -115,7 +132,10 @@ class GodotMethod {
                 ret ~= text(arg.type.dCallParamPrefix, arg.type.godotType, "Arg", i);
                 typeString = text(arg.type.godotType, "Arg", i);
             } else {
-                ret ~= text(arg.type.dCallParamPrefix, arg.type.dType);
+                if (isCopyCtor) // allow copy construction avoiding recursion loop
+                    ret ~= "in " ~ arg.type.asOpaqueType;
+                else 
+                    ret ~= text(arg.type.dCallParamPrefix, arg.type.dType);
                 typeString = arg.type.dType;
             }
 
@@ -155,7 +175,14 @@ class GodotMethod {
     string binding() const {
         string ret;
 
-        ret ~= "\t\t@GodotName(\"" ~ name ~ "\") GodotMethod!(" ~ return_type.dType;
+        ret ~= "\t\t@GodotName(\"" ~ name ~ "\") ";
+        if (is_static)
+            ret ~= "GodotMethodStatic";
+        else
+            ret ~= "GodotMethod";
+        ret ~= "!(" ~ return_type.dType;
+        if (return_type.isSingleton)
+            ret ~= "Singleton";
         foreach (ai, const arg; arguments) {
             ret ~= ", " ~ arg.type.dType;
         }
@@ -243,12 +270,23 @@ class GodotMethod {
         string ret;
 
         // optional static modifier
-        if (isConstructor) {
+        if (isConstructor || is_static) {
             ret ~= "static ";
         }
-        // note that even though it strips constness of return type the method is still marked const
-        // const in D is transitive, which means compiler should disallow modifying returned reference types
-        ret ~= return_type.stripConst.dRef ~ " ";
+        // core types is a bit tricky to deal with D copy constructors so return the reference as raw handle
+        // some core types like RID and 'Nil' (GDExtensionTypePtr_Bind) are not needed
+        // Basically only String, StringName, NodePath and Array are of interest.
+        if (isConstructor && !return_type.canBeCopied && return_type.isCoreType) {
+            ret ~= return_type.asOpaqueType;
+        }
+        else {
+            // note that even though it strips constness of return type the method is still marked const
+            // const in D is transitive, which means compiler should disallow modifying returned reference types
+            ret ~= return_type.stripConst.dRef;
+        }
+        if (return_type.isSingleton)
+            ret ~= "Singleton";
+        ret ~= " ";
         // none of the types (Classes/Core/Primitive) are pointers in D
         // Classes are reference types; the others are passed by value.
         ret ~= name.snakeToCamel.escapeDType;
@@ -382,17 +420,28 @@ class GodotMethod {
                 ret ~= "\t\t";
             }
 
-            ret ~= callType() ~ "!(" ~ return_type.dType ~ ")(";
+            ret ~= callType() ~ "!(" ~ return_type.dType;
+            if (return_type.isSingleton)
+                ret ~= "Singleton";
+            ret ~= ")(";
             if (parent.isBuiltinClass)
                 ret ~= "cast(GDExtensionPtrBuiltInMethod) ";
             ret ~= "GDExtensionClassBinding." ~ wrapperIdentifier;
             if (parent.isBuiltinClass) // Adds method pointer accessor instead of template itself
                 ret ~= ".mb";
             ret ~= ", ";
-            if (parent.isBuiltinClass)
-                ret ~= "cast(void*) &_godot_object";
-            else
-                ret ~= "_godot_object";
+            if (is_static) {
+                if (parent.isBuiltinClass)
+                    ret ~= "null";
+                else
+                    ret ~= "godot_object.init";
+            }
+            else {
+                if (parent.isBuiltinClass)
+                    ret ~= "cast(void*) &_godot_object";
+                else
+                    ret ~= "_godot_object";
+            }
             foreach (ai, const arg; arguments) {
                 // FIXME: const cast hack
                 // FIXME: make auto-cast in escapeDType?
@@ -400,15 +449,19 @@ class GodotMethod {
                 //        it also relies on that ugly cast.
                 //        The problem is that for some reason that call expects StringName**
                 //        and unlike C++ I haven't come with a way to do that
-                if (arg.type.godotType == "StringName" && callType == "callBuiltinMethod")
-                    ret ~= ", cast(void*) " ~ arg.name.escapeDType(arg.type.godotType); 
+                //if (arg.type.godotType == "StringName" && callType == "callBuiltinMethod")
+                //    ret ~= ", cast(void*) " ~ arg.name.escapeDType(arg.type.godotType); 
+                if (isCopyCtor) {
+                    // this is needed to break infinite copy construction loop
+                    ret ~= ", cast(void*) &" ~ arg.name.escapeDType(arg.type.godotType);
+                }
                 else
                     ret ~= ", cast() " ~ arg.name.escapeDType(arg.type.godotType); 
             }
             ret ~= ");\n";
-            // wrap temporary object
+            // wrap temporary object, but for core types such as strings just return the handle as is
             if (isConstructor) {
-                if (parent.name.canBeCopied) {
+                if (parent.name.canBeCopied || return_type.isCoreType) {
                     ret ~= "\t\treturn _godot_object;\n";
                 } else {
                     ret ~= "\t\treturn " ~ return_type.dType ~ "(_godot_object);\n";

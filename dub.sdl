@@ -39,10 +39,10 @@ subPackage {
 subPackage {
 	name "generator"
 	description "Godot API binder for use with godot-dlang"
-	dependency "dxml" version="~>0.4.3"
+	dependency "dxml" version="~>0.4.4"
 	dependency "godot-dlang:util" version="*"
 	dependency "libdparse" version="~>0.20.0"
-	dependency "asdf" version="~>0.7.15"
+	dependency "asdf" version="~>0.7.17"
 	targetType "executable"
 	targetName "generator"
 	dflags "--link-internally" platform="windows-ldc"
