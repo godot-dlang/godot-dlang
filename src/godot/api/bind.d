@@ -55,6 +55,11 @@ struct GodotMethod(Return, Args...) {
     }
 }
 
+struct GodotMethodStatic(Return, Args...) {    
+    GodotMethod!(Return, Args) m;
+    alias m this;
+}
+
 struct GodotConstructor(Return, Args...) {
     GDExtensionPtrConstructor mb; /// MethodBind for ptrcalls
 
@@ -185,6 +190,7 @@ Direct pointer call through MethodBind.
 +/
 RefOrT!Return ptrcall(Return, MB, Args...)(MB method, in godot_object self, Args args)
 in {
+    static if (!isInstanceOf!(GodotMethodStatic, MB))
     debug if (self.ptr is null) {
         auto utf8 = (String("Method ") ~ method.name ~ String(" called on null reference")).utf8;
         auto msg = cast(char[]) utf8.data[0 .. utf8.length];

@@ -38,7 +38,7 @@ string asEnumName(string type) {
 
 struct EnumValues {
     string name;
-    int value;
+    long value;
 }
 
 struct GodotEnum {
@@ -52,7 +52,7 @@ struct GodotEnum {
     string[string] ddoc;
 
     string source() const {
-        string ret = "\t/// \n\tenum " ~ name.escapeDType ~ " : int {\n";
+        string ret = "\t/// \n\tenum " ~ name.escapeDType ~ " : long {\n";
 
         foreach (n; values /*.sort!((a, b)=>(a.value < b.value))*/ ) {
             if (auto ptr = n.name in ddoc)

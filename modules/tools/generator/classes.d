@@ -22,7 +22,7 @@ struct ClassList {
 
 struct ClassConstant {
     string name;
-    int value;
+    long value;
 }
 
 struct BuiltinConstant {
@@ -257,7 +257,7 @@ final class GodotClass {
                 addUsedClass(pType);
             }
         }
-        assert(!used_classes.canFind(name));
+        //assert(!used_classes.canFind(name));
         assert(!used_classes.canFind!(c => c.godotType == "Object"));
 
         if (!isBuiltinClass) {

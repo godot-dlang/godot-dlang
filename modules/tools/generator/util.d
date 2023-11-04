@@ -127,6 +127,10 @@ class Type {
         return dType.indexOf("*") != -1;
     }
 
+    bool isSingleton() const {
+        return original && original.singleton;
+    }
+
     // Any type that is internally backed by godot string
     bool isGodotStringType() const {
         import std.algorithm : among;
@@ -217,7 +221,18 @@ class Type {
     }
 
     bool isRef() const {
-        return objectClass && objectClass.is_reference;
+        if (!objectClass)
+            return false;
+        auto cls = cast() objectClass;
+        while (cls) {
+            if (cls.is_reference)
+                return true;
+            if (cls.base_class)
+                cls = cls.base_class.original;
+            else
+                break;
+        }
+        return false;
     }
 
     /// type should be taken as template arg by methods to allow implicit conversion in ptrcall
@@ -276,7 +291,7 @@ class Type {
         auto found = searchInParent.enums.find!(s => s.name == innerName);
         if (!found.empty) {
             foreach (pair; found.front.values)
-                if (pair.value == to!int(value))
+                if (pair.value == to!long(value))
                     return dType ~ "." ~ snakeToCamel(pair.name);
         }
 
@@ -342,11 +357,21 @@ class Type {
     }
 
     this(TypeStruct t) {
-        // here t.name usually specifies old type like int, with meta describing actual length like int64
+        // This constructor actually doing weird things, with DMD it is possible just to have
+        // this = Type.get(...) and be done with that, but it seems there is an issue in LDC.
+        // So now instead we are doing this hacky workaround of copying bytes from temp object to 'this'.
+
+        // t.name usually specifies plain type like int or float or some class,
+        // and t.meta is like a meta info about type size like int64 or float32
+        Type ty;
         if (t.meta)
-            this(t.meta);
+            ty = Type.get(t.meta);
         else
-            this(t.name);
+            ty = Type.get(t.name);
+        
+        // memcpy can be used here but why pulling in libc just for that?
+        enum len = __traits(classInstanceSize, typeof(this));
+        (cast(void*) this)[0..len] = (cast(void*) ty)[0..len];
     }
 
     static Type get(string godotName) {
