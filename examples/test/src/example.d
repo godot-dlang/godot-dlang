@@ -451,6 +451,37 @@ class Test : GodotScript!Label {
             assert(im.isValid());
         }
 
+        // test packed array
+        {
+            PackedByteArray pb;
+            assert(pb.size == 0);
+
+            pb.pushBack(1);
+            pb.pushBack(2);
+            assert(pb.size == 2);
+            assert(pb[1] == 2);
+
+            print("PackedByteArray pb size: (2) = ", pb.size());
+
+            PackedFloat64Array pf;
+            pf.pushBack(0.5);
+            pf.pushBack(1.0);
+            pf.pushBack(0.3);
+            import std.math : isClose;
+            assert(isClose(pf[2], 0.3));
+            print("PackedFloat64Array pf[0]: (0.5) = ", pf[0]);
+
+            // moving
+            PackedInt32Array p1;
+            {
+                PackedInt32Array p2;
+                p2.pushBack(42);
+                p1 = p2;
+            }
+            assert(p1.size == 1);
+            assert(p1[0] == 42);
+        }
+
     }
 }
 
