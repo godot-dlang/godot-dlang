@@ -59,6 +59,7 @@ private enum string bindNameOverride(T) = AliasSeq!(
         "Byte", "Int32", "Int64", "Float32", "Float64", "String",
         "Vector2", "Vector3", "Color")[staticIndexOf!(T, PackedArrayTypes)];
 
+private enum string opaqueName(T) = "godot_packed_" ~ (nameOverride!T) ~ "_array";
 private enum string typeName(T) = "packed_" ~ (nameOverride!T) ~ "_array";
 private enum string readName(T) = "packed_" ~ (nameOverride!T) ~ "_array_operator_index_const";
 private enum string writeName(T) = "packed_" ~ (nameOverride!T) ~ "_array_operator_index";
@@ -89,7 +90,7 @@ struct PackedArray(T) {
     //mixin("package(godot) "~(typeName!T)~" _godot_array;");
 
     package(godot) union _PackedArray {
-        GDExtensionTypePtr _godot_array;
+        OPAQUE_TYPE _godot_array;
         mixin("Packed" ~ bindNameOverride!T ~ "Array_Bind _bind;");
     }
 
@@ -97,20 +98,16 @@ struct PackedArray(T) {
     alias _packed_array this;
 
     alias VARIANT_TYPE = PackedArrayVariantType[staticIndexOf!(T, PackedArrayTypes)];
+    alias OPAQUE_TYPE = mixin(opaqueName!T);
 
-    this(this) {
-        import std.array;
-
-        //mixin("auto n = gdextension_interface_"~(typeName!T)~"_new_copy;");
+    this(ref const PackedArray other) {
         auto ctor = gdextension_interface_variant_get_ptr_constructor(VARIANT_TYPE, 1);
-        const auto args = [_godot_array].staticArray;
-        ctor(_godot_array, args.ptr);
-
-        //n(&_godot_array, &tmp);
-
+        void*[1] args; 
+        args[0] = cast(void*) other._godot_array._opaque.ptr;
+        ctor(&_godot_array, cast(void**) args.ptr);
     }
 
-    package(godot) this(GDExtensionTypePtr opaque) {
+    package(godot) this(OPAQUE_TYPE opaque) {
         _godot_array = opaque;
     }
 
@@ -118,7 +115,10 @@ struct PackedArray(T) {
         auto dtor = gdextension_interface_variant_get_ptr_destructor(VARIANT_TYPE);
         auto ctor = gdextension_interface_variant_get_ptr_constructor(VARIANT_TYPE, 1);
         dtor(&_godot_array);
-        ctor(&_godot_array, &other._godot_array);
+
+        void*[1] args; 
+        args[0] = cast(void*) other._godot_array._opaque.ptr;
+        ctor(&_godot_array, cast(void**) args.ptr);
         return this;
     }
 
@@ -276,11 +276,11 @@ struct PackedArray(T) {
 
     static if (is(T == String))
         char* data() inout {
-            return cast(char*) _godot_array;
+            return cast(char*) _godot_array._opaque.ptr;
         }
     else
         T* data() inout {
-            return cast(T*) _godot_array;
+            return cast(T*) _godot_array._opaque.ptr;
         }
 
     // Superbelko: PoolVector was replaced by Vector, all PoolTypeArray's was replaced with PackedTypeArray 

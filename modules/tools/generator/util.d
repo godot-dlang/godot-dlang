@@ -87,16 +87,23 @@ class Type {
         case "Nil": // we don't need Nil at all but for now let just make it work
             return "godot_object";
         case "PackedByteArray":
+            return "godot_packed_byte_array";
         case "PackedInt32Array":
+            return "godot_packed_int32_array";
         case "PackedInt64Array":
+            return "godot_packed_int64_array";
         case "PackedFloat32Array":
+            return "godot_packed_float32_array";
         case "PackedFloat64Array":
+            return "godot_packed_float64_array";
         case "PackedStringArray":
+            return "godot_packed_string_array";
         case "PackedVector2Array":
+            return "godot_packed_vector2_array";
         case "PackedVector3Array":
+            return "godot_packed_vector3_array";
         case "PackedColorArray":
-            //case "Nil":
-            return "GDExtensionTypePtr";
+            return "godot_packed_color_array";
         default:
             break;
         }
