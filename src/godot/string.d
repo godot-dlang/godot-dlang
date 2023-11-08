@@ -165,7 +165,7 @@ struct String {
     /// Returns the length of the wchar_t array, minus the zero terminator.
     size_t length() const {
         //return _bind.length(); // bug: infinite recursion
-        return gdextension_interface_string_to_utf8_chars(&_godot_string, null, 0);
+        return cast(size_t) gdextension_interface_string_to_utf8_chars(&_godot_string, null, 0);
     }
 
     /// Returns: $(D true) if length is 0

@@ -129,11 +129,11 @@ struct godot_array {
 }
 
 struct godot_basis {
-    uint[9] _opaque;
+    godot_real_t[9] _opaque;
 }
 
 struct godot_color {
-    ulong[2] _opaque;
+    float[4] _opaque;
 }
 
 struct godot_dictionary {
@@ -193,6 +193,9 @@ struct godot_transform2d {
 }
 
 struct godot_variant {
+    version(GODOT_REAL_T_DOUBLE)
+    ubyte[40] _opaque;
+    else
     ubyte[24] _opaque;
 }
 
