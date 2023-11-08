@@ -536,7 +536,7 @@ class GodotProperty {
         string retType = m.return_type.dType;
         string ret;
         ret ~= "\t/**\n\t" ~ ddoc.replace("\n", "\n\t") ~ "\n\t*/\n";
-        ret ~= "\t@property " ~ retType ~ " " ~ name.replace("/", "_")
+        ret ~= "\t@property " ~ Type.get(retType).dRef ~ " " ~ name.replace("/", "_")
         // ret ~= "\t@property " ~ m.return_type.dType ~ " " ~ name.replace("/", "_")
             .snakeToCamel.escapeDType ~ "() {\n"; /// TODO: const?
         ret ~= "\t\treturn " ~ getter.snakeToCamel.escapeDType ~ "(";
