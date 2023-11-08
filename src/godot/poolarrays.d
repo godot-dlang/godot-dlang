@@ -167,7 +167,7 @@ struct PackedArray(T) {
     }
 
     size_t size() const {
-        return _bind.size();
+        return cast(size_t) _bind.size();
         //mixin("auto s = gdextension_interface_"~(typeName!T)~"_size;");
         //return s(&_godot_array);
     }
