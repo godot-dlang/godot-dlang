@@ -290,11 +290,11 @@ package(godot) struct MethodWrapper(T, alias mf) {
         }
 
         if (args && numArgs)
-            va[0 .. numArgs] = (cast(Variant**) args)[0 .. numArgs];
+            va[0 .. cast(size_t) numArgs] = (cast(Variant**) args)[0 .. cast(size_t) numArgs];
         if (args && numArgs < defaults.length) // <-- optional parameters that godot decided not to pass
         {
             foreach (i; 0 .. defaults.length)
-                va[max(0, numArgs) + i] = &defaults[i];
+                va[max(0, cast(size_t) numArgs) + i] = &defaults[i];
         }
 
         // it seems to work with static calls without this alias,

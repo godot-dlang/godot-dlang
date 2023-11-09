@@ -129,11 +129,11 @@ struct godot_array {
 }
 
 struct godot_basis {
-    uint[9] _opaque;
+    godot_real_t[9] _opaque;
 }
 
 struct godot_color {
-    ulong[2] _opaque;
+    float[4] _opaque;
 }
 
 struct godot_dictionary {
@@ -148,21 +148,6 @@ struct godot_plane {
     ubyte[4 * godot_real_t.sizeof] _opaque;
 }
 
-mixin template PackedArray(Type, string name) {
-    mixin("struct godot_packed_" ~ name ~ "_array { size_t _opaque; }");
-    //mixin("struct godot_packed_"~name~"_array_read_access { ubyte _opaque; }");
-    //mixin("struct godot_packed_"~name~"_array_write_access { ubyte _opaque; }");
-}
-
-mixin PackedArray!(ubyte, "byte");
-mixin PackedArray!(int, "int32");
-mixin PackedArray!(long, "int64");
-mixin PackedArray!(float, "float32");
-mixin PackedArray!(double, "float64");
-mixin PackedArray!(godot_string, "string");
-mixin PackedArray!(godot_vector2, "vector2");
-mixin PackedArray!(godot_vector3, "vector3");
-mixin PackedArray!(godot_color, "color");
 
 // Alignment hardcoded in `core/variant/callable.h`.
 enum GODOT_CALLABLE_SIZE = 16;
@@ -208,6 +193,9 @@ struct godot_transform2d {
 }
 
 struct godot_variant {
+    version(GODOT_REAL_T_DOUBLE)
+    ubyte[40] _opaque;
+    else
     ubyte[24] _opaque;
 }
 

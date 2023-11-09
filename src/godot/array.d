@@ -311,7 +311,7 @@ struct Array {
 
     size_t count(in Variant v) {
         //return gdextension_interface_array_count(&_godot_array, &v._godot_variant);
-        return _bind.count(v);
+        return cast(size_t) _bind.count(v); // godot always uses long, in this case it should be safe to cast
     }
 
     bool empty() const {
@@ -412,7 +412,7 @@ struct Array {
 
     size_t size() const {
         //return gdextension_interface_array_size(&_godot_array);
-        return _bind.size();
+        return cast(size_t) _bind.size();
     }
 
     alias length = size; // D-style `length`

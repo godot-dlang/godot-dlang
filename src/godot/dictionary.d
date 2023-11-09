@@ -187,7 +187,7 @@ struct Dictionary {
 
         Variant v = void;
         v._godot_variant = *cast(godot_variant*)&this;
-        JSON json = memnew!JSON();
+        Ref!JSON json = memnew!JSON();
         return json.stringify(v, gs!(`""`), true, false);
 
         //godot_string s = gdextension_interface_dictionary_to_json(&_godot_dictionary);

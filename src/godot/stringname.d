@@ -62,7 +62,7 @@ struct StringName {
     /// Returns the length of the char32_t array, minus the zero terminator.
     size_t length() const {
         auto len = gdextension_interface_string_to_utf8_chars(&_godot_string_name, null, 0);
-        return len;
+        return cast(size_t) len;
         //return gdextension_interface_string_length(&_godot_string);
     }
 
