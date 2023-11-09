@@ -17,6 +17,7 @@ lib/
 
 # Linux Binaries
 generator
+godotbin
 
 # Generated
 extension_api.json
