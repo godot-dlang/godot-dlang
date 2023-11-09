@@ -41,11 +41,11 @@ test_editor: (editor TEST_PATH)
 # Private utils
 [private]
 editor project:
-    ./godotbin "{{project}}/project/project.godot"
+    godot "{{project}}/project/project.godot"
 
 [private]
 instance project:
-    ./godotbin --path "{{project}}/project/"
+    godot --path "{{project}}/project/"
 
 [private]
 exbuild project:
@@ -61,7 +61,7 @@ generator:
     dub run :generator -- -j extension_api.json -o
 
 dump_api:
-    ./godotbin --dump-extension-api --quiet
+    godot --dump-extension-api --quiet
 
 
 
