@@ -7,6 +7,7 @@ import godot.tools.generator.methods;
 import godot.tools.generator.enums;
 import godot.tools.generator.doc;
 import godot.tools.generator.api;
+import godot.tools.generator.common;
 
 import godot.tools.generator.d;
 
@@ -30,10 +31,15 @@ int main(string[] args) {
     string extensionsJson = "extension_api.json";
     string godotSource; // TODO: ddoc
     bool overwrite = false;
+    bool useClasses = false;
     auto opt = args.getopt(
         "json|j", "Extensions API JSON (default: extensions_api.json)", &extensionsJson,
         "source|s", "Godot source directory, for documentation (also sets gdnative if unset)", &godotSource,
-        "overwrite|o", "Overwrite outputDir unconditionally", &overwrite
+        "overwrite|o", "Overwrite outputDir unconditionally", &overwrite,
+        "classes|c", "(Experimental) Generate classes instead of structs for Godot API", &useClasses,
+    );
+    setSettings = Settings (
+        useClasses=useClasses,
     );
 
     writeln(args);

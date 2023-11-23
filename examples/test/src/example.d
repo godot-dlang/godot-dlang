@@ -28,6 +28,9 @@ class Test : GodotScript!Label {
     /++
 	Simulate OOP inheritance and polymorphism with implicit conversion to Label
 	+/
+    version (USE_CLASSES)
+    override typeof(this) owner() => this; // FIXME: used for this test only, don't do that
+    else
     alias owner this;
 
     @Enum enum Flag {
@@ -139,8 +142,23 @@ class Test : GodotScript!Label {
     @Signal @Rename("send_message")
     static void function(String message) sendMessage;
 
+version(USE_CLASSES) {
+
+    @Method
+    override void _ready() {
+          runTest();
+    }
+
+} else {
+
     @Method
     void _ready() {
+        runTest();
+    }
+
+}
+
+    void runTest() {
         // don't do anything in editor
         import godot.engine;
 

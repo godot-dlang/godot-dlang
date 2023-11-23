@@ -8,10 +8,10 @@
             "name": "Debug Generator",
             "type": "code-d",
             "request": "launch",
-            "program": "godot-dlang_generator.exe",
-            "args": ["-j", "extension_api.json", "-o"],
+            "program": "lib/generator.exe",
+            "args": ["-j", "../extension_api.json", "-o"],
             "cwd": "${workspaceRoot}",
-            "preLaunchTask": "Build Generate API"
+            //"preLaunchTask": "Build Generate API"
         },
         {
             "name": "(test project) GD4 editor",
@@ -40,7 +40,8 @@
             "type": "cppvsdbg",
             "request": "launch",
             "program": "C:/godot/bin/godot.windows.editor.dev.x86_64.exe",
-            "args": ["--path", "${workspaceFolder}/examples/test/project"],
+            //"program": "D:/godot/Godot_v4.2-beta5_win32.exe",
+            "args": ["--path", "${workspaceFolder}/examples/test/project", "-v"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

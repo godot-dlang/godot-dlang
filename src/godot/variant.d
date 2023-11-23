@@ -281,8 +281,14 @@ struct Variant {
 
     private enum bool implicit(Src, Dest) = is(Src : Dest) || isImplicitlyConvertible!(Src, Dest);
 
+    // NOTE: it returns godot_object handle for classes, but keeps the signature as old way for structures
+    // this is because when using classes GodotObject is basically a pointer
+    // but probably it should be propely put under version branching
     private static GodotObject objectToGodot(T)(T o) {
-        return o.getGodotObject;
+        version (USE_CLASSES)
+          return cast(GodotObject) cast() o._owner.ptr ; 
+        else
+          return o.getGodotObject;
     }
 
     // Conversions for non-core types provided by Variant.
@@ -311,7 +317,10 @@ struct Variant {
     T as(T)() const 
             if ((isGodotClass!T && !is(T == GodotObject)) || is(T : Ref!U, U)) {
         GodotObject o = cast()(as!GodotObject);
-        return o.as!T;
+        version (USE_CLASSES)
+          return cast(T) o;
+        else
+          return o.as!T;
     }
 
     ///
@@ -678,16 +687,27 @@ struct Variant {
     bool isType(GodotType type) const {
         import std.sumtype : match;
 
+        // FIXME: make Ref work with sumtype when using classes and remove this hack
+        version(USE_CLASSES)
+          alias OptRef(T) = T;
+        else
+          alias OptRef(T) = Ref!T;
+
+        version (USE_CLASSES)
+          bool isNullValue(GodotObject o) => o is null;
+        else
+          bool isNullValue(GodotObject o) => o == null;
+
         return type.match!(
-            (Ref!Script script) {
+            (OptRef!Script script) {
             GodotObject o = this.as!GodotObject;
-            if (o == null)
+            if (isNullValue(o))
                 return false;
             return script.instanceHas(o);
         },
             (BuiltInClass object) {
             GodotObject o = this.as!GodotObject;
-            if (o == null)
+            if (isNullValue(o))
                 return false;
             // return o.isClass(object.name);
             return o.isClass(toDString(object.name));

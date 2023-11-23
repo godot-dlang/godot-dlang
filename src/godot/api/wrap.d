@@ -529,6 +529,7 @@ package(godot) struct MethodWrapperMeta(alias mf) {
 }
 
 // Special wrapper that fetches OnReady members and then calls real _ready 
+// NOTE: test this and use version to choose T/GodotClass!T depending on USE_CLASSES version
 package(godot) struct OnReadyWrapper(T, alias mf) if (is(GodotClass!T : Node)) {
     extern (C) // for calling convention
     static void callOnReady(void* methodData, void* instance,
@@ -599,7 +600,11 @@ package(godot) struct OnReadyWrapper(T, alias mf) if (is(GodotClass!T : Node)) {
                 } else static if (isGodotClass!F && extends!(F, Node)) {
                     // special case: node path
                     auto np = NodePath(result);
-                    mixin("t." ~ n) = cast(F) t.owner.getNode(np);
+                    // FIXME: t.owner vs t, also there is a class with "owner" property exists
+                    version(USE_CLASSES)
+                      mixin("t." ~ n) = t.getNode(np).as!F;
+                    else
+                      mixin("t." ~ n) = cast(F) t.owner.getNode(np);
                 } else static if (isGodotClass!F && extends!(F, Resource)) {
                     // special case: resource load path
                     import godot.resourceloader;

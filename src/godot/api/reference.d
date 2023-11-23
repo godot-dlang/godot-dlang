@@ -13,14 +13,19 @@ struct Ref(T) {
     static assert(!is(T == const), "Ref cannot contain a const Reference");
     //@nogc nothrow:
 
-    static if (isGodotBaseClass!T) {
+    version (USE_CLASSES) {
         package(godot) T _reference;
         alias _self = _reference;
     } else {
-        package(godot) T _self;
-        pragma(inline, true)
-        package(godot) GodotClass!T _reference() {
-            return (_self) ? _self.owner : GodotClass!T.init;
+        static if (isGodotBaseClass!T) {
+            package(godot) T _reference;
+            alias _self = _reference;
+        } else {
+            package(godot) T _self;
+            pragma(inline, true)
+            package(godot) GodotClass!T _reference() {
+                return (_self) ? _self.owner : GodotClass!T.init;
+            }
         }
     }
 
@@ -56,10 +61,16 @@ struct Ref(T) {
     }
 
     void unref() {
-        if (_self && _reference.unreference()) {
-            gdextension_interface_object_destroy(_reference._godot_object.ptr);
-            static if (__traits(hasMember, T, "__xdtor"))
-                _self.__xdtor();
+        version (USE_CLASSES) {
+            if (_self && _reference.unreference()) {
+                gdextension_interface_object_destroy(_reference._owner.ptr);
+            }
+        } else {
+            if (_self && _reference.unreference()) {
+                static if (__traits(hasMember, T, "__xdtor"))
+                    _self.__xdtor();
+                gdextension_interface_object_destroy(_reference._godot_object.ptr);
+            }
         }
         _self = T.init;
     }
@@ -68,7 +79,7 @@ struct Ref(T) {
         // the only non-Reference this can possibly be is Object, so no need to account for non-Refs
         static assert(extends!(U, T) || extends!(T, U),
             U.stringof ~ " is not polymorphic to " ~ T.stringof);
-        Ref!U ret = _self.as!U;
+        Ref!U ret = _self.as!U; // note: will release before return in case of classes, fixed with a hack in bind.d casts
         return ret;
     }
 
@@ -91,18 +102,32 @@ struct Ref(T) {
 
     pragma(inline, true)
     bool isValid() const {
+        version (USE_CLASSES)
+        return _self.getGodotObject !is null;
+        else
         return _self.getGodotObject != GodotClass!T.init;
     }
 
     alias opCast(T : bool) = isValid;
     pragma(inline, true)
     bool isNull() const {
+        version (USE_CLASSES)
+        return _self.getGodotObject is null;
+        else
         return _self.getGodotObject == GodotClass!T.init;
     }
 
-    this(this) {
-        if (_self)
-            _reference.reference();
+    version (none) {
+      // this is supposed to be classes copy ctor but due to inout issues fallback to postblit for now
+      this(ref const(T) inst) {
+          _self = cast() inst;
+          _self.reference();
+      }
+    } else {
+      this(this) {
+          if (_self)
+              _reference.reference();
+      }
     }
 
     /++
@@ -120,8 +145,15 @@ struct Ref(T) {
             _reference.reference();
     }
 
-    this(R)(R other) if (is(R : Ref!U, U) && extends!(T, U)) {
-        swap(_self, other);
+    version (USE_CLASSES) {
+      this(ref const Ref other) {
+        _self = cast() other._self;
+        _self.reference();
+      }
+    } else {
+      this(R)(R other) if (is(R : Ref!U, U) && extends!(T, U)) {
+          swap(_self, other);
+      }
     }
 
     ~this() {

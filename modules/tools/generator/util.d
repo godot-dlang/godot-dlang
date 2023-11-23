@@ -690,6 +690,7 @@ string escapeDType(string s, string godotType = "") {
         "version",
         "body",
         "debug",
+        "toString", // Object.toString overload
     );
     switch (s) {
     case "Object":
