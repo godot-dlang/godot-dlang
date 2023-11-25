@@ -16,6 +16,17 @@
             "buildOptions": ["debugMode", "debugInfo"],
             "dflags": ["-version=importc"]
         }
-    }
+    },
+	"configurations": [
+		{ 
+			"name": "default"
+		},
+		{
+			"name": "classes",
+			"subConfigurations": { 
+				"godot-dlang": "classes" 
+			}
+		}
+	]
 
 }

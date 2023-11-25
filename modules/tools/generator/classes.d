@@ -4,6 +4,7 @@ import godot.util.string;
 import godot.tools.generator.methods;
 import godot.tools.generator.enums;
 import godot.tools.generator.util;
+import godot.tools.generator.common;
 
 import asdf;
 
@@ -290,27 +291,56 @@ public import godot.classdb;`;
         if (isBuiltinClass)
             className ~= "_Bind";
         ret ~= "/**\n" ~ ddoc ~ "\n*/\n";
-        ret ~= "@GodotBaseClass struct " ~ className ~ " {\n";
-        ret ~= "\tpackage(godot) enum string _GODOT_internal_name = \"" ~ name.godotType ~ "\";\n";
+        ret ~= "@GodotBaseClass ";
+        if (settings.useClasses)
+            ret ~= (isBuiltinClass ? "struct" : "class");
+        else
+            ret ~= "struct";
+        ret ~= " " ~ className;
+        if (settings.useClasses) {
+            if (base_class) {
+                ret ~= " : " ~ base_class.dType;
+                if (base_class.original && base_class.original.singleton)
+                   ret ~= "Singleton";
+            }
+        }
+        ret ~= " {\n";
+        ret ~= "\tpackage(godot) static enum string _GODOT_internal_name = \"" ~ name.godotType ~ "\";\n";
         ret ~= "\tpublic:\n";
         // way to much PITA, ignore for now
         //ret ~= "@nogc nothrow:\n";
 
-        // Pointer to Godot object, fake inheritance through alias this
-        if (name.godotType != "Object" && name.godotType != "CoreConstants" && !isBuiltinClass) {
-            ret ~= "\tunion { /** */ godot_object _godot_object; /** */ " ~ base_class.dType;
-            if (base_class && base_class.original && base_class.original.singleton)
-                ret ~= "Singleton";
-            ret ~= " _GODOT_base; }\n\talias _GODOT_base this;\n";
-            ret ~= "\talias BaseClasses = AliasSeq!(typeof(_GODOT_base), typeof(_GODOT_base).BaseClasses);\n";
-        } else {
-            ret ~= "\t" ~ name.asOpaqueType ~ "  _godot_object;\n";
-            ret ~= "\talias BaseClasses = AliasSeq!();\n";
+        // godot_object handle
+        if (settings.useClasses) {
+            if (name.godotType == "Object") {
+                ret ~= "\tprotected godot_object _godot_object;\n";
+                ret ~= "\tpublic godot_object _owner() @nogc const nothrow { return cast() _godot_object; }\n";
+                ret ~= "\tpackage(godot) void _owner(godot_object handle) @nogc nothrow { _godot_object = handle; }\n";
+            }
+            else if (isBuiltinClass)
+            {
+                ret ~= "\tpackage(godot) godot_object _godot_object;\n";
+            }
+        }
+        if (!settings.useClasses) {
+            // Pointer to Godot object, fake inheritance through alias this
+            if (name.godotType != "Object" && name.godotType != "CoreConstants" && !isBuiltinClass) {
+                ret ~= "\tunion { /** */ godot_object _godot_object; /** */ " ~ base_class.dType;
+                if (base_class && base_class.original && base_class.original.singleton)
+                    ret ~= "Singleton";
+                ret ~= " _GODOT_base; }\n\talias _GODOT_base this;\n";
+                ret ~= "\talias BaseClasses = AliasSeq!(typeof(_GODOT_base), typeof(_GODOT_base).BaseClasses);\n";
+            } else {
+                ret ~= "\t" ~ name.asOpaqueType ~ "  _godot_object;\n";
+                ret ~= "\talias BaseClasses = AliasSeq!();\n";
+            }
         }
 
         ret ~= bindingStruct;
 
-        if (!isBuiltinClass) {
+        const bool shouldEmitOpOverloads =  (settings.useClasses && name.godotType == "Object") 
+                                  || !(settings.useClasses || isBuiltinClass);
+        if (shouldEmitOpOverloads) {
             // equality
             ret ~= "\t/// \n";
             ret ~= "\tpragma(inline, true) bool opEquals(in " ~ className ~ " other) const {\n";
@@ -334,13 +364,31 @@ public import godot.classdb;`;
             }
             // hash function
             ret ~= "\t/// \n";
-            ret ~= "\textern(D) size_t toHash() const nothrow @trusted { return cast(size_t)_godot_object.ptr; }\n";
+            if (settings.useClasses)
+                ret ~= "\textern(D) override size_t toHash() const nothrow @trusted { return cast(size_t)_godot_object.ptr; }\n";
+            else
+                ret ~= "\textern(D) size_t toHash() const nothrow @trusted { return cast(size_t)_godot_object.ptr; }\n";
 
             ret ~= "\tmixin baseCasts;\n";
-
+        }
+        if (settings.useClasses && !isBuiltinClass) {
+            // base ctor
+            ret ~= "\tthis() {}\n";
+            ret ~= "\tthis(godot_object handle) { _godot_object = handle; }\n";
+            ret ~= "\n";
+        }
             // Godot constructor.
             ret ~= "\t/// Construct a new instance of " ~ className ~ ".\n";
             ret ~= "\t/// Note: use `memnew!" ~ className ~ "` instead.\n";
+        if (settings.useClasses) {
+            ret ~= "\tstatic godot_object _new() {\n";
+            ret ~= "\t\tStringName godotname = StringName(\"" ~ name.godotType ~ "\");\n";
+            ret ~= "\t\tif(auto obj = gdextension_interface_classdb_construct_object(cast(GDExtensionStringNamePtr) godotname))\n";
+            ret ~= "\t\t\treturn godot_object(obj);\n";
+            ret ~= "\t\treturn godot_object.init;\n";
+            ret ~= "\t}\n";
+        }
+        else if (!isBuiltinClass) {
             ret ~= "\tstatic " ~ className ~ " _new() {\n";
             ret ~= "\t\tStringName godotname = StringName(\"" ~ name.godotType ~ "\");\n";
             ret ~= "\t\tif(auto obj = gdextension_interface_classdb_construct_object(cast(GDExtensionStringNamePtr) godotname))\n";
@@ -457,7 +505,10 @@ public import godot.classdb;`;
             ret ~= "@property pragma(inline, true)\n";
             ret ~= className ~ " " ~ name.dType ~ "() {\n";
             ret ~= "\tcheckClassBinding!" ~ className ~ "();\n";
-            ret ~= "\treturn " ~ className ~ "(" ~ className ~ ".GDExtensionClassBinding._singleton);\n";
+            if (settings.useClasses)
+                ret ~= "\treturn memnew!(" ~ className ~ ")(" ~ className ~ ".GDExtensionClassBinding._singleton);\n";
+            else
+                ret ~= "\treturn " ~ className ~ "(" ~ className ~ ".GDExtensionClassBinding._singleton);\n";
             ret ~= "}\n";
         }
 

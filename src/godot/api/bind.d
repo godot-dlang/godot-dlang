@@ -232,7 +232,17 @@ do {
             aarr[ai] = cast(const(void)*)(&temp[ai]);
         }
     }
-    static if (!is(Return : void))
+
+    // because class is a just a pointer to an actual memory
+    // we have to do extra work later compared to structs version
+    version(USE_CLASSES) {
+      static if (isGodotClass!Return) {
+        godot_object r;
+      }
+      else static if (!is(Return : void))
+        RefOrT!Return r = godotDefaultInit!(RefOrT!Return);
+    }
+    else static if (!is(Return : void))
         RefOrT!Return r = godotDefaultInit!(RefOrT!Return);
 
     static if (is(Return : void))
@@ -246,8 +256,17 @@ do {
         const(void)** aptr = aarr.ptr;
 
     gdextension_interface_object_method_bind_ptrcall(method.mb, cast(GDExtensionObjectPtr) self.ptr, aptr, rptr);
-    static if (!is(Return : void))
+
+    version(USE_CLASSES) {
+      static if (isGodotClass!Return)
+        return getObjectInstance!Return(r.ptr);
+      else static if (!is(Return : void))
         return r;
+    }
+    else {
+      static if (!is(Return : void))
+        return r;
+    }
 }
 
 /++
@@ -298,15 +317,29 @@ mixin template baseCasts() {
     private import godot.api.reference, godot.api.traits : RefOrT, NonRef;
 
     inout(To) as(To)() inout if (isGodotBaseClass!To) {
-        static if (extends!(typeof(this), To))
-            return cast(inout) To(cast() _godot_object);
-        else static if (extends!(To, typeof(this))) {
+        static if (extends!(typeof(this), To)) {
+            version(USE_CLASSES)
+              return this;
+            else
+              return cast(inout) To(cast() _godot_object);
+        } else static if (extends!(To, typeof(this))) {
             if (_godot_object.ptr is null)
                 return typeof(return).init;
-            //String c = String(To._GODOT_internal_name);
-            // HACK: string
-            if (isClass(To._GODOT_internal_name))
-                return inout(To)(_godot_object);
+            StringName classname = StringName(To._GODOT_internal_name);
+            if (auto tag = gdextension_interface_classdb_get_class_tag(cast(GDExtensionStringNamePtr) classname)) {
+                if (auto obj = gdextension_interface_object_cast_to(cast(void*) _godot_object.ptr, tag)) {
+					version (USE_CLASSES) {
+                      auto tmp = getObjectInstance!(To)(obj); // note: doesn't holds Ref, be careful
+                      static if (is(To : RefCounted)) {
+                        tmp.reference(); // FIXME: hack that makes it hold ref
+                      }
+                      To ret = tmp;
+                      return cast(inout) ret;
+					} else {
+                      return inout(To)(typeof(_godot_object)(cast(inout) obj));
+                    }
+                }
+            }
             return typeof(return).init;
         } else
             static assert(0, To.stringof ~ " is not polymorphic to "
@@ -326,20 +359,35 @@ mixin template baseCasts() {
         return cast(inout(To)) gdextension_interface_object_get_instance_binding(go.ptr, _GODOT_library, &_instanceCallbacks);
     }
 
+
+    version(USE_CLASSES)
+    template opCast(To) if (isGodotBaseClass!To || extendsGodotBaseClass!To) {
+        alias opCast = as!To;
+    }
+    else {
     template opCast(To) if (isGodotBaseClass!To) {
         alias opCast = as!To;
     }
-
     template opCast(To) if (extendsGodotBaseClass!To) {
         alias opCast = as!To;
     }
+    } // else version 
 
     template opCast(ToRef) if (is(ToRef : Ref!To, To) && extends!(To, RefCounted)) {
         alias opCast = as!ToRef;
     }
-    // void* cast for passing this type to ptrcalls
-    package(godot) void* opCast(T : void*)() const {
-        return cast(void*) _godot_object.ptr;
+
+    // this cast is used when passing parameters in ptrcall
+    // classes can be used as is, but for struct we need godot object ptr
+    version(USE_CLASSES) {
+      void* opCast(T : void*)() const {
+        return cast(void*) cast() super;
+      }
+    } else {
+      // void* cast for passing this type to ptrcalls
+      package(godot) void* opCast(T : void*)() const {
+          return cast(void*) _godot_object.ptr;
+      }
     }
     // strip const, because the C API sometimes expects a non-const godot_object
     godot_object opCast(T : godot_object)() const {

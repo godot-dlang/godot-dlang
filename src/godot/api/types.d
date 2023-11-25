@@ -18,7 +18,14 @@ struct BuiltInClass {
 }
 
 /// 
-alias TypeCategories = AliasSeq!(VariantType, BuiltInClass, Ref!Script);
+version(USE_CLASSES) {
+    // FIXME: make Ref work
+    //   the problem is that sumtype is using inout,
+    //   and this doesn't plays well with Ref constructors when using classes
+    alias TypeCategories = AliasSeq!(VariantType, BuiltInClass, Script); 
+}
+else
+    alias TypeCategories = AliasSeq!(VariantType, BuiltInClass, Ref!Script);
 
 /++
 A specific Godot type in one of these type categories:

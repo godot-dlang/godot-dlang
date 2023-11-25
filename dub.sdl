@@ -18,6 +18,14 @@ sourcePaths "src" "classes"
 importPaths "src" "classes"
 /* sourceFiles "src/godot/abi/gdnative_interface.i" */
 
+configuration "default" {
+	targetType "library"
+}
+
+configuration "classes" {
+	versions "USE_CLASSES"
+}
+
 preBuildCommands "if [ ! -d \"classes/\" ]; then echo \"ERROR: 'classes' dir not found, did you forgot to generate bindings?\" && exit 1; fi" platform="posix"
 preBuildCommands "if not exist \"classes\\\" ( echo ERROR: 'classes' dir not found, did you forgot to generate bindings? & exit 1 )" platform="windows"
 // preBuildCommands "If (-not (Test-Path classes) ) { Write-Host \"No generated 'classes' dir found, did you forgot to generate bindings?\" -f Red ; exit 1 }" platform="windows"
