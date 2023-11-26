@@ -380,63 +380,108 @@ package(godot) struct MethodWrapper(T, alias mf) {
     }
 }
 
+/// Holds a data such as StringNames and conveniently wraps it into GDExtension registration format
 package(godot) struct MethodWrapperMeta(alias mf) {
+    import godot.variant;
+    import std.meta : staticMap;
+    import std.traits;
+
     alias R = ReturnType!mf; // the return type (can be void)
     alias A = Parameters!mf; // the argument types (can be empty)
 
-    //enum string name = __traits(identifier, mf);
+    this(this) {} // to silence annoying warnings
 
-    // GDExtensionClassMethodGetArgumentType signature:
-    //   GDExtensionVariantType function(void *p_method_userdata, int32_t p_argument)
-    extern (C)
-    static GDExtensionVariantType* getArgTypes() {
-        // fill array of argument types and use cached data
-        import godot.variant;
-        import std.meta : staticMap;
+    // Wrapper for GDExtensionPropertyInfo that holds data and allows it to be released unlike __gshared
+    static struct PropertyInfo {
+        StringName snName = void;
+        StringName snClassName = void;
+        StringName snHint = void;
+        GDExtensionVariantType typeKind;
+        int hintFlags;
+        int usageFlags;
+    }
 
-        immutable __gshared static VariantType[A.length] argInfo = [
-            staticMap!(Variant.variantTypeOf, A)
+    PropertyInfo _returnInfo;
+    PropertyInfo[A.length+1] _argumentsInfo;
+    // Unlike arguments info this is strictly variant type index
+    VariantType[A.length+1] _argVariantTypes = [staticMap!(Variant.variantTypeOf, A)];
+    VariantType[2] _retVariantTypes = [Variant.variantTypeOf!R, VariantType.nil ];
+    // Godot Arguments Metadata, not yet implemented
+    GDExtensionClassMethodArgumentMetadata[A.length] _argInfo = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE;
+    // Default values for arguments
+    Variant[ParameterDefaults!mf.length + 1] _defaults;
+    Variant*[ParameterDefaults!mf.length + 1] _defaultsPtrs;
+
+    void initialize() {
+        _returnInfo = initReturnInfo();
+        _argumentsInfo = initArgumentsInfo();
+        _defaults = initDefaultArgs();
+        for(int i = 0; i < _defaults.length; i++) {
+            _defaultsPtrs[i] = &_defaults[i];
+        }
+    }
+
+
+    GDExtensionPropertyInfo[2] returnInfo() { 
+        GDExtensionPropertyInfo[2] retInfo = [ 
+            GDExtensionPropertyInfo(
+                cast(GDExtensionVariantType) _returnInfo.typeKind,
+                cast(GDExtensionStringNamePtr) _returnInfo.snName,
+                cast(GDExtensionStringNamePtr) _returnInfo.snClassName,
+                _returnInfo.hintFlags, 
+                cast(GDExtensionStringNamePtr) _returnInfo.snHint,
+                _returnInfo.usageFlags
+            ), 
+            GDExtensionPropertyInfo.init 
         ];
-        return cast(GDExtensionVariantType*) argInfo.ptr;
+        return retInfo;
+    }
+
+    GDExtensionPropertyInfo[A.length+1] argumentsInfo() {
+        GDExtensionPropertyInfo[A.length+1] argsInfo;
+        static foreach (i; 0 .. A.length) {
+            argsInfo[i] = GDExtensionPropertyInfo(
+                cast(GDExtensionVariantType) _argumentsInfo[i].typeKind,
+                cast(GDExtensionStringNamePtr) _argumentsInfo[i].snName,
+                cast(GDExtensionStringNamePtr) _argumentsInfo[i].snClassName,
+                _argumentsInfo[i].hintFlags, 
+                cast(GDExtensionStringNamePtr) _argumentsInfo[i].snHint,
+                _argumentsInfo[i].usageFlags
+            );
+        }
+        return argsInfo;
+    }
+
+    GDExtensionVariantType* argumentsTypes() {
+        return cast(GDExtensionVariantType*) _argVariantTypes.ptr;
     }
 
     // yeah, it says return types, godot goes brrr
-    extern (C)
-    static GDExtensionVariantType* getReturnTypes() {
-        // fill array of argument types and use cached data
-        import godot.variant;
-        immutable __gshared static VariantType[2] retInfo = [Variant.variantTypeOf!R, VariantType.nil ];
-        return cast(GDExtensionVariantType*) retInfo.ptr;
+    GDExtensionVariantType* returnTypes() {
+        return cast(GDExtensionVariantType*) _retVariantTypes.ptr;
     }
 
     // function parameter type information
-    extern (C)
-    static GDExtensionPropertyInfo[A.length+1] getArgInfo() {
-        GDExtensionPropertyInfo[A.length + 1] argInfo;
-        __gshared static StringName[A.length+1] snClassNames = void;
-        __gshared static StringName[A.length+1] snArgNames = void;
-        __gshared static StringName[A.length+1] snHintStrings = void;
+    private static PropertyInfo[A.length+1] initArgumentsInfo() {
+        PropertyInfo[A.length+1] argsInfo;
         static foreach (i; 0 .. A.length) {
             if (Variant.variantTypeOf!(A[i]) == VariantType.object) {
-                snClassNames[i] = StringName(A[i].stringof);
+                argsInfo[i].snClassName = StringName(A[i].stringof);
             }
             else {
-                snClassNames[i] = stringName();
+                argsInfo[i].snClassName = stringName();
             }
-            snArgNames[i] = StringName((ParameterIdentifierTuple!mf)[i]);
-            snHintStrings[i] = stringName();
-            argInfo[i].class_name = cast(GDExtensionStringNamePtr) snClassNames[i];
-            argInfo[i].name = cast(GDExtensionStringNamePtr) snArgNames[i];
-            argInfo[i].type = cast(GDExtensionVariantType) Variant.variantTypeOf!(A[i]);
-            argInfo[i].usage = GDEXTENSION_METHOD_FLAGS_DEFAULT;
-            argInfo[i].hint_string = cast(GDExtensionStringNamePtr) snHintStrings[i];
+            argsInfo[i].snName = StringName((ParameterIdentifierTuple!mf)[i]);
+            argsInfo[i].snHint = stringName();
+            argsInfo[i].typeKind = cast(GDExtensionVariantType) Variant.variantTypeOf!(A[i]);
+            argsInfo[i].usageFlags = GDEXTENSION_METHOD_FLAGS_DEFAULT;
+            argsInfo[i].hintFlags = 0; // aka PropertyHint.propertyHintNone
         }
-        return argInfo;
+        return argsInfo;
     }
 
     // return type information
-    extern (C)
-    static GDExtensionPropertyInfo[2] getReturnInfo() {
+    private static PropertyInfo initReturnInfo() {
         // FIXME: StringName makes it no longer CTFE-able
         static if (is(R == Variant)) {
             import godot.globalenums : PropertyUsageFlags;
@@ -447,84 +492,61 @@ package(godot) struct MethodWrapperMeta(alias mf) {
         else {
             enum propUsageFlags = 0;
         }
-        __gshared static StringName snName = void;
-        __gshared static StringName snClassName = void;
-        __gshared static StringName snHint = void;
+        StringName snName = stringName();
+        StringName snHint = stringName();
 
         // shouldn't this be the opposite?
         static if (Variant.variantTypeOf!R == VariantType.object) {
-            snClassName = stringName();
+            StringName snClassName = stringName();
         } 
         else {
-            snClassName = StringName(R.stringof);
+            StringName snClassName = StringName(R.stringof);
         }
-        snName = stringName();
-        snHint = stringName();
 
-        GDExtensionPropertyInfo[2] retInfo = [ 
-            GDExtensionPropertyInfo(
-                cast(GDExtensionVariantType) Variant.variantTypeOf!R,
-                cast(GDExtensionStringNamePtr) snName,
-                cast(GDExtensionStringNamePtr) snClassName,
-                0, // aka PropertyHint.propertyHintNone
-                cast(GDExtensionStringNamePtr) snHint,
-                propUsageFlags
-            ), 
-            GDExtensionPropertyInfo.init 
-        ];
+        PropertyInfo retInfo = {
+            snName: snName,
+            snClassName: snClassName,
+            snHint: snHint,
+            typeKind: Variant.variantTypeOf!R,
+            hintFlags: 0, // aka PropertyHint.propertyHintNone
+            usageFlags: propUsageFlags,
+        };
         return retInfo;
     }
 
     // metadata array for argument types
-    extern (C)
-    static GDExtensionClassMethodArgumentMetadata* getArgMetadata() {
+    GDExtensionClassMethodArgumentMetadata* argumentsMetadata() {
         __gshared static GDExtensionClassMethodArgumentMetadata[A.length] argInfo = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE;
         return argInfo.ptr;
     }
 
     // metadata for return type
-    extern (C)
-    static GDExtensionClassMethodArgumentMetadata getReturnMetadata() {
+    GDExtensionClassMethodArgumentMetadata returnMetadata() {
         return GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE;
     }
 
-    import std.traits;
+    // this function expected to return Variant pointers array containing default values
+    GDExtensionVariantPtr* defaultArgs() {
+        return cast(GDExtensionVariantPtr*) _defaultsPtrs.ptr;
+    }
+    
 
     private enum bool notVoid(alias T) = !is(T == void);
-    enum getDefaultArgNum = cast(int32_t) Filter!(notVoid, ParameterDefaults!mf).length;
+    enum defaultArgsNum = cast(int32_t) Filter!(notVoid, ParameterDefaults!mf).length;
     //enum getDefaultArgNum = cast(int32_t) Parameters!mf.length;
 
-    // this function expected to return Variant[] containing default values
-    extern (C)
-    static GDExtensionVariantPtr* getDefaultArgs() {
+    Variant[A.length+1] initDefaultArgs() {
         //pragma(msg, "fn: ", __traits(identifier, mf), " > ",  ParameterDefaults!mf);
-
-        // just pick any possible property for now
-        //alias udas = getUDAs!(mf, Property);
-        //static if (udas.length)
-        //{
-        //	__gshared static Variant[1] defval;
-        //	static if (!is(R == void))
-        //		defval[0] = Variant(R.init);
-        //	else
-        //		defval[0] = Variant(A[0].init);
-        //	return cast(GDExtensionVariantPtr*) &defval[0];
-        //}
-        {
-            __gshared static Variant*[ParameterDefaults!mf.length + 1] defaultsPtrs;
-            __gshared static Variant[ParameterDefaults!mf.length + 1] defaults;
-            static foreach (i, val; ParameterDefaults!mf) {
-                // typeof val is needed because default value returns alias/expression and not a type itself
-                static if (is(val == void) || !Variant.compatibleToGodot!(typeof(val)))
-                    defaults[i] = Variant(null); // even though it doesn't have it we probably need some value
-                else
-                    defaults[i] = Variant(val);
-                defaultsPtrs[i] = &defaults[i];
-            }
-            defaults[ParameterDefaults!mf.length + 1 .. $] = Variant();
-
-            return cast(GDExtensionVariantPtr*)&defaultsPtrs[0];
+        Variant[ParameterDefaults!mf.length + 1] defaults;
+        static foreach (i, val; ParameterDefaults!mf) {
+            // typeof val is needed because default value returns alias/expression and not a type itself
+            static if (is(val == void) || !Variant.compatibleToGodot!(typeof(val)))
+                defaults[i] = Variant(null); // even though it doesn't have it we probably need some value
+            else
+                defaults[i] = Variant(val);
         }
+        defaults[ParameterDefaults!mf.length + 1 .. $] = Variant();
+        return defaults;
     }
 }
 
