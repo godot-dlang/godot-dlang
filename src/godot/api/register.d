@@ -328,6 +328,9 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
 
         enum isOnReady = godotName!mf == "_ready" && onReadyFieldNames!T.length;
 
+        MethodWrapperMeta!mf methodInfo;
+        methodInfo.initialize();
+
         StringName snFunName = StringName(mfn);
         GDExtensionClassMethodInfo mi = {
             cast(GDExtensionStringNamePtr) snFunName , //const char *name;
@@ -337,15 +340,15 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
             flags, //uint32_t method_flags; /* GDExtensionClassMethodFlags */
 
             cast(GDExtensionBool) !is(ReturnType!mf == void), //GDExtensionBool has_return_value;
-            MethodWrapperMeta!mf.getReturnInfo().ptr, //GDExtensionPropertyInfo* return_value_info;
-            MethodWrapperMeta!mf.getReturnMetadata, //GDExtensionClassMethodArgumentMetadata return_value_metadata;
+            methodInfo.returnInfo.ptr, //GDExtensionPropertyInfo* return_value_info;
+            methodInfo.returnMetadata, //GDExtensionClassMethodArgumentMetadata return_value_metadata;
 
             cast(uint32_t) arity!mf, //uint32_t argument_count;
-            MethodWrapperMeta!mf.getArgInfo().ptr, //GDExtensionPropertyInfo* arguments_info;
-            MethodWrapperMeta!mf.getArgMetadata(), //GDExtensionClassMethodArgumentMetadata* arguments_metadata;
+            methodInfo.argumentsInfo.ptr, //GDExtensionPropertyInfo* arguments_info;
+            methodInfo.argumentsMetadata, //GDExtensionClassMethodArgumentMetadata* arguments_metadata;
 
-            MethodWrapperMeta!mf.getDefaultArgNum, //uint32_t default_argument_count;
-            MethodWrapperMeta!mf.getDefaultArgs(), //GDExtensionVariantPtr *default_arguments;
+            methodInfo.defaultArgsNum, //uint32_t default_argument_count;
+            methodInfo.defaultArgs, //GDExtensionVariantPtr *default_arguments;
         
         };
         gdextension_interface_classdb_register_extension_class_method(lib, cast(GDExtensionStringNamePtr) snClass, &mi);
@@ -364,6 +367,9 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
 
         uint flags = GDEXTENSION_METHOD_FLAGS_DEFAULT;
 
+        MethodWrapperMeta!propType methodInfo;
+        methodInfo.initialize();
+
         GDExtensionClassMethodInfo mi = {
             cast(GDExtensionStringNamePtr) snName, //const char *name;
             &mf, //void *method_userdata;
@@ -372,15 +378,15 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
             flags, //uint32_t method_flags; /* GDExtensionClassMethodFlags */
 
             cast(GDExtensionBool) !is(ReturnType!propType == void), //GDExtensionBool has_return_value;
-            MethodWrapperMeta!propType.getReturnInfo.ptr,
-            MethodWrapperMeta!propType.getReturnMetadata,
+            methodInfo.returnInfo.ptr,
+            methodInfo.returnMetadata,
 
             cast(uint32_t) arity!propType, //uint32_t argument_count;
-            MethodWrapperMeta!propType.getArgInfo.ptr, //GDExtensionPropertyInfo* arguments_info;
-            MethodWrapperMeta!propType.getArgMetadata, //GDExtensionClassMethodArgumentMetadata* arguments_metadata;
+            methodInfo.argumentsInfo.ptr, //GDExtensionPropertyInfo* arguments_info;
+            methodInfo.argumentsMetadata, //GDExtensionClassMethodArgumentMetadata* arguments_metadata;
 
-            MethodWrapperMeta!propType.getDefaultArgNum, //uint32_t default_argument_count;
-            MethodWrapperMeta!propType.getDefaultArgs(), //GDExtensionVariantPtr *default_arguments;
+            methodInfo.defaultArgsNum, //uint32_t default_argument_count;
+            methodInfo.defaultArgs, //GDExtensionVariantPtr *default_arguments;
         };
 
         gdextension_interface_classdb_register_extension_class_method(lib, cast(GDExtensionStringNamePtr) snClass, &mi);
@@ -412,6 +418,12 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
             __gshared static StringName[Parameters!s.length] snClassNames = void;
             __gshared static StringName[Parameters!s.length] snHintStrings = void;
             __gshared static GDExtensionPropertyInfo[Parameters!s.length] prop;
+            scope (exit) {
+                prop = prop.init;
+                snHintStrings = snHintStrings.init;
+                snClassNames = snClassNames.init;
+                snArgNames = snArgNames.init;
+            }
             static if (is(FunctionTypeOf!s FT == __parameters)){
                 //pragma(msg, typeof(s), " : ", FT);
                 alias PARAMS = FT;
@@ -476,6 +488,7 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
             enum Property uda = extractPropertyUDA!(getterMatches, setterMatches);
 
             __gshared static GDExtensionPropertyInfo pinfo;
+            scope (exit) pinfo = pinfo.init;
 
 
             StringName snPropName = StringName(pName);
@@ -536,6 +549,7 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
             enum Property uda = is(udas[0]) ? Property.init : udas[0];
 
             __gshared static GDExtensionPropertyInfo pinfo;
+            scope (exit) pinfo = pinfo.init;
 
             StringName snPropName = StringName(pName);
             static if (Variant.variantTypeOf!P == VariantType.object) {
