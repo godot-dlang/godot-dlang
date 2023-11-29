@@ -149,7 +149,8 @@ mixin template GodotNativeLibrary(string symbolPrefix, Args...) {
         //assertHandler = (options.in_editor) ? (&godotAssertHandlerEditorDebug)
         //	: (&godotAssertHandlerCrash);
 
-        r_initialization.minimum_initialization_level = GDEXTENSION_INITIALIZATION_CORE;
+        // Scene is the lowest level to enable hot reload, core or server requires engine restart
+        r_initialization.minimum_initialization_level = GDEXTENSION_INITIALIZATION_SCENE;
         r_initialization.initialize = &initializeLevel;
         r_initialization.deinitialize = &deinitializeLevel;
 
@@ -215,10 +216,6 @@ mixin template GodotNativeLibrary(string symbolPrefix, Args...) {
         import godot.api.output;
         import godot.api.traits;
 
-        // FIXME: level 3 for some reason not happens
-        // currently only scene-level scripts supported
-        //if (level != GDEXTENSION_INITIALIZATION_SCENE)
-        //    return;
 
         // TODO: this will likely crash in a real project, classes has to be sorted in such way that
         // descendants unregistered before parent
@@ -226,10 +223,15 @@ mixin template GodotNativeLibrary(string symbolPrefix, Args...) {
         static foreach (C; NoDuplicates!(classList, Filter!(is_, Args))) {
             static if (is(C)) {
                 static if (extendsGodotBaseClass!C) {
-                    unregister!C(_GODOT_library);
+                    if (level == GDEXTENSION_INITIALIZATION_SCENE)
+                        unregister!C(_GODOT_library);
                 }
             }
         }
+
+        // terminate D runtime on lowest possible level after all classes unregistered
+        if (level != GDEXTENSION_INITIALIZATION_CORE)
+            return;
 
         version(Windows) {}
 		else
@@ -282,10 +284,24 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
         enum string name = __traits(identifier, T);
     enum fqn = fullyQualifiedName!T ~ '\0';
 
+    // Choose registration format, v2 required for hot reload
+    import extVersion = godot.apiinfo;
+    enum isGodot42orNewer = extVersion.VERSION_MAJOR == 4 && extVersion.VERSION_MINOR >= 2;
+
+    static if (isGodot42orNewer)
+    __gshared static GDExtensionClassCreationInfo2 class_info;
+    else
     __gshared static GDExtensionClassCreationInfo class_info;
     class_info.create_instance_func = &createFunc!T;
     class_info.free_instance_func = &destroyFunc!T;
     class_info.class_userdata = cast(void*) name.ptr;
+
+    static if (isGodot42orNewer) {
+        class_info.recreate_instance_func = &recreateFunc!T;
+        class_info.is_exposed = true; // TODO: add some control over what class should be exposed
+    }
+
+    
 
     // This function will be called for any virtual script method, the returned pointer is then cached internally by godot
     extern (C) static GDExtensionClassCallVirtual getVirtualFn(void* p_userdata, const GDExtensionStringNamePtr p_name) {
@@ -308,6 +324,9 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
 
     StringName snClass = StringName(name);
     StringName snBase = StringName(baseName);
+    static if (isGodot42orNewer)
+    gdextension_interface_classdb_register_extension_class2(lib, cast(GDExtensionStringNamePtr) snClass, cast(GDExtensionStringNamePtr) snBase, &class_info);
+    else
     gdextension_interface_classdb_register_extension_class(lib, cast(GDExtensionStringNamePtr) snClass, cast(GDExtensionStringNamePtr) snBase, &class_info);
 
     void registerMethod(alias mf, string nameOverride = null)() {
@@ -675,7 +694,7 @@ void unregister(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
     else
         enum string name = __traits(identifier, T);
 
-    void unregister() {
+    {
         static foreach (pName; godotSingletonVariableNames!T) {{
             import std.string;
             import godot.engine;

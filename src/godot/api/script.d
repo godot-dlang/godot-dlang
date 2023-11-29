@@ -295,6 +295,43 @@ extern (C) package(godot) void destroyFunc(T)(void* userData, void* instance) //
     //Mallocator.instance.dispose(t);
 }
 
+extern(C) package(godot) GDExtensionClassInstancePtr recreateFunc(T)(void* p_class_userdata, GDExtensionObjectPtr p_object) { 
+    // Hot-reload is meant for development only so turn off in release builds
+    debug {
+        // NOTE: Keep in sync with register.d register(T) template
+        static if (hasUDA!(T, Rename))
+            enum string name = godotName!T;
+        else 
+            enum string name = __traits(identifier, T);
+
+        auto snName = StringName(name);
+
+        import std.conv : emplace;
+
+        // don't do that, it will double the amount of objects on every reload
+        // auto o = memnew!T();
+        // instead only allocate the new native instance
+        enum allocSize = __traits(classInstanceSize, T);
+        T o = cast(T) gdextension_interface_mem_alloc(allocSize);
+        if (o) {
+            emplace(o);
+
+            // set owning godot object and instance bindings for new D instance to the same Godot object
+            version (USE_CLASSES) {
+                o._owner = godot_object(p_object);
+            }
+            else {
+                o.owner._godot_object = godot_object(p_object);
+            }
+            
+            gdextension_interface_object_set_instance_binding(p_object, _GODOT_library, cast(void*) o, &_instanceCallbacks);
+            
+            return cast(void*) o;
+        }
+    }
+    return null;
+}
+
 /// Returns D object associated with Godot object
 version (USE_CLASSES)
 RefOrT!T getObjectInstance(T)(void* godotObj)
