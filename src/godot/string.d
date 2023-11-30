@@ -318,15 +318,16 @@ struct GodotStringLiteral(string data) {
                                 .length);
                 }
             }
-        //String ret = void;
-        //gdextension_interface_variant_new_copy(&ret._godot_string, &gs);
-        //return ret;
-        return String(gs);
+        String* ret = cast(String*) cast(void*) &gs;
+        return *ret;
     }
 
     static if (data.length) {
         shared static ~this() {
-            //if(gs != godot_string.init) gdextension_interface_variant_destroy(&gs);
+            // clean up
+            String* str = cast(String*) cast(void*) &gs;
+            str.__dtor();
+            gs = gs.init;
         }
     }
     alias str this;

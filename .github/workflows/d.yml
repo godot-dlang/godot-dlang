@@ -17,6 +17,9 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        flavor: ['structs', 'classes']
 
     steps:
     - uses: actions/checkout@v3
@@ -38,13 +41,16 @@ jobs:
         $GDEXE --headless --dump-extension-api
       
     - name: 'Generate bindings'
-      run: dub run :generator --verbose -- -j extension_api.json -o
+      # braces block adds an extra build flags based on flavor, the general syntax is `expr && truthy || falsy`
+      run: dub run :generator --verbose -- -j extension_api.json -o ${{ matrix.flavor == 'classes' && '-c' || '' }}
       
     - name: 'Build Test Project'
       run: |
-        dub build :test --verbose --compiler=$DC
+        dub build :test --verbose --compiler=$DC ${{ matrix.flavor == 'classes' && '-c classes' || ''}}
 
     - name: 'Build Asteroids Project'
+      # not updated yet so can't test for classes
+      if: matrix.flavor == 'structs'
       run: |
         dub build :asteroids --verbose --compiler=$DC
 
@@ -59,6 +65,8 @@ jobs:
         timeout 10 "${{ env.GDEXE }}" --verbose --headless --path ./examples/test/project
 
     - name: 'Run Asteroids project'
+      # not updated yet so can't test for classes
+      if: matrix.flavor == 'structs'
       # currently both godot and godot-dlang doesn't exits cleanly
       continue-on-error: true
       run: | 
