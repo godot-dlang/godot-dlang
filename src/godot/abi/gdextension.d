@@ -28,7 +28,7 @@ enum bool isFunctionPtr(alias T) = T.startsWith("GDExtensionInterface")
 
 /// this will convert function pointer declaration and create a variable
 static foreach(symname; Filter!(isFunctionPtr, __traits(derivedMembers, gdextension_interface))) {
-    mixin(symname ~ " " ~ symname.camelToSnake ~ ";");
+    mixin("__gshared " ~ symname ~ " " ~ symname.camelToSnake ~ ";");
 }
 
 // load function pointers for GDExtensionInterface
