@@ -122,12 +122,14 @@ import godot.node;
 
 // minimal class example with _ready method that will be invoked on creation
 class Greeter : GodotScript!Node {
+    @Property String name;
+
     // this method is a special godot entry point when object is added to the scene
-    @Method 
+    @Method
     void _ready() {
         // 'gs' is a string wrapper that converts D string to godot string
         // usually there is helper functions that takes regular D strings and do this for you
-        print(gs!"Hello from D"); 
+        print(gs!"Hello ", name);
     }
 }
 
@@ -136,7 +138,7 @@ mixin GodotNativeLibrary!(
     // this is a name prefix of the plugin to be acessible inside godot
     // it must match the prefix in .gdextension file:
     //     entry_symbol = "mydplugin_gdextension_entry"
-    "mydplugin", 
+    "mydplugin",
 
     // here goes the list of classes you would like to expose in godot
     Greeter,
@@ -157,6 +159,7 @@ __mydplugin.gdextension__:
 [configuration]
 
 entry_symbol = "mydplugin_gdextension_entry"
+compatibility_minimum = "4.1"
 
 [libraries]
 
