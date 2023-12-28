@@ -237,26 +237,6 @@ struct PackedArray(T) {
         //	s(&_godot_array, cast(int)idx, cast(InternalType*)&data);
         //else s(&_godot_array, cast(int)idx, data);
     }
-
-    void opIndexAssign(in T data, size_t idx) {
-        _bind.set(idx, data);
-        //mixin("auto s = gdextension_interface_"~(typeName!T)~"_set;");
-        //static if(is(T==Vector2) || is(T==Vector3) || is(T==Color))
-        //	s(&_godot_array, cast(int)idx, cast(InternalType*)&data);
-        //else s(&_godot_array, cast(int)idx, data);
-    }
-
-    T opIndex(size_t idx) const {
-        mixin("auto g = gdextension_interface_" ~ (typeName!T) ~ "_operator_index_const;");
-        static union V {
-            T t;
-            InternalType r;
-        }
-
-        V v;
-        v.r = *cast(InternalType*) g(&_godot_array, cast(int) idx);
-        return v.t;
-    }
     //}
 
     ///
@@ -274,134 +254,21 @@ struct PackedArray(T) {
         return ret;
     }
 
-    static if (is(T == String))
-        char* data() inout {
-            return cast(char*) _godot_array._opaque.ptr;
-        }
-    else
-        T* data() inout {
-            return cast(T*) _godot_array._opaque.ptr;
-        }
-
-    // Superbelko: PoolVector was replaced by Vector, all PoolTypeArray's was replaced with PackedTypeArray 
-    //             which is simply Vector<Type> under the hood plus bells and whistles.
-    //             No need to keep this anymore, but ok. use raw pointer instead of Read.
-    /// Read/Write access locks with RAII.
-    version (none) static struct Access(bool write = false) {
-        private enum string rw = write ? "operator_index" : "operator_index_const";
-        private enum string RW = write ? "Write" : "Read";
-        static if (write)
-            private alias access = writeName!T;
-        else
-            private alias access = readName!T;
-
-        private {
-            mixin(access ~ "* _access;");
-            T[] _data;
-        }
-
-        static if (write) {
-            /// 
-            inout(T[]) data() inout {
-                return _data;
-            }
-        } else {
-            /// 
-            const(T[]) data() const {
-                return _data;
-            }
-        }
-        // TODO: `scope` for data to ensure it doesn't outlive `this`?
-        alias data this;
-
-        this(PackedArray!T p) {
-            mixin("_access = gdextension_interface_" ~ typeName!T ~ "_" ~ rw ~ "(&p._godot_array);");
-            mixin("void* _ptr = cast(void*)gdextension_interface_" ~ access ~ "_ptr(_access);");
-            _data = (cast(T*) _ptr)[0 .. p.length];
-        }
-
-        this(this) {
-            mixin("_access = gdextension_interface_" ~ access ~ "_copy(_access);");
-        }
-
-        void opAssign(const ref typeof(this) other) {
-            mixin("gdextension_interface_" ~ access ~ "_destroy(_access);");
-            mixin("_access = gdextension_interface_" ~ access ~ "_copy(other._access);");
-        }
-
-        ~this() {
-            mixin("gdextension_interface_" ~ access ~ "_destroy(_access);");
-        }
+    T[] data() return @trusted {
+        return (&opIndex(0))[0 .. length];
     }
 
-    version (none) {
-
-        /// 
-        alias Read = Access!false;
-        /// Lock the array for read-only access to the underlying memory.
-        /// This is faster than using opIndex, which locks each time it's called.
-        Read read() const {
-            return Read(this);
-        }
-        /// 
-        alias Write = Access!true;
-        /// Lock the array for write access to the underlying memory.
-        /// This is faster than using opIndexAssign, which locks each time it's called.
-        Write write() {
-            return Write(this);
-        }
+    const(T)[] data() const return @trusted {
+        return (&opIndex(0))[0 .. length];
     }
 
-    /// Slice-like view of the PackedArray.
-    static struct Range {
-        private {
-            PackedArray* arr;
-            size_t start, end;
-        }
-
-        bool empty() const {
-            return start == end;
-        }
-
-        size_t length() const {
-            return end - start;
-        }
-
-        alias opDollar = length;
-        T front() {
-            return (*arr)[start];
-        }
-
-        void popFront() {
-            ++start;
-        }
-
-        T back() {
-            return (*arr)[end - 1];
-        }
-
-        void popBack() {
-            --end;
-        }
-
-        T opIndex(size_t index) {
-            return (*arr)[index + start];
-        }
-
-        Range save() {
-            return this;
-        }
+    ref T opIndex(size_t idx) return @trusted {
+        alias fn = mixin("gdextension_interface_", writeName!T);
+        return *cast(T*) fn(&_godot_array, cast(int) idx);
     }
 
-    static assert(isRandomAccessRange!Range);
-
-    /// Returns: a slice-like Range view over the array.
-    /// Note: Prefer `read()`/`write()`; Range locks the array on each individual access.
-    Range opSlice() {
-        return Range(&this, 0, length);
-    }
-    /// ditto
-    Range opSlice(size_t start, size_t end) {
-        return Range(&this, start, end);
+    ref const(T) opIndex(size_t idx) const return @trusted {
+        alias fn = mixin("gdextension_interface_", readName!T);
+        return *cast(const(T)*) fn(&_godot_array, cast(int) idx);
     }
 }
