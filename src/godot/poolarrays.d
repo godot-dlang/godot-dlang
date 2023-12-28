@@ -134,9 +134,10 @@ struct PackedArray(T) {
     else
         private alias InternalType = T;
 
-    this(Array arr) {
+    this(in Array arr) {
+        const(Array)*[1] ptr = [ &arr ];
         auto n = gdextension_interface_variant_get_ptr_constructor(VARIANT_TYPE, 2);
-        n(&_godot_array, cast(void**)&arr._godot_array);
+        n(&_godot_array, cast(void**)ptr.ptr);
     }
 
     ///
