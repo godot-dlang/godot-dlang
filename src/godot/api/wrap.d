@@ -335,7 +335,7 @@ package(godot) struct MethodWrapper(T, alias mf) {
                 mixin("v = obj." ~ name ~ "(argCall);");
             }
             else {
-                mixin("v = Variant(obj." ~ name ~ "(argCall));");
+                v = Variant(__traits(getMember, obj, name)(argCall));
             }
 
             if (r_return && v._godot_variant._opaque.ptr) {
@@ -380,6 +380,7 @@ package(godot) struct MethodWrapper(T, alias mf) {
     }
 }
 
+
 /// Holds a data such as StringNames and conveniently wraps it into GDExtension registration format
 package(godot) struct MethodWrapperMeta(alias mf) {
     import godot.variant;
@@ -390,16 +391,6 @@ package(godot) struct MethodWrapperMeta(alias mf) {
     alias A = Parameters!mf; // the argument types (can be empty)
 
     this(this) {} // to silence annoying warnings
-
-    // Wrapper for GDExtensionPropertyInfo that holds data and allows it to be released unlike __gshared
-    static struct PropertyInfo {
-        StringName snName = void;
-        StringName snClassName = void;
-        StringName snHint = void;
-        GDExtensionVariantType typeKind;
-        int hintFlags;
-        int usageFlags;
-    }
 
     PropertyInfo _returnInfo;
     PropertyInfo[A.length+1] _argumentsInfo;
@@ -429,7 +420,7 @@ package(godot) struct MethodWrapperMeta(alias mf) {
                 cast(GDExtensionStringNamePtr) _returnInfo.snName,
                 cast(GDExtensionStringNamePtr) _returnInfo.snClassName,
                 _returnInfo.hintFlags, 
-                cast(GDExtensionStringNamePtr) _returnInfo.snHint,
+                cast(GDExtensionStringPtr) &_returnInfo.snHint,
                 _returnInfo.usageFlags
             ), 
             GDExtensionPropertyInfo.init 
@@ -445,7 +436,7 @@ package(godot) struct MethodWrapperMeta(alias mf) {
                 cast(GDExtensionStringNamePtr) _argumentsInfo[i].snName,
                 cast(GDExtensionStringNamePtr) _argumentsInfo[i].snClassName,
                 _argumentsInfo[i].hintFlags, 
-                cast(GDExtensionStringNamePtr) _argumentsInfo[i].snHint,
+                cast(GDExtensionStringPtr) &_argumentsInfo[i].snHint,
                 _argumentsInfo[i].usageFlags
             );
         }
@@ -465,53 +456,14 @@ package(godot) struct MethodWrapperMeta(alias mf) {
     private static PropertyInfo[A.length+1] initArgumentsInfo() {
         PropertyInfo[A.length+1] argsInfo;
         static foreach (i; 0 .. A.length) {
-            if (Variant.variantTypeOf!(A[i]) == VariantType.object) {
-                argsInfo[i].snClassName = StringName(A[i].stringof);
-            }
-            else {
-                argsInfo[i].snClassName = stringName();
-            }
-            argsInfo[i].snName = StringName((ParameterIdentifierTuple!mf)[i]);
-            argsInfo[i].snHint = stringName();
-            argsInfo[i].typeKind = cast(GDExtensionVariantType) Variant.variantTypeOf!(A[i]);
-            argsInfo[i].usageFlags = GDEXTENSION_METHOD_FLAGS_DEFAULT;
-            argsInfo[i].hintFlags = 0; // aka PropertyHint.propertyHintNone
+            argsInfo[i] = makePropertyInfo!(A[i], (ParameterIdentifierTuple!mf)[i])();
         }
         return argsInfo;
     }
 
     // return type information
     private static PropertyInfo initReturnInfo() {
-        // FIXME: StringName makes it no longer CTFE-able
-        static if (is(R == Variant)) {
-            import godot.globalenums : PropertyUsageFlags;
-            enum propUsageFlags = PropertyUsageFlags.propertyUsageNilIsVariant;
-            // fallback value in case for some reason this enum will go away
-            //enum propUsageFlags = 131072;
-        }
-        else {
-            enum propUsageFlags = 0;
-        }
-        StringName snName = stringName();
-        StringName snHint = stringName();
-
-        // shouldn't this be the opposite?
-        static if (Variant.variantTypeOf!R == VariantType.object) {
-            StringName snClassName = stringName();
-        } 
-        else {
-            StringName snClassName = StringName(R.stringof);
-        }
-
-        PropertyInfo retInfo = {
-            snName: snName,
-            snClassName: snClassName,
-            snHint: snHint,
-            typeKind: Variant.variantTypeOf!R,
-            hintFlags: 0, // aka PropertyHint.propertyHintNone
-            usageFlags: propUsageFlags,
-        };
-        return retInfo;
+        return makePropertyInfo!(R, null)();
     }
 
     // metadata array for argument types
@@ -655,6 +607,99 @@ package(godot) struct OnReadyWrapper(T, alias mf) if (is(GodotClass!T : Node)) {
             MethodWrapper!(T, mf).callMethod(null, methodData, args, numArgs, r_return, r_error); 
         }
     }
+}
+
+// Wrapper for GDExtensionPropertyInfo that holds data and allows it to be released unlike __gshared
+struct PropertyInfo {
+    this(this) {} // to silence annoying message
+    StringName snName = void;
+    StringName snClassName = void;
+    String snHint = void; // suddenly it is a string and not a StringName
+    GDExtensionVariantType typeKind;
+    int hintFlags;
+    int usageFlags;
+}
+
+package(godot) PropertyInfo makePropertyInfo(alias T, string Name)() {
+    static if (is(T == Variant)) {
+        import godot.globalenums : PropertyUsageFlags;
+        enum propUsageFlags = PropertyUsageFlags.propertyUsageNilIsVariant;
+        // fallback value in case for some reason this enum will go away
+        //enum propUsageFlags = 131072;
+    }
+    else {
+        enum propUsageFlags = PropertyUsageFlags.propertyUsageDefault;
+    }
+    static if (Name.length)
+    StringName snName = StringName(Name);
+    else
+    StringName snName = stringName();
+
+    static if (is(T == TypedArray!U, U))
+        String snHint = String(makeTypeHint!T);
+    else static if (extends!(T, Node) || extends!(T, Resource))
+        String snHint = T.stringof;
+    else
+        String snHint = String();
+
+    static if (Variant.variantTypeOf!T == VariantType.object) {
+        static if (is(T == GodotObject))
+            StringName snClassName = StringName("Object");
+        else static if (is(T == Ref!U, U))
+            StringName snClassName = StringName(U.stringof);
+        else static if (!is(T == void))
+            StringName snClassName = StringName(T.stringof);
+        else
+            StringName snClassName = stringName();
+    }
+    else {
+        static if (is(T == TypedArray!U, U)) // typed array has no class name but a hint
+            StringName snClassName = stringName();
+        else static if (is(T == PackedArray!U, U))
+            StringName snClassName = StringName(T.InternalName);
+        else
+            StringName snClassName = StringName(T.stringof);
+    }
+
+    static if (is(T == TypedArray!U, U))
+        enum hintFlags = PropertyHint.propertyHintTypeString;
+    else static if(extends!(T, Resource))
+        enum hintFlags = PropertyHint.propertyHintResourceType;
+    else static if(extends!(T, Node))
+        enum hintFlags = PropertyHint.propertyHintNodeType;
+    else
+        enum hintFlags = 0;
+
+    PropertyInfo retInfo = {
+        snName: snName,
+        snClassName: snClassName,
+        snHint: snHint,
+        typeKind: Variant.variantTypeOf!T,
+        hintFlags: hintFlags,
+        usageFlags: propUsageFlags,
+    };
+    return retInfo;
+}
+
+package(godot) template makeTypeHint(alias T) {
+    // hint string is implemented in editor by parsing the encoded string in form of 
+    //   subType/subTypeHint:nextSubtype
+    // e.g. if your typed array is Array[Node3D] the string will be "24/34:Node3D"
+    //      where 24 is VariantType.Object and 34 is PropertyHint.hintNodeType and will show node picker
+    //      for classes that derives from Resource use hintResourceType(17) instead 
+    // another example Array[Vector2] - "5/Vector2" where 5 is VariantType.vector2
+    static if (is(T == TypedArray!U, U) && Variant.variantTypeOf!U == VariantType.object) {
+        enum hint = cast(int)( extends!(U, Resource) ? PropertyHint.propertyHintResourceType : PropertyHint.propertyHintNodeType);
+        string makeTypeHint = (cast(int) Variant.variantTypeOf!U).stringof 
+            ~ "/" 
+            ~ hint.stringof ~ ":" ~ U.stringof;
+    }
+    else static if (Variant.variantTypeOf!T != VariantType.nil) {
+        string makeTypeHint = (cast(int) Variant.variantTypeOf!T).stringof 
+            ~ "/" ~ U.stringof;
+    }
+    else 
+        string makeTypeHint = null;
 }
 
 /++

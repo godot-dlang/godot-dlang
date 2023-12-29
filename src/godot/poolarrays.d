@@ -83,6 +83,9 @@ Copy-on-write array for some Godot types, allocated with a memory pool.
 struct PackedArray(T) {
     //@nogc nothrow:
 
+    // godot type name, e.g. "PackedVector3Array"
+    package(godot) enum InternalName = "Packed" ~ bindNameOverride!T ~ "Array";
+
     static assert(staticIndexOf!(T, PackedArrayTypes) != -1,
         "Cannot make a Godot PackedArray for a non-Godot type");
 
@@ -134,9 +137,10 @@ struct PackedArray(T) {
     else
         private alias InternalType = T;
 
-    this(Array arr) {
+    this(in Array arr) {
+        const(Array)*[1] ptr = [ &arr ];
         auto n = gdextension_interface_variant_get_ptr_constructor(VARIANT_TYPE, 2);
-        n(&_godot_array, cast(void**)&arr._godot_array);
+        n(&_godot_array, cast(void**)ptr.ptr);
     }
 
     ///

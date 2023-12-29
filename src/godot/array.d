@@ -113,6 +113,11 @@ struct Array {
         _godot_array = opaque;
     }
 
+    /// TypedArray constructor
+    this(in Array base, int64_t type, in StringName className, in Variant script) {
+        _godot_array = _bind.new2(base, type, className, script);
+    }
+
     //@disable this(this);
     //{
     //	const godot_array tmp = _godot_array;
@@ -121,13 +126,18 @@ struct Array {
     //}
 
     this(const scope ref Array other) {
-        _godot_array = _bind.new1(other._godot_array);
+        // do null checks here because godot doesn't likes null array when copying
+        if (other._godot_array._opaque)
+            _godot_array = _bind.new1(other._godot_array);
     }
 
     Array opAssign(in Array other) {
         if (_godot_array._opaque)
         	_bind._destructor();
-        _godot_array = _bind.new1(other._godot_array); // do we actually need a copy here?
+        if (other._godot_array._opaque)
+            _godot_array = _bind.new1(other._godot_array);
+        else
+            _godot_array = _godot_array.init;
         return this;
     }
 
@@ -498,14 +508,76 @@ struct TypedArray(T) {
     Array _array;
     alias _array this;
 
-    this(this) {
+    package(godot) this(godot_array arr) {
+        // here we assume array is already typed
+        // because this is private API it is mainly used by marshalling code
+        // TODO: assert check that array is indeed typed?
+        _array = Array(arr); 
     }
 
-    this(Array other) {
-        _array = other;
+    this(this) {
+        _array._bind.new1(_array._godot_array);
+    }
+
+    this(in Array other) {
+        alias varType = Variant.variantTypeOf!T;
+        static if (varType == Variant.Type.object) 
+            StringName typeName = __traits(identifier, T);
+        else
+            StringName typeName = StringName.makeEmpty();
+        _array = Array(other, varType, typeName, Variant());
     }
 
     this(T[] other) {
-        _array = Array.from(other);
+        _array = TypedArray.make(other);
+    }
+    
+    // constructs an empty typed array
+    this(typeof(null)) {
+        this(Array.make());
+    }
+
+    ~this() {
+        _array = null;
+        _array = _array.init;
+    }
+
+    version(none) private void setType() {
+        // allowed only once and only if empty
+        if (_array.length != 0) {
+            printerr("TypedArray.setType() called on non-empty array");
+            return; 
+        }
+        alias varType = Variant.variantTypeOf!T;
+        static if (varType == Variant.Type.object) 
+            StringName typeName = __traits(identifier, T);
+        else
+            StringName typeName = StringName.makeEmpty();
+
+        // last parameter is a Script object, usually from godot object itself, we don't have it here, but it can be obtained from GodotObject.getScript
+        //gdextension_interface_array_set_typed(&_array, varType, cast(GDExtensionStringNamePtr) typeName, cast(GDExtensionTypePtr) &Variant.nil);
+        _array = Array(_array, cast(int) varType, typeName, Variant.nil);
+    }
+
+    /++
+	Create an array and add all $(PARAM args) to it.
+	+/
+    static TypedArray!T make(Args...)(Args args)
+            if (allSatisfy!(Variant.compatibleToGodot, Args)) {
+        TypedArray!T arr = TypedArray!T(null);
+        static if (args.length)
+            arr.resize(args.length);
+        static foreach (i, Arg; Args) {
+            arr[i] = args[i];
+        }
+        return arr;
     }
 }
+
+
+static assert(__traits(compiles, typeof(TypedArray!Array()))); // legit use case
+static assert(__traits(compiles, typeof(TypedArray!Dictionary())));
+static assert(__traits(compiles, typeof(TypedArray!RID())));
+static assert(__traits(compiles, typeof(TypedArray!Vector3i())));
+static assert(__traits(compiles, typeof(TypedArray!String())));
+static assert(__traits(compiles, typeof(TypedArray!StringName())));

@@ -408,6 +408,9 @@ struct Variant {
             alias conversionToGodot = (T t) => String(t);
         else static if (hasToVariantFunction!T) {
             alias conversionToGodot = getToVariantFunction!T;
+        } else static if (is(T == TypedArray!U, U)) {
+            // FIXME: it is supposed to be already compatible because of TypedArray's alias this
+            alias conversionToGodot = (ref T t) => t._array; 
         } else static if (hasInternalFrom!T)
             alias conversionToGodot = internalFrom!T;
         else
@@ -451,7 +454,11 @@ struct Variant {
             enum bool compatibleFromGodot = convertsFromGodot!T;
     }
 
-    enum bool compatible(R) = compatibleToGodot!(R) && compatibleFromGodot!(R);
+    template compatible(R) {
+        //pragma(msg, R.stringof, " compatibleToGodot: ", compatibleToGodot!R, "; compatibleFromGodot: ", compatibleFromGodot!R);
+        enum bool compatible = compatibleToGodot!(R) && compatibleFromGodot!(R);
+    }
+    
 
     /// All target Variant.Types that T could implicitly convert to, as indices
     private template implicitTargetIndices(T) {
@@ -468,14 +475,21 @@ struct Variant {
         static if (directlyCompatible!T) {
             enum Type variantTypeOf = EnumMembers!Type[staticIndexOf!(Unqual!T, DType)];
         } else static if (convertsToGodot!T) {
-            static if (is(conversionToGodotType!T : Variant))
-                enum Type variantTypeOf = Type.nil;
+            
+            static if (is(conversionToGodotType!T : Variant)) {
+                // FIXME: this should already work because TypedArray has alias to Array which is compatible
+                static if (is(T == TypedArray!U, U))
+                  enum Type variantTypeOf = Type.array; 
+                else
+                  enum Type variantTypeOf = Type.nil;
+            }
             else
                 enum Type variantTypeOf = EnumMembers!Type[staticIndexOf!(
                             conversionToGodotType!T, DType)];
         } else
             enum Type variantTypeOf = Type.nil; // so the template always returns a Type
     }
+    static assert (variantTypeOf!(TypedArray!int) == VariantType.array);
 
     /// 
     R as(R)() const 
@@ -623,7 +637,8 @@ struct Variant {
 
     ~this() {
         // TODO: need to check this, causes broken values after several Variant to variant assignments
-        gdextension_interface_variant_destroy(&_godot_variant);
+        if (type != Type.nil)
+            gdextension_interface_variant_destroy(&_godot_variant);
     }
 
     Type type() const {
