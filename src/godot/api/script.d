@@ -23,6 +23,17 @@ class GodotScript(Base) if (isGodotBaseClass!Base) {
     Base owner;
     alias owner this;
 
+    /// Helper function that provides typesafe way of emitting signals using 'emit!signal()' syntax
+    GodotError emit(alias Sig, Args...)(Args args) if (hasUDA!(Sig, Signal)) {
+        static assert(
+            // methods with String parameters has helpers that takes regular D strings
+            __traits(isSame, Parameters!Sig, ReplaceAll!(string, String, Args)), 
+            "Can't call signal `" ~ __traits(identifier, Sig) ~ Parameters!Sig.stringof ~ "` with parameters " ~ Args.stringof
+        ); 
+
+        return emitSignal(godotName!Sig, args);
+    }
+
     pragma(inline, true)
     inout(To) as(To)() inout if (isGodotBaseClass!To) {
         static assert(extends!(Base, To), typeof(this).stringof ~ " does not extend " ~ To.stringof);

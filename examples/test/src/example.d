@@ -170,6 +170,8 @@ version(USE_CLASSES) {
         longNode.setText("This node was set by OnReady");
 
         owner.emitSignal("send_message", "Some text sent by a signal");
+        // alternative syntax using types instead of plain string
+        emit!sendMessage("Some text sent by a signal");
 
         writefln("owner: %x", cast(void*) owner);
         // print() will write into Godot's editor output, unlike writeln

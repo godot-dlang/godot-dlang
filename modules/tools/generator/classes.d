@@ -285,6 +285,12 @@ public import godot.classdb;`;
             ret ~= ";\n";
         }
 
+        // extra imports required by emit() helper, structs version have emit() in GodotScript wrapper
+        if (settings.useClasses && name.godotType == "Object") {
+            ret ~= "import std.traits : Parameters, hasUDA;\n";
+            ret ~= "import std.meta : ReplaceAll;\n";
+        }
+
         string className = name.dType;
         if (singleton)
             className ~= "Singleton";
@@ -448,6 +454,21 @@ public import godot.classdb;`;
                     constant.value) ~ ",\n";
             }
             ret ~= "\t}\n";
+        }
+
+        // signal emit() helper, structs version have emit() defined in GodotScript wrapper
+        if (settings.useClasses && name.godotType == "Object") {
+            ret ~= q{
+	/// Helper function that provides typesafe way of emitting signals using 'signal.emit()' syntax
+	GodotError emit(alias Sig, Args...)(Args args) if (hasUDA!(Sig, Signal)) {
+		static assert(
+			// methods with String parameters has helpers that takes regular D strings
+			__traits(isSame, Parameters!Sig, ReplaceAll!(string, String, Args)), 
+			"Can't call signal `" ~ __traits(identifier, Sig) ~ Parameters!Sig.stringof ~ "` with parameters " ~ Args.stringof
+		); 
+		return emitSignal(godotName!Sig, args);
+	}};
+        ret ~= "\n";
         }
 
         foreach (const m; methods) {
