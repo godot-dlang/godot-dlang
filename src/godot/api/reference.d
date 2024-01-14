@@ -13,6 +13,7 @@ struct Ref(T) {
     static assert(!is(T == const), "Ref cannot contain a const Reference");
     //@nogc nothrow:
 
+    // the difference here is that classes can use normal covariance rules, but structs does only basic upcast by returning script base
     version (USE_CLASSES) {
         package(godot) T _reference;
         alias _self = _reference;
@@ -24,7 +25,7 @@ struct Ref(T) {
             package(godot) T _self;
             pragma(inline, true)
             package(godot) GodotClass!T _reference() {
-                return (_self) ? _self.owner : GodotClass!T.init;
+                return (_self) ? _self._godot_base : GodotClass!T.init;
             }
         }
     }
@@ -61,16 +62,15 @@ struct Ref(T) {
     }
 
     void unref() {
-        version (USE_CLASSES) {
-            if (_self && _reference.unreference()) {
-                gdextension_interface_object_destroy(_reference._owner.ptr);
+        if (_self && _reference.unreference()) {
+            version (USE_CLASSES) {
+                // do nothing
             }
-        } else {
-            if (_self && _reference.unreference()) {
+            else {
                 static if (__traits(hasMember, T, "__xdtor"))
                     _self.__xdtor();
-                gdextension_interface_object_destroy(_reference._godot_object.ptr);
             }
+            gdextension_interface_object_destroy(_reference._gdextension_handle.ptr);
         }
         _self = T.init;
     }

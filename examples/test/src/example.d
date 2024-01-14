@@ -28,10 +28,13 @@ class Test : GodotScript!Label {
     /++
 	Simulate OOP inheritance and polymorphism with implicit conversion to Label
 	+/
-    version (USE_CLASSES)
-    override typeof(this) owner() => this; // FIXME: used for this test only, don't do that
-    else
-    alias owner this;
+    version (USE_CLASSES) {
+        // nothing to do
+    }
+    else {
+        // note that this is done implicitly in GodotScript wrapper, but you can do that explicitly
+        alias _godot_base this;
+    }
 
     @Enum enum Flag {
         DEFAULT,
@@ -169,11 +172,17 @@ version(USE_CLASSES) {
         colorRect.setColor(Color(0f, 1f, 0f));
         longNode.setText("This node was set by OnReady");
 
-        owner.emitSignal("send_message", "Some text sent by a signal");
+        emitSignal("send_message", "Some text sent by a signal");
         // alternative syntax using types instead of plain string
         emit!sendMessage("Some text sent by a signal");
 
-        writefln("owner: %x", cast(void*) owner);
+        // internal inheritance test, _godot_base is a struct serving as a base interface.
+        // this is an implementation detail, users don't need to use it at all.
+        version (USE_CLASSES)
+          writefln("base object ptr: %x", cast(void*) super);
+        else
+          writefln("base object ptr: %x", cast(void*) _godot_base);
+
         // print() will write into Godot's editor output, unlike writeln
         print("Test._ready()");
         print();
@@ -186,14 +195,16 @@ version(USE_CLASSES) {
 
         {
             writefln("This (%s) is a normal D method of type %s.",
-                __FUNCTION__, typeof(notification).stringof);
+                __FUNCTION__, typeof(runTest).stringof);
         }
 
         {
             import std.compiler;
 
+            // name is ambigous here (Node.name vs std.compiler.name),
+            // so we have to be more specific as Node.name will have priority
             writefln("This D library was compiled with %s compiler, v%d.%03d",
-                name, version_major, version_minor);
+                std.compiler.name, version_major, version_minor);
         }
 
         writeln(" ---TEST--- ");
@@ -393,9 +404,9 @@ version(USE_CLASSES) {
             Variant someTextV = Variant(someText);
 
             writeln("setting property to \"Some text.\"...");
-            owner.set(pn, someTextV);
+            this.set(pn, someTextV);
             writefln("Internally, property now contains <%s>.", _prop);
-            auto res = owner.get(pn).as!String;
+            auto res = this.get(pn).as!String;
             writefln("getting property: <%s>", res);
         }
         {
@@ -404,13 +415,13 @@ version(USE_CLASSES) {
             Variant someNumV = Variant(someNum);
 
             writeln("setting number to 42...");
-            owner.set(pn, someNumV);
+            set(pn, someNumV);
             writefln("Internally, number now contains <%d>.", _num);
-            auto res = owner.get(pn).as!long;
+            auto res = this.get(pn).as!long;
             writefln("getting number: <%d>", res);
         }
-        owner.set("only_setter", 5678);
-        print("onlyGetter: ", owner.get("only_getter"));
+        set("only_setter", 5678);
+        print("onlyGetter: ", this.get("only_getter"));
 
         // test array slicing and equality
         {
@@ -435,11 +446,16 @@ version(USE_CLASSES) {
 
         // test object comparison operators
         {
-            Node n = owner;
+            // super should actually work with both versions, 
+            // however here we assert that the _godot_base does works by means of struct inheritance
+            version (USE_CLASSES)
+              auto _godot_base = super;
+
+            Node n = _godot_base;
             assert(n == this);
             assert(this == n);
-            assert(n == owner);
-            assert(owner == n);
+            assert(n == _godot_base);
+            assert(_godot_base == n);
 
             Node o = memnew!Node;
             scope (exit)
@@ -447,17 +463,17 @@ version(USE_CLASSES) {
             assert(n != o);
             assert(this != o);
             assert(o != this);
-            assert(owner != o);
-            assert(o != owner);
+            assert(_godot_base != o);
+            assert(o != _godot_base);
 
             if (o > n)
                 assert(!(o < n));
             if (o < n)
                 assert(!(o > n));
-            if (o > owner)
-                assert(!(o < owner));
-            if (o < owner)
-                assert(!(o > owner));
+            if (o > _godot_base)
+                assert(!(o < _godot_base));
+            if (o < _godot_base)
+                assert(!(o > _godot_base));
             if (o > this)
                 assert(!(o < this));
             if (o < this)

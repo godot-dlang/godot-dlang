@@ -18,7 +18,7 @@ mixin GodotNativeLibrary!(
 );
 
 class Asteroids : GodotScript!Node3D {
-    alias owner this;
+    alias _godot_base this;
 
     enum float spread = PI / 4f;
     enum float speed = 20f;
