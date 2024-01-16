@@ -83,8 +83,8 @@ template extendsGodotBaseClass(T) {
         enum bool extendsGodotBaseClass = false;
     }
     else {
-      static if (is(T == class) && hasMember!(T, "owner")) {
-        enum bool extendsGodotBaseClass = isGodotBaseClass!(typeof(T.owner));
+      static if (is(T == class) && hasMember!(T, "_godot_base")) {
+        enum bool extendsGodotBaseClass = isGodotBaseClass!(typeof(T._godot_base));
       } else
         enum bool extendsGodotBaseClass = false;
     }
@@ -149,7 +149,7 @@ template GodotClass(R) {
         version (USE_CLASSES)
           alias GodotClass = T; // when using classes this should work through normal inheritance
         else
-          alias GodotClass = typeof(T.owner);
+          alias GodotClass = typeof(T._godot_base);
     }
 }
 
@@ -166,10 +166,11 @@ Useful for generic code.
 +/
 version (USE_CLASSES)
 T getGodotObject(T)(in T t) if (isGodotClass!T) {
-    // NOTE: signature kept for structs version
+    // NOTE: signature kept for structs version and it is incorrect,
+    // the returned value is godot object pointer and not a D object
     if (t is null)
         return null;
-    return cast(T) t._owner.ptr;
+    return cast(T) t._gdextension_handle.ptr;
 }
 else
 GodotClass!T getGodotObject(T)(in T t) if (isGodotClass!T) {
@@ -189,21 +190,18 @@ GodotClass!(NonRef!R) getGodotObject(R)(auto ref R r) if (is(R : Ref!U, U)) {
 
 package(godot) godot_object getGDExtensionObject(T)(in T t) if (isGodotClass!T) {
     version (USE_CLASSES)
-      return  t ? cast(godot_object) t._owner : godot_object.init;
+      return  t ? cast(godot_object) t._gdextension_handle : godot_object.init;
     else {
       static if (isGodotBaseClass!T)
           return cast(godot_object) t._godot_object;
       static if (extendsGodotBaseClass!T) {
-          return (t) ? cast(godot_object) t.owner._godot_object : godot_object.init;
+          return (t) ? cast(godot_object) t._gdextension_handle : godot_object.init;
       }
     }
 }
 
 package(godot) godot_object getGDExtensionObject(R)(auto ref R r) if (is(R : Ref!U, U)) {
-    version (USE_CLASSES)
-      return cast() r._reference._owner;
-    else
-      return r._reference._godot_object;
+    return cast() r._reference._gdextension_handle;
 }
 
 /++

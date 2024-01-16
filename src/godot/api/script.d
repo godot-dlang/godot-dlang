@@ -20,8 +20,10 @@ version(USE_CLASSES)
 alias GodotScript(Base) = Base;
 else
 class GodotScript(Base) if (isGodotBaseClass!Base) {
-    Base owner;
-    alias owner this;
+    // Base in this case just points to a struct that serves as a interface, it also stores the object reference for native calls
+    Base _godot_base;
+    alias _godot_base this;
+    ref inout(godot_object) _gdextension_handle() inout @nogc nothrow { return _godot_base._godot_object; }
 
     /// Helper function that provides typesafe way of emitting signals using 'emit!signal()' syntax
     GodotError emit(alias Sig, Args...)(Args args) if (hasUDA!(Sig, Signal)) {
@@ -37,7 +39,7 @@ class GodotScript(Base) if (isGodotBaseClass!Base) {
     pragma(inline, true)
     inout(To) as(To)() inout if (isGodotBaseClass!To) {
         static assert(extends!(Base, To), typeof(this).stringof ~ " does not extend " ~ To.stringof);
-        return cast(inout(To))(owner.getGDExtensionObject);
+        return cast(inout(To))(_godot_base.getGDExtensionObject);
     }
 
     pragma(inline, true)
@@ -54,14 +56,14 @@ class GodotScript(Base) if (isGodotBaseClass!Base) {
         static if (extendsGodotBaseClass!T)
             return this is other;
         else {
-            const void* a = owner._godot_object.ptr, b = other._godot_object.ptr;
+            const void* a = _godot_base._godot_object.ptr, b = other._godot_object.ptr;
             return a is b;
         }
     }
     ///
     pragma(inline, true)
     int opCmp(T)(in T other) const if (isGodotClass!T) {
-        const void* a = owner._godot_object.ptr, b = other.getGodotObject._godot_object.ptr;
+        const void* a = _godot_base._godot_object.ptr, b = other.getGodotObject._godot_object.ptr;
         return a is b ? 0 : a < b ? -1 : 1;
     }
 
@@ -121,7 +123,7 @@ package(godot) void initialize(T)(T t) if (extendsGodotBaseClass!T) {
         static if (raii.autoCreate) {
             mixin("t." ~ n) = memnew!M();
             static if (raii.autoAddChild && OnInit.canAddChild!(M, T)) {
-                t.owner.addChild(mixin("t." ~ n).getGodotObject);
+                t._godot_base.addChild(mixin("t." ~ n).getGodotObject);
             }
         }
     }
@@ -259,41 +261,25 @@ extern (C) package(godot) void* createFunc(T)(void* data) //nothrow @nogc
             StringName snInternalName = (GodotClass!T)._GODOT_internal_name;
         }
 
-        version (USE_CLASSES)
-          const bool hasValidHandle = t._owner.ptr !is null;
-        else
-          const bool hasValidHandle = t.owner._godot_object.ptr !is null;
+        const bool hasValidHandle = t._gdextension_handle.ptr !is null;
         if (!hasValidHandle) {
             // allocate backing godot object for D one
             void* obj = gdextension_interface_classdb_construct_object(cast(GDExtensionStringNamePtr) snInternalName);
-
-            version (USE_CLASSES)
-              t._owner = godot_object(obj);
-            else
-              t.owner._godot_object = godot_object(obj);
+            t._gdextension_handle = godot_object(obj);
         }
 
-        // associate D and Godot objects together
-        version (USE_CLASSES)
-          gdextension_interface_object_set_instance(cast(void*) t._owner.ptr, cast(GDExtensionStringNamePtr) classname, cast(void*) t);
-        else
-          gdextension_interface_object_set_instance(cast(void*) t.owner._godot_object.ptr, cast(GDExtensionStringNamePtr) classname, cast(void*) t);
+        gdextension_interface_object_set_instance(cast(void*) t._gdextension_handle.ptr, cast(GDExtensionStringNamePtr) classname, cast(void*) t);
     }
     //else
     //	t.owner._godot_object.ptr = cast(void*) t;
     godot.initialize(t);
 
     // instance bindings allows to get associated object for Godot object
-    version (USE_CLASSES)
-      gdextension_interface_object_set_instance_binding(cast(void*) t._owner.ptr, _GODOT_library, cast(void*) t, &_instanceCallbacks);
-    else
-      gdextension_interface_object_set_instance_binding(cast(void*) t.owner._godot_object.ptr, _GODOT_library, cast(void*) t, &_instanceCallbacks);
+    gdextension_interface_object_set_instance_binding(cast(void*) t._gdextension_handle.ptr, _GODOT_library, cast(void*) t, &_instanceCallbacks);
+    
 
     // return back the godot object
-    version (USE_CLASSES)
-      return cast(void*) t._owner.ptr;
-    else
-      return cast(void*) t.owner._godot_object.ptr;
+    return cast(void*) t._gdextension_handle.ptr;
 }
 
 extern (C) package(godot) void destroyFunc(T)(void* userData, void* instance) //nothrow @nogc
@@ -328,12 +314,7 @@ extern(C) package(godot) GDExtensionClassInstancePtr recreateFunc(T)(void* p_cla
             emplace(o);
 
             // set owning godot object and instance bindings for new D instance to the same Godot object
-            version (USE_CLASSES) {
-                o._owner = godot_object(p_object);
-            }
-            else {
-                o.owner._godot_object = godot_object(p_object);
-            }
+            o._gdextension_handle = godot_object(p_object);
             
             gdextension_interface_object_set_instance_binding(p_object, _GODOT_library, cast(void*) o, &_instanceCallbacks);
             

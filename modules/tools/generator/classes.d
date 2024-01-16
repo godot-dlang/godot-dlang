@@ -320,11 +320,12 @@ public import godot.classdb;`;
         if (settings.useClasses) {
             if (name.godotType == "Object") {
                 ret ~= "\tprotected godot_object _godot_object;\n";
-                ret ~= "\tpublic godot_object _owner() @nogc const nothrow { return cast() _godot_object; }\n";
-                ret ~= "\tpackage(godot) void _owner(godot_object handle) @nogc nothrow { _godot_object = handle; }\n";
+                ret ~= "\tpublic final godot_object _gdextension_handle() @nogc const nothrow { return cast() _godot_object; }\n";
+                ret ~= "\tpackage(godot) void _gdextension_handle(godot_object handle) @nogc nothrow { _godot_object = handle; }\n";
             }
             else if (isBuiltinClass)
             {
+                // WTF: should it be an opaque type as well as in structs?
                 ret ~= "\tpackage(godot) godot_object _godot_object;\n";
             }
         }
@@ -336,6 +337,7 @@ public import godot.classdb;`;
                     ret ~= "Singleton";
                 ret ~= " _GODOT_base; }\n\talias _GODOT_base this;\n";
                 ret ~= "\talias BaseClasses = AliasSeq!(typeof(_GODOT_base), typeof(_GODOT_base).BaseClasses);\n";
+                ret ~= "\n\tref inout(godot_object) _gdextension_handle() inout { return _godot_object; }\n";
             } else {
                 ret ~= "\t" ~ name.asOpaqueType ~ "  _godot_object;\n";
                 ret ~= "\talias BaseClasses = AliasSeq!();\n";
@@ -366,7 +368,7 @@ public import godot.classdb;`;
                 ret ~= "\t\tconst void* a = _godot_object.ptr, b = other._godot_object.ptr; return a is b ? 0 : a < b ? -1 : 1; \n\t}\n";
                 ret ~= "\t/// \n";
                 ret ~= "\tpragma(inline, true) int opCmp(T)(in T other) const if(extendsGodotBaseClass!T) {\n";
-                ret ~= "\t\tconst void* a = _godot_object.ptr, b = other.owner._godot_object.ptr; return a is b ? 0 : a < b ? -1 : 1; \n\t}\n";
+                ret ~= "\t\tconst void* a = _godot_object.ptr, b = other._godot_object.ptr; return a is b ? 0 : a < b ? -1 : 1; \n\t}\n";
             }
             // hash function
             ret ~= "\t/// \n";

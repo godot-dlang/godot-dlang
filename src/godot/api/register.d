@@ -266,7 +266,7 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
 
     static if (BaseClassesTuple!T.length == 2) // base class is GodotScript; use owner
     {
-            alias Base = typeof(T.owner);
+            alias Base = typeof(T._godot_base);
             alias baseName = Base._GODOT_internal_name;
     }
     else // base class is another D script
@@ -642,7 +642,7 @@ void unregister(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
 
     static if (BaseClassesTuple!T.length == 2) // base class is GodotScript; use owner
     {
-        alias Base = typeof(T.owner);
+        alias Base = typeof(T._godot_base);
         alias baseName = Base._GODOT_internal_name;
     }
     else // base class is another D script

@@ -286,7 +286,7 @@ struct Variant {
     // but probably it should be propely put under version branching
     private static GodotObject objectToGodot(T)(T o) {
         version (USE_CLASSES)
-          return cast(GodotObject) cast() o._owner.ptr ; 
+          return cast(GodotObject) cast() o._gdextension_handle.ptr ; 
         else
           return o.getGodotObject;
     }
