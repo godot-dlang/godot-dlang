@@ -291,10 +291,11 @@ package(godot) struct MethodWrapper(T, alias mf) {
 
         if (args && numArgs)
             va[0 .. cast(size_t) numArgs] = (cast(Variant**) args)[0 .. cast(size_t) numArgs];
-        if (args && numArgs < defaults.length) // <-- optional parameters that godot decided not to pass
+        if (args && numArgs < Parameters!mf.length) // <-- optional parameters that godot decided not to pass
         {
-            foreach (i; 0 .. defaults.length)
-                va[max(0, cast(size_t) numArgs) + i] = &defaults[i];
+            foreach (i; numArgs .. ParameterDefaults!mf.length) {
+                va[i] = &defaults[i];
+            }
         }
 
         // it seems to work with static calls without this alias,
@@ -308,12 +309,7 @@ package(godot) struct MethodWrapper(T, alias mf) {
 
         A[ai] variantToArg(size_t ai)() {
             static if (isFloatingPoint!(A[ai])) {
-                return (cast(Variant*)args[ai]).as!(A[ai]);
-            } 
-            else static if (isGodotClass!(A[ai])) {
-                if (args)
-                    return *cast(A[ai]*)args[ai];
-                return A[ai].init;
+                return (cast(Variant*)va[ai]).as!(A[ai]);
             }
             else {
                 return va[ai].as!(A[ai]);
@@ -485,12 +481,13 @@ package(godot) struct MethodWrapperMeta(alias mf) {
 
     private enum bool notVoid(alias T) = !is(T == void);
     enum defaultArgsNum = cast(int32_t) Filter!(notVoid, ParameterDefaults!mf).length;
+    private enum size_t defaultsStart = ParameterDefaults!mf.length - defaultArgsNum;
     //enum getDefaultArgNum = cast(int32_t) Parameters!mf.length;
 
     Variant[A.length+1] initDefaultArgs() {
         //pragma(msg, "fn: ", __traits(identifier, mf), " > ",  ParameterDefaults!mf);
         Variant[ParameterDefaults!mf.length + 1] defaults;
-        static foreach (i, val; ParameterDefaults!mf) {
+        static foreach (i, val; ParameterDefaults!mf[defaultsStart..$]) {
             // typeof val is needed because default value returns alias/expression and not a type itself
             static if (is(val == void) || !Variant.compatibleToGodot!(typeof(val)))
                 defaults[i] = Variant(null); // even though it doesn't have it we probably need some value
