@@ -17,7 +17,7 @@ import godot.abi.core;
 import godot.abi.types;
 import godot.vector2, godot.transform2d;
 
-// import godot.globalenums;  // enum Side, but tbh it is bad idea to rely on this
+public import godot.globalenums : Side;  // enum Side, but tbh it is bad idea to rely on this
 
 import std.algorithm.comparison;
 import std.algorithm.mutation : swap;
@@ -35,10 +35,16 @@ struct Rect2 {
     alias pos = position;
 
     alias end = getEnd;
+    alias area = getArea;
 
-    this(real_t p_x, real_t p_y, real_t p_width, real_t p_height) {
-        position = Vector2(p_x, p_y);
-        size = Vector2(p_width, p_height);
+    this(real_t x, real_t y, real_t width, real_t height) {
+        position = Vector2(x, y);
+        size = Vector2(width, height);
+    }
+
+    this(in Vector2 pos, in Vector2 size) {
+        this.position = pos;
+        this.size = size;
     }
 
     this(in Rect2i b) {
@@ -50,6 +56,10 @@ struct Rect2 {
         return size.width * size.height;
     }
 
+    Vector2 getCenter() const {
+        return position + (size * 0.5f);
+    }
+
     Vector2 end() const {
         return getEnd();
     }
@@ -58,139 +68,265 @@ struct Rect2 {
         setEnd(p_end);
     }
 
-    bool intersects(in Rect2 p_rect) const {
-        if (position.x >= (p_rect.position.x + p_rect.size.width))
-            return false;
-        if ((position.x + size.width) <= p_rect.position.x)
-            return false;
-        if (position.y >= (p_rect.position.y + p_rect.size.height))
-            return false;
-        if ((position.y + size.height) <= p_rect.position.y)
-            return false;
+    bool intersects(in Rect2 rect, in bool includeBorders = false) const {
+        if (includeBorders) {
+            if (position.x > (rect.position.x + rect.size.width))
+				return false;
+			if ((position.x + size.width) < rect.position.x)
+				return false;
+			if (position.y > (rect.position.y + rect.size.height))
+				return false;
+			if ((position.y + size.height) < rect.position.y)
+				return false;
+        } else {
+            if (position.x >= (rect.position.x + rect.size.width))
+                return false;
+            if ((position.x + size.width) <= rect.position.x)
+                return false;
+            if (position.y >= (rect.position.y + rect.size.height))
+                return false;
+            if ((position.y + size.height) <= rect.position.y)
+                return false;
+        }
 
         return true;
     }
 
-    bool encloses(in Rect2 p_rect) const {
-        return (p_rect.position.x >= position.x) && (p_rect.position.y >= position.y) &&
-            ((p_rect.position.x + p_rect.size.x) < (position.x + size.x)) &&
-            ((p_rect.position.y + p_rect.size.y) < (position.y + size.y));
+    bool encloses(in Rect2 rect) const {
+        return (rect.position.x >= position.x) && (rect.position.y >= position.y) &&
+            ((rect.position.x + rect.size.x) < (position.x + size.x)) &&
+            ((rect.position.y + rect.size.y) < (position.y + size.y));
     }
 
+    deprecated("use !hasArea()")
     bool hasNoArea() const {
-        return (size.x <= 0 || size.y <= 0);
+        return !hasArea();
     }
 
-    bool hasPoint(in Vector2 p_point) const {
-        if (p_point.x < position.x)
+    bool hasArea() const {
+        return size.x > 0 && size.y > 0;
+    }
+
+	// Returns the instersection between two Rect2s or an empty Rect2 if there is no intersection
+	Rect2 intersection(in Rect2 rect) const {
+		Rect2 new_rect = rect;
+
+		if (!intersects(new_rect)) {
+			return Rect2();
+		}
+
+		new_rect.position.x = max(rect.position.x, position.x);
+		new_rect.position.y = max(rect.position.y, position.y);
+
+		Vector2 p_rect_end = rect.position + rect.size;
+		Vector2 end = position + size;
+
+		new_rect.size.x = min(p_rect_end.x, end.x) - new_rect.position.x;
+		new_rect.size.y = min(p_rect_end.y, end.y) - new_rect.position.y;
+
+		return new_rect;
+	}
+
+	Rect2 merge(in Rect2 rect) const { ///< return a merged rect
+		Rect2 new_rect;
+
+		new_rect.position.x = min(rect.position.x, position.x);
+		new_rect.position.y = min(rect.position.y, position.y);
+
+		new_rect.size.x = max(rect.position.x + rect.size.x, position.x + size.x);
+		new_rect.size.y = max(rect.position.y + rect.size.y, position.y + size.y);
+
+		new_rect.size = new_rect.size - new_rect.position; // Make relative again.
+
+		return new_rect;
+	}
+
+    bool hasPoint(in Vector2 point) const {
+        if (point.x < position.x)
             return false;
-        if (p_point.y < position.y)
+        if (point.y < position.y)
             return false;
 
-        if (p_point.x >= (position.x + size.x))
+        if (point.x >= (position.x + size.x))
             return false;
-        if (p_point.y >= (position.y + size.y))
+        if (point.y >= (position.y + size.y))
             return false;
 
         return true;
     }
 
-    Rect2 grow(real_t p_by) const {
+    bool isEqualApprox(in Rect2 rect) {
+        return position.isEqualApprox(rect.position) && size.isEqualApprox(rect.size);
+    }
+
+
+
+    Rect2 grow(real_t amount) const {
         Rect2 g = this;
-        g.position.x -= p_by;
-        g.position.y -= p_by;
-        g.size.width += p_by * 2;
-        g.size.height += p_by * 2;
+        g.growBy(amount);
         return g;
     }
 
-    Rect2 expand(in Vector2 p_vector) const {
+    void growBy(real_t amount) {
+        position.x -= amount;
+        position.y -= amount;
+        size.width += amount * 2;
+        size.height += amount * 2;
+    }
+
+    Rect2 growSide(Side side, real_t amount) const {
+		Rect2 g = this;
+		g = g.growIndividual((Side.sideLeft == side) ? amount : 0,
+				(Side.sideTop == side) ? amount : 0,
+				(Side.sideRight == side) ? amount : 0,
+				(Side.sideBottom == side) ? amount : 0);
+		return g;
+	}
+
+    Rect2 growIndividual(real_t left, real_t top, real_t right, real_t bottom) const {
+		Rect2 g = this;
+		g.position.x -= left;
+		g.position.y -= top;
+		g.size.width += left + right;
+		g.size.height += top + bottom;
+
+		return g;
+	}
+
+    Rect2 expand(in Vector2 vector) const {
         Rect2 r = this;
-        r.expandTo(p_vector);
+        r.expandTo(vector);
         return r;
     }
 
-    void expandTo(in Vector2 p_vector) {
+    void expandTo(in Vector2 vector) {
         Vector2 begin = position;
         Vector2 end = position + size;
 
-        if (p_vector.x < begin.x)
-            begin.x = p_vector.x;
-        if (p_vector.y < begin.y)
-            begin.y = p_vector.y;
+        if (vector.x < begin.x)
+            begin.x = vector.x;
+        if (vector.y < begin.y)
+            begin.y = vector.y;
 
-        if (p_vector.x > end.x)
-            end.x = p_vector.x;
-        if (p_vector.y > end.y)
-            end.y = p_vector.y;
+        if (vector.x > end.x)
+            end.x = vector.x;
+        if (vector.y > end.y)
+            end.y = vector.y;
 
         position = begin;
         size = end - begin;
     }
 
-    real_t distanceTo(in Vector2 p_point) const {
-        real_t dist = 1e20;
+    Rect2 abs() const {
+		return Rect2(Vector2(position.x + min(size.x, cast(real_t) 0), position.y + min(size.y, cast(real_t) 0)), size.abs());
+	}
 
-        if (p_point.x < position.x) {
-            dist = min(dist, position.x - p_point.x);
-        }
-        if (p_point.y < position.y) {
-            dist = min(dist, position.y - p_point.y);
-        }
-        if (p_point.x >= (position.x + size.x)) {
-            dist = min(p_point.x - (position.x + size.x), dist);
-        }
-        if (p_point.y >= (position.y + size.y)) {
-            dist = min(p_point.y - (position.y + size.y), dist);
-        }
+    Vector2 getSupport(in Vector2 normal) const {
+		Vector2 half_extents = size * 0.5f;
+		Vector2 ofs = position + half_extents;
+		return Vector2(
+					   (normal.x > 0) ? -half_extents.x : half_extents.x,
+					   (normal.y > 0) ? -half_extents.y : half_extents.y
+                ) + ofs;
+	}
 
-        if (dist == 1e20)
-            return 0;
-        else
-            return dist;
+    bool intersectsFilledPolygon(in Vector2[] points) const {
+		Vector2 center = getCenter();
+		int side_plus = 0;
+		int side_minus = 0;
+		Vector2 end = position + size;
+
+		int i_f = cast(int)(points.length - 1);
+		for (int i = 0; i < points.length; i++) {
+			const Vector2 a = points[i_f];
+			const Vector2 b = points[i];
+			i_f = i;
+
+			Vector2 r = (b - a);
+			float l = r.length();
+			if (l == 0.0f) {
+				continue;
+			}
+
+			// Check inside.
+			Vector2 tg = r.orthogonal();
+			float s = tg.dot(center) - tg.dot(a);
+			if (s < 0.0f) {
+				side_plus++;
+			} else {
+				side_minus++;
+			}
+
+			// Check ray box.
+			r /= l;
+			Vector2 ir = Vector2(1.0f / r.x, 1.0f / r.y);
+
+			// lb is the corner of AABB with minimal coordinates - left bottom, rt is maximal corner
+			// r.org is origin of ray
+			Vector2 t13 = (position - a) * ir;
+			Vector2 t24 = (end - a) * ir;
+
+			float tmin = max(min(t13.x, t24.x), min(t13.y, t24.y));
+			float tmax = min(max(t13.x, t24.x), max(t13.y, t24.y));
+
+			// if tmax < 0, ray (line) is intersecting AABB, but the whole AABB is behind us
+			if (tmax < 0 || tmin > tmax || tmin >= l) {
+				continue;
+			}
+
+			return true;
+		}
+
+		if (side_plus * side_minus == 0) {
+			return true; // All inside.
+		} else {
+			return false;
+		}
+	}
+
+    real_t distanceTo(in Vector2 point) const {
+        real_t dist = 0.0;
+		bool inside = true;
+
+		if (point.x < position.x) {
+			real_t d = position.x - point.x;
+			dist = d;
+			inside = false;
+		}
+		if (point.y < position.y) {
+			real_t d = position.y - point.y;
+			dist = inside ? d : min(dist, d);
+			inside = false;
+		}
+		if (point.x >= (position.x + size.x)) {
+			real_t d = point.x - (position.x + size.x);
+			dist = inside ? d : min(dist, d);
+			inside = false;
+		}
+		if (point.y >= (position.y + size.y)) {
+			real_t d = point.y - (position.y + size.y);
+			dist = inside ? d : min(dist, d);
+			inside = false;
+		}
+
+		if (inside) {
+			return 0;
+		} else {
+			return dist;
+		}
     }
 
-    Rect2 clip(in Rect2 p_rect) const {
+    deprecated("use intersection()")
+    alias clip = intersection;
 
-        Rect2 new_rect = p_rect;
-
-        if (!intersects(new_rect))
-            return Rect2();
-
-        new_rect.position.x = max(p_rect.position.x, position.x);
-        new_rect.position.y = max(p_rect.position.y, position.y);
-
-        Vector2 p_rect_end = p_rect.position + p_rect.size;
-        Vector2 end = position + size;
-
-        new_rect.size.x = min(p_rect_end.x, end.x) - new_rect.position.x;
-        new_rect.size.y = min(p_rect_end.y, end.y) - new_rect.position.y;
-
-        return new_rect;
-    }
-
-    Rect2 merge(in Rect2 p_rect) const {
-        Rect2 new_rect;
-
-        new_rect.position.x = min(p_rect.position.x, position.x);
-        new_rect.position.y = min(p_rect.position.y, position.y);
-
-        new_rect.size.x = max(p_rect.position.x + p_rect.size.x, position.x + size.x);
-        new_rect.size.y = max(p_rect.position.y + p_rect.size.y, position.y + size.y);
-
-        new_rect.size = new_rect.size - new_rect.position; //make relative again
-
-        return new_rect;
-    }
-
-    bool intersectsSegment(in Vector2 p_from, in Vector2 p_to, Vector2* r_pos, Vector2* r_normal) const {
+    bool intersectsSegment(in Vector2 from, in Vector2 to, Vector2* pos = null, Vector2* normal = null) const {
         real_t min = 0, max = 1;
         int axis = 0;
         real_t sign = 0;
 
         for (int i = 0; i < 2; i++) {
-            real_t seg_from = p_from[i];
-            real_t seg_to = p_to[i];
+            real_t seg_from = from[i];
+            real_t seg_to = to[i];
             real_t box_begin = position[i];
             real_t box_end = box_begin + size[i];
             real_t cmin, cmax;
@@ -224,28 +360,28 @@ struct Rect2 {
                 return false;
         }
 
-        Vector2 rel = p_to - p_from;
+        Vector2 rel = to - from;
 
-        if (r_normal) {
-            Vector2 normal;
-            normal[axis] = sign;
-            *r_normal = normal;
+        if (normal) {
+            Vector2 normal_;
+            normal_[axis] = sign;
+            *normal = normal_;
         }
 
-        if (r_pos)
-            *r_pos = p_from + rel * min;
+        if (pos)
+            *pos = from + rel * min;
 
         return true;
     }
 
-    bool intersectsTransformed(in Transform2D p_xform, in Rect2 p_rect) const {
+    bool intersectsTransformed(in Transform2D xform, in Rect2 rect) const {
         //SAT intersection between local and transformed rect2
 
         Vector2[4] xf_points = [
-            p_xform.xform(p_rect.position),
-            p_xform.xform(Vector2(p_rect.position.x + p_rect.size.x, p_rect.position.y)),
-            p_xform.xform(Vector2(p_rect.position.x, p_rect.position.y + p_rect.size.y)),
-            p_xform.xform(Vector2(p_rect.position.x + p_rect.size.x, p_rect.position.y + p_rect
+            xform.xform(rect.position),
+            xform.xform(Vector2(rect.position.x + rect.size.x, rect.position.y)),
+            xform.xform(Vector2(rect.position.x, rect.position.y + rect.size.y)),
+            xform.xform(Vector2(rect.position.x + rect.size.x, rect.position.y + rect
                     .size.y)),
         ];
 
@@ -316,33 +452,33 @@ struct Rect2 {
             Vector2(position.x + size.x, position.y + size.y),
         ];
 
-        real_t maxa = p_xform.columns[0].dot(xf_points2[0]);
+        real_t maxa = xform.columns[0].dot(xf_points2[0]);
         real_t mina = maxa;
 
-        real_t dp = p_xform.columns[0].dot(xf_points2[1]);
+        real_t dp = xform.columns[0].dot(xf_points2[1]);
         maxa = max(dp, maxa);
         mina = min(dp, mina);
 
-        dp = p_xform.columns[0].dot(xf_points2[2]);
+        dp = xform.columns[0].dot(xf_points2[2]);
         maxa = max(dp, maxa);
         mina = min(dp, mina);
 
-        dp = p_xform.columns[0].dot(xf_points2[3]);
+        dp = xform.columns[0].dot(xf_points2[3]);
         maxa = max(dp, maxa);
         mina = min(dp, mina);
 
-        real_t maxb = p_xform.columns[0].dot(xf_points[0]);
+        real_t maxb = xform.columns[0].dot(xf_points[0]);
         real_t minb = maxb;
 
-        dp = p_xform.columns[0].dot(xf_points[1]);
+        dp = xform.columns[0].dot(xf_points[1]);
         maxb = max(dp, maxb);
         minb = min(dp, minb);
 
-        dp = p_xform.columns[0].dot(xf_points[2]);
+        dp = xform.columns[0].dot(xf_points[2]);
         maxb = max(dp, maxb);
         minb = min(dp, minb);
 
-        dp = p_xform.columns[0].dot(xf_points[3]);
+        dp = xform.columns[0].dot(xf_points[3]);
         maxb = max(dp, maxb);
         minb = min(dp, minb);
 
@@ -351,33 +487,33 @@ struct Rect2 {
         if (minb > maxa)
             return false;
 
-        maxa = p_xform.columns[1].dot(xf_points2[0]);
+        maxa = xform.columns[1].dot(xf_points2[0]);
         mina = maxa;
 
-        dp = p_xform.columns[1].dot(xf_points2[1]);
+        dp = xform.columns[1].dot(xf_points2[1]);
         maxa = max(dp, maxa);
         mina = min(dp, mina);
 
-        dp = p_xform.columns[1].dot(xf_points2[2]);
+        dp = xform.columns[1].dot(xf_points2[2]);
         maxa = max(dp, maxa);
         mina = min(dp, mina);
 
-        dp = p_xform.columns[1].dot(xf_points2[3]);
+        dp = xform.columns[1].dot(xf_points2[3]);
         maxa = max(dp, maxa);
         mina = min(dp, mina);
 
-        maxb = p_xform.columns[1].dot(xf_points[0]);
+        maxb = xform.columns[1].dot(xf_points[0]);
         minb = maxb;
 
-        dp = p_xform.columns[1].dot(xf_points[1]);
+        dp = xform.columns[1].dot(xf_points[1]);
         maxb = max(dp, maxb);
         minb = min(dp, minb);
 
-        dp = p_xform.columns[1].dot(xf_points[2]);
+        dp = xform.columns[1].dot(xf_points[2]);
         maxb = max(dp, maxb);
         minb = min(dp, minb);
 
-        dp = p_xform.columns[1].dot(xf_points[3]);
+        dp = xform.columns[1].dot(xf_points[3]);
         maxb = max(dp, maxb);
         minb = min(dp, minb);
 
@@ -390,15 +526,25 @@ struct Rect2 {
 
     }
 
-    void setEnd(in Vector2 p_end) {
-        size = p_end - position;
+    void setEnd(in Vector2 end) {
+        size = end - position;
     }
 
     Vector2 getEnd() const {
         return position + size;
     }
 
+    Rect2i opCast(Rect2i)() const {
+        return Rect2i(position, size);
+    }
+
+    bool opEquals(in Rect2 rect) const {
+        return position == rect.position && size == rect.size;
+    }
+
 }
+
+// ###### Rect2i ##############################################################
 
 struct Rect2i {
 @nogc nothrow:
@@ -406,18 +552,6 @@ struct Rect2i {
     Vector2i position;
     Vector2i size;
 
-    // from godot.globalenums module
-    enum {
-        /** */
-        sideLeft = 0,
-        /** */
-        sideTop = 1,
-        /** */
-        sideRight = 2,
-        /** */
-        sideBottom = 3,
-    }
-    alias Side = int;
 
     Vector2i end() const {
         return getEnd();
@@ -427,55 +561,66 @@ struct Rect2i {
         setEnd(p_end);
     }
 
-    this(godot_int p_x, godot_int p_y, godot_int p_width, godot_int p_height) {
-        position = Vector2i(p_x, p_y);
-        size = Vector2i(p_width, p_height);
+    this(godot_int x, godot_int y, godot_int width, godot_int height) {
+        this.position = Vector2i(x, y);
+        this.size = Vector2i(width, height);
     }
 
-    this(in Vector2i p_pos, in Vector2i p_size) {
-        position = p_pos;
-        size = p_size;
+    this(in Vector2i pos, in Vector2i size) {
+        this.position = pos;
+        this.size = size;
     }
 
-    bool intersects(in Rect2i p_rect) const {
-        if (position.x > (p_rect.position.x + p_rect.size.width)) {
+    int getArea() const {
+        return size.width * size.height;
+    }
+
+    Vector2i getCenter() const { 
+        return position + (size / 2);
+    }
+
+    bool intersects(in Rect2i rect) const {
+        if (position.x > (rect.position.x + rect.size.width)) {
             return false;
         }
-        if ((position.x + size.width) < p_rect.position.x) {
+        if ((position.x + size.width) < rect.position.x) {
             return false;
         }
-        if (position.y > (p_rect.position.y + p_rect.size.height)) {
+        if (position.y > (rect.position.y + rect.size.height)) {
             return false;
         }
-        if ((position.y + size.height) < p_rect.position.y) {
+        if ((position.y + size.height) < rect.position.y) {
             return false;
         }
 
         return true;
     }
 
-    bool encloses(in Rect2i p_rect) const {
-        return (p_rect.position.x >= position.x) && (p_rect.position.y >= position.y) &&
-            ((p_rect.position.x + p_rect.size.x) < (position.x + size.x)) &&
-            ((p_rect.position.y + p_rect.size.y) < (position.y + size.y));
+    bool encloses(in Rect2i rect) const {
+        return (rect.position.x >= position.x) && (rect.position.y >= position.y) &&
+            ((rect.position.x + rect.size.x) < (position.x + size.x)) &&
+            ((rect.position.y + rect.size.y) < (position.y + size.y));
     }
 
-    bool hasNoArea() const {
-        return (size.x <= 0 || size.y <= 0);
+    deprecated("Scheduled for removal after Q1 2024, use !hasArea() instead")
+    bool hasNoArea() const { return hasArea(); }
+
+    bool hasArea() const {
+        return size.x > 0 && size.y > 0;
     }
 
     // Returns the instersection between two Rect2is or an empty Rect2i if there is no intersection
-    Rect2i intersection(in Rect2i p_rect) const {
-        Rect2i new_rect = p_rect;
+    Rect2i intersection(in Rect2i rect) const {
+        Rect2i new_rect = rect;
 
         if (!intersects(new_rect)) {
             return Rect2i();
         }
 
-        new_rect.position.x = max(p_rect.position.x, position.x);
-        new_rect.position.y = max(p_rect.position.y, position.y);
+        new_rect.position.x = max(rect.position.x, position.x);
+        new_rect.position.y = max(rect.position.y, position.y);
 
-        Vector2i p_rect_end = p_rect.position + p_rect.size;
+        Vector2i p_rect_end = rect.position + rect.size;
         Vector2i end = position + size;
 
         new_rect.size.x = cast(godot_int)(min(p_rect_end.x, end.x) - new_rect.position.x);
@@ -484,99 +629,98 @@ struct Rect2i {
         return new_rect;
     }
 
-    Rect2i merge(in Rect2i p_rect) const  ///< return a merged rect
+    Rect2i merge(in Rect2i rect) const  ///< return a merged rect
     {
 
         Rect2i new_rect;
 
-        new_rect.position.x = min(p_rect.position.x, position.x);
-        new_rect.position.y = min(p_rect.position.y, position.y);
+        new_rect.position.x = min(rect.position.x, position.x);
+        new_rect.position.y = min(rect.position.y, position.y);
 
-        new_rect.size.x = max(p_rect.position.x + p_rect.size.x, position.x + size.x);
-        new_rect.size.y = max(p_rect.position.y + p_rect.size.y, position.y + size.y);
+        new_rect.size.x = max(rect.position.x + rect.size.x, position.x + size.x);
+        new_rect.size.y = max(rect.position.y + rect.size.y, position.y + size.y);
 
         new_rect.size = new_rect.size - new_rect.position; // make relative again
 
         return new_rect;
     }
 
-    bool hasPoint(in Vector2i p_point) const {
-        if (p_point.x < position.x) {
+    bool hasPoint(in Vector2i point) const {
+        if (point.x < position.x) {
             return false;
         }
-        if (p_point.y < position.y) {
+        if (point.y < position.y) {
             return false;
         }
 
-        if (p_point.x >= (position.x + size.x)) {
+        if (point.x >= (position.x + size.x)) {
             return false;
         }
-        if (p_point.y >= (position.y + size.y)) {
+        if (point.y >= (position.y + size.y)) {
             return false;
         }
 
         return true;
     }
 
-    bool opEquals(in Rect2i p_rect) const {
-        return position == p_rect.position && size == p_rect.size;
+    bool opEquals(in Rect2i rect) const {
+        return position == rect.position && size == rect.size;
     }
 
-    Rect2i grow(int p_amount) const {
+    void growBy(int amount) {
+        position.x -= amount;
+        position.y -= amount;
+        size.width += amount * 2;
+        size.height += amount * 2;
+    }
+
+    Rect2i grow(int amount) const {
         Rect2i g = this;
-        g.position.x -= p_amount;
-        g.position.y -= p_amount;
-        g.size.width += p_amount * 2;
-        g.size.height += p_amount * 2;
+        g.growBy(amount);
         return g;
     }
 
-    Rect2i growSide(Side p_side, int p_amount) const {
+    Rect2i growSide(Side side, int amount) const {
         Rect2i g = this;
-        g = g.growIndividual((sideLeft == p_side) ? p_amount : 0,
-            (sideTop == p_side) ? p_amount : 0,
-            (sideRight == p_side) ? p_amount
-                : 0,
-                (sideBottom == p_side) ? p_amount : 0);
+        g = g.growIndividual((Side.sideLeft == side) ? amount : 0,
+                (Side.sideTop == side) ? amount : 0,
+                (Side.sideRight == side) ? amount : 0,
+                (Side.sideBottom == side) ? amount : 0);
         return g;
     }
 
-    Rect2i growSideBind(uint32_t p_side, int p_amount) const {
-        return growSide(Side(p_side), p_amount);
-    }
-
-    Rect2i growIndividual(int p_left, int p_top, int p_right, int p_bottom) const {
+    Rect2i growIndividual(int left, int top, int right, int bottom) const {
         Rect2i g = this;
-        g.position.x -= p_left;
-        g.position.y -= p_top;
-        g.size.width += p_left + p_right;
-        g.size.height += p_top + p_bottom;
+        g.position.x -= left;
+        g.position.y -= top;
+        g.size.width += left + right;
+        g.size.height += top + bottom;
 
         return g;
     }
 
-    Rect2i expand(in Vector2i p_vector) const {
+    Rect2i expand(in Vector2i vector) const {
         Rect2i r = this;
-        r.expandTo(p_vector);
+        r.expandTo(vector);
         return r;
     }
 
-    void expandTo(in Vector2i p_vector) {
+    void expandTo(in Vector2i vector) {
         Vector2i begin = position;
         Vector2i end = position + size;
 
-        if (p_vector.x < begin.x) {
-            begin.x = p_vector.x;
+        if (vector.x < begin.x) {
+            begin.x = vector.x;
         }
-        if (p_vector.y < begin.y) {
-            begin.y = p_vector.y;
+        if (vector.y < begin.y) {
+            begin.y = vector.y;
         }
 
-        if (p_vector.x > end.x) {
-            end.x = p_vector.x;
+        if (vector.x > end.x) {
+            end.x = vector.x;
         }
-        if (p_vector.y > end.y) {
-            end.y = p_vector.y;
+        if (vector.y > end.y) {
+            end.y = vector.y;
         }
 
         position = begin;
@@ -587,8 +731,8 @@ struct Rect2i {
         return Rect2i(Vector2i(position.x + min(size.x, 0), position.y + min(size.y, 0)), size.abs());
     }
 
-    void setEnd(in Vector2i p_end) {
-        size = p_end - position;
+    void setEnd(in Vector2i end) {
+        size = end - position;
     }
 
     Vector2i getEnd() const {

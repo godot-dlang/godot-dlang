@@ -16,6 +16,7 @@ module godot.aabb;
 import godot.api.types;
 import godot.vector3;
 import godot.plane;
+import godot.math;
 
 import std.algorithm.mutation : swap;
 
@@ -28,78 +29,97 @@ struct AABB {
     Vector3 position;
     Vector3 size;
 
+    // some aliases for property-like access
+    alias volume = getVolume;
+    alias center = getCenter;
+    alias end = getEnd;
+    alias end = setEnd;
+
     deprecated("pos has been renamed to position, please use position instead")
     alias pos = position;
 
-    bool hasNoArea() const {
-        return (size.x <= CMP_EPSILON || size.y <= CMP_EPSILON || size.z <= CMP_EPSILON);
+    deprecated("getArea has been renamed to getVolume, use getVolume() instead")
+    alias getArea = getVolume;
+
+    deprecated("will be removed after Q1 2024, use !hasVolume() instead")
+    bool hasNoArea() const { return !hasVolume(); }
+
+    bool hasVolume() const {
+        return size.x > 0.0f && size.y > 0.0f && size.z > 0.0f;
     }
 
-    bool hasNoSurface() const {
-        return (size.x <= CMP_EPSILON && size.y <= CMP_EPSILON && size.z <= CMP_EPSILON);
+    deprecated("will be removed after Q1 2024, use !hasSurface instead")
+    bool hasNoSurface() const { return !hasSurface(); }
+
+    bool hasSurface() const {
+        return size.x > 0.0f || size.y > 0.0f || size.z > 0.0f;
     }
 
-    bool intersects(in AABB p_aabb) const {
-        if (position.x >= (p_aabb.position.x + p_aabb.size.x))
+    bool isEqualApprox(in AABB aabb) const {
+        return position.isEqualApprox(aabb.position) && size.isEqualApprox(aabb.size);
+    }
+
+    bool intersects(in AABB aabb) const {
+        if (position.x >= (aabb.position.x + aabb.size.x))
             return false;
-        if ((position.x + size.x) <= p_aabb.position.x)
+        if ((position.x + size.x) <= aabb.position.x)
             return false;
-        if (position.y >= (p_aabb.position.y + p_aabb.size.y))
+        if (position.y >= (aabb.position.y + aabb.size.y))
             return false;
-        if ((position.y + size.y) <= p_aabb.position.y)
+        if ((position.y + size.y) <= aabb.position.y)
             return false;
-        if (position.z >= (p_aabb.position.z + p_aabb.size.z))
+        if (position.z >= (aabb.position.z + aabb.size.z))
             return false;
-        if ((position.z + size.z) <= p_aabb.position.z)
+        if ((position.z + size.z) <= aabb.position.z)
             return false;
         return true;
     }
 
-    bool intersectsInclusive(in AABB p_aabb) const {
-        if (position.x > (p_aabb.position.x + p_aabb.size.x))
+    bool intersectsInclusive(in AABB aabb) const {
+        if (position.x > (aabb.position.x + aabb.size.x))
             return false;
-        if ((position.x + size.x) < p_aabb.position.x)
+        if ((position.x + size.x) < aabb.position.x)
             return false;
-        if (position.y > (p_aabb.position.y + p_aabb.size.y))
+        if (position.y > (aabb.position.y + aabb.size.y))
             return false;
-        if ((position.y + size.y) < p_aabb.position.y)
+        if ((position.y + size.y) < aabb.position.y)
             return false;
-        if (position.z > (p_aabb.position.z + p_aabb.size.z))
+        if (position.z > (aabb.position.z + aabb.size.z))
             return false;
-        if ((position.z + size.z) < p_aabb.position.z)
+        if ((position.z + size.z) < aabb.position.z)
             return false;
         return true;
     }
 
-    bool encloses(in AABB p_aabb) const {
+    bool encloses(in AABB aabb) const {
         Vector3 src_min = position;
         Vector3 src_max = position + size;
-        Vector3 dst_min = p_aabb.position;
-        Vector3 dst_max = p_aabb.position + p_aabb.size;
+        Vector3 dst_min = aabb.position;
+        Vector3 dst_max = aabb.position + aabb.size;
 
         return (
             (src_min.x <= dst_min.x) &&
-                (src_max.x > dst_max.x) &&
+                (src_max.x >= dst_max.x) &&
                 (src_min.y <= dst_min.y) &&
-                (src_max.y > dst_max.y) &&
+                (src_max.y >= dst_max.y) &&
                 (src_min.z <= dst_min.z) &&
-                (src_max.z > dst_max.z));
+                (src_max.z >= dst_max.z));
 
     }
 
-    Vector3 getSupport(in Vector3 p_normal) const {
+    Vector3 getSupport(in Vector3 normal) const {
         Vector3 half_extents = size * 0.5;
         Vector3 ofs = position + half_extents;
 
         return Vector3(
-            (p_normal.x > 0) ? -half_extents.x : half_extents.x,
-            (p_normal.y > 0) ? -half_extents.y : half_extents.y,
-            (p_normal.z > 0) ? -half_extents.z : half_extents.z
+            (normal.x > 0) ? -half_extents.x : half_extents.x,
+            (normal.y > 0) ? -half_extents.y : half_extents.y,
+            (normal.z > 0) ? -half_extents.z : half_extents.z
         ) + ofs;
     }
 
-    Vector3 getEndpoint(int p_point) const {
-        switch (p_point) {
+    Vector3 getEndpoint(int point) const {
+        switch (point) {
         case 0:
             return Vector3(position.x, position.y, position.z);
         case 1:
@@ -121,17 +141,56 @@ struct AABB {
         }
     }
 
-    bool intersectsConvexShape(in Plane[] p_planes) const {
+    bool intersectsConvexShape(in Plane[] planes, in Vector3[] points) const {
         Vector3 half_extents = size * 0.5;
         Vector3 ofs = position + half_extents;
 
-        foreach (const ref p; p_planes) {
+        foreach (const ref p; planes) {
             Vector3 point = Vector3(
-                (p.normal.x > 0) ? -half_extents.x
-                    : half_extents.x,
-                    (p.normal.y > 0) ? -half_extents.y
-                    : half_extents.y,
-                    (p.normal.z > 0) ? -half_extents.z : half_extents.z
+                (p.normal.x > 0) ? -half_extents.x : half_extents.x,
+                (p.normal.y > 0) ? -half_extents.y : half_extents.y,
+                (p.normal.z > 0) ? -half_extents.z : half_extents.z
+            );
+            point += ofs;
+            if (p.isPointOver(point))
+                return false;
+        }
+
+        // Make sure all points in the shape aren't fully separated from the AABB on
+        // each axis.
+        int[3] bad_point_counts_positive = 0;
+        int[3] bad_point_counts_negative = 0;
+
+        for (int k = 0; k < 3; k++) {
+            for (int i = 0; i < points.length; i++) {
+                if (points[i].coord[k] > ofs.coord[k] + half_extents.coord[k]) {
+                    bad_point_counts_positive[k]++;
+                }
+                if (points[i].coord[k] < ofs.coord[k] - half_extents.coord[k]) {
+                    bad_point_counts_negative[k]++;
+                }
+            }
+
+            if (bad_point_counts_negative[k] == points.length) {
+                return false;
+            }
+            if (bad_point_counts_positive[k] == points.length) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    bool insideConvexShape(in Plane[] planes) const {
+        Vector3 half_extents = size * 0.5;
+        Vector3 ofs = position + half_extents;
+
+        foreach (const ref p; planes) {
+            Vector3 point = Vector3(
+                (p.normal.x < 0) ? -half_extents.x : half_extents.x,
+                (p.normal.y < 0) ? -half_extents.y : half_extents.y,
+                (p.normal.z < 0) ? -half_extents.z : half_extents.z
             );
             point += ofs;
             if (p.isPointOver(point))
@@ -141,54 +200,53 @@ struct AABB {
         return true;
     }
 
-    bool hasPoint(in Vector3 p_point) const {
-        if (p_point.x < position.x)
+    bool hasPoint(in Vector3 point) const {
+        if (point.x < position.x)
             return false;
-        if (p_point.y < position.y)
+        if (point.y < position.y)
             return false;
-        if (p_point.z < position.z)
+        if (point.z < position.z)
             return false;
-        if (p_point.x > position.x + size.x)
+        if (point.x > position.x + size.x)
             return false;
-        if (p_point.y > position.y + size.y)
+        if (point.y > position.y + size.y)
             return false;
-        if (p_point.z > position.z + size.z)
+        if (point.z > position.z + size.z)
             return false;
 
         return true;
     }
 
-    void expandTo(in Vector3 p_vector) {
+    void expandTo(in Vector3 vector) {
         Vector3 begin = position;
         Vector3 end = position + size;
 
-        if (p_vector.x < begin.x)
-            begin.x = p_vector.x;
-        if (p_vector.y < begin.y)
-            begin.y = p_vector.y;
-        if (p_vector.z < begin.z)
-            begin.z = p_vector.z;
+        if (vector.x < begin.x)
+            begin.x = vector.x;
+        if (vector.y < begin.y)
+            begin.y = vector.y;
+        if (vector.z < begin.z)
+            begin.z = vector.z;
 
-        if (p_vector.x > end.x)
-            end.x = p_vector.x;
-        if (p_vector.y > end.y)
-            end.y = p_vector.y;
-        if (p_vector.z > end.z)
-            end.z = p_vector.z;
+        if (vector.x > end.x)
+            end.x = vector.x;
+        if (vector.y > end.y)
+            end.y = vector.y;
+        if (vector.z > end.z)
+            end.z = vector.z;
 
         position = begin;
         size = end - begin;
     }
 
-    void projectRangeInPlane(in Plane p_plane, out real_t r_min, out real_t r_max) const {
+    void projectRangeInPlane(in Plane plane, out real_t min, out real_t max) const {
         Vector3 half_extents = Vector3(size.x * 0.5, size.y * 0.5, size.z * 0.5);
-        Vector3 center = Vector3(position.x + half_extents.x, position.y + half_extents.y, position.z + half_extents
-                .z);
+        Vector3 center = Vector3(position.x + half_extents.x, position.y + half_extents.y, position.z + half_extents.z);
 
-        real_t length = p_plane.normal.abs().dot(half_extents);
-        real_t distance = p_plane.distanceTo(center);
-        r_min = distance - length;
-        r_max = distance + length;
+        real_t length = plane.normal.abs().dot(half_extents);
+        real_t distance = plane.distanceTo(center);
+        min = distance - length;
+        max = distance + length;
     }
 
     real_t getLongestAxisSize() const {
@@ -262,28 +320,64 @@ struct AABB {
         return ((tmin < t1) && (tmax > t0));
     }
 
-    void growBy(real_t p_amount) {
-        position.x -= p_amount;
-        position.y -= p_amount;
-        position.z -= p_amount;
-        size.x += 2.0 * p_amount;
-        size.y += 2.0 * p_amount;
-        size.z += 2.0 * p_amount;
+    void growBy(real_t amount) {
+        position.x -= amount;
+        position.y -= amount;
+        position.z -= amount;
+        size.x += 2.0 * amount;
+        size.y += 2.0 * amount;
+        size.z += 2.0 * amount;
     }
 
-    real_t getArea() const {
+    real_t getVolume() const {
         return size.x * size.y * size.z;
     }
 
-    void mergeWith(in AABB p_aabb) {
+    Vector3 getCenter() const {
+        return position + (size * 0.5f);
+    }
+
+    Vector3 getEnd() const {
+        return position + size;
+    }
+
+    void setEnd(in Vector3 end) {
+        size = end - position;
+    }
+
+    void quantize(real_t unit) {
+        size += position;
+
+        position.x -= fposmodp(position.x, unit);
+        position.y -= fposmodp(position.y, unit);
+        position.z -= fposmodp(position.z, unit);
+
+        size.x -= fposmodp(size.x, unit);
+        size.y -= fposmodp(size.y, unit);
+        size.z -= fposmodp(size.z, unit);
+
+        size.x += unit;
+        size.y += unit;
+        size.z += unit;
+
+        size -= position;
+    }
+
+    AABB quantized(real_t unit) const {
+        AABB ret = this;
+        ret.quantize(unit);
+        return ret;
+    }
+
+    void mergeWith(in AABB aabb) {
         Vector3 beg_1, beg_2;
         Vector3 end_1, end_2;
         Vector3 min, max;
 
         beg_1 = position;
-        beg_2 = p_aabb.position;
+        beg_2 = aabb.position;
         end_1 = Vector3(size.x, size.y, size.z) + beg_1;
-        end_2 = Vector3(p_aabb.size.x, p_aabb.size.y, p_aabb.size.z) + beg_2;
+        end_2 = Vector3(aabb.size.x, aabb.size.y, aabb.size.z) + beg_2;
 
         min.x = (beg_1.x < beg_2.x) ? beg_1.x : beg_2.x;
         min.y = (beg_1.y < beg_2.y) ? beg_1.y : beg_2.y;
@@ -297,11 +391,11 @@ struct AABB {
         size = max - min;
     }
 
-    AABB intersection(in AABB p_aabb) const {
+    AABB intersection(in AABB aabb) const {
         Vector3 src_min = position;
         Vector3 src_max = position + size;
-        Vector3 dst_min = p_aabb.position;
-        Vector3 dst_max = p_aabb.position + p_aabb.size;
+        Vector3 dst_min = aabb.position;
+        Vector3 dst_max = aabb.position + aabb.size;
 
         Vector3 min, max;
 
@@ -329,7 +423,7 @@ struct AABB {
         return AABB(min, max - min);
     }
 
-    bool intersectsRay(in Vector3 p_from, in Vector3 p_dir, Vector3* r_clip = null, Vector3* r_normal = null) const {
+    bool intersectsRay(in Vector3 from, in Vector3 dir, Vector3* clip = null, Vector3* normal = null) const {
         Vector3 c1, c2;
         Vector3 end = position + size;
         real_t near = -1e20;
@@ -337,13 +431,13 @@ struct AABB {
         int axis = 0;
 
         for (int i = 0; i < 3; i++) {
-            if (p_dir[i] == 0) {
-                if ((p_from[i] < position[i]) || (p_from[i] > end[i])) {
+            if (dir[i] == 0) {
+                if ((from[i] < position[i]) || (from[i] > end[i])) {
                     return false;
                 }
             } else { // ray not parallel to planes in this direction
-                c1[i] = (position[i] - p_from[i]) / p_dir[i];
-                c2[i] = (end[i] - p_from[i]) / p_dir[i];
+                c1[i] = (position[i] - from[i]) / dir[i];
+                c2[i] = (end[i] - from[i]) / dir[i];
 
                 if (c1[i] > c2[i]) {
                     swap(c1, c2);
@@ -360,23 +454,23 @@ struct AABB {
                 }
             }
         }
-        if (r_clip)
-            *r_clip = c1;
-        if (r_normal) {
-            *r_normal = Vector3();
-            (*r_normal)[axis] = p_dir[axis] ? -1 : 1;
+        if (clip)
+            *clip = c1;
+        if (normal) {
+            *normal = Vector3();
+            (*normal)[axis] = dir[axis] ? -1 : 1;
         }
         return true;
     }
 
-    bool intersectsSegment(in Vector3 p_from, in Vector3 p_to, Vector3* r_clip = null, Vector3* r_normal = null) const {
+    bool intersectsSegment(in Vector3 from, in Vector3 to, Vector3* clip = null, Vector3* normal = null) const {
         real_t min = 0, max = 1;
         int axis = 0;
         real_t sign = 0;
 
         for (int i = 0; i < 3; i++) {
-            real_t seg_from = p_from[i];
-            real_t seg_to = p_to[i];
+            real_t seg_from = from[i];
+            real_t seg_to = to[i];
             real_t box_begin = position[i];
             real_t box_end = box_begin + size[i];
             real_t cmin, cmax;
@@ -409,21 +503,21 @@ struct AABB {
                 return false;
         }
 
-        Vector3 rel = p_to - p_from;
+        Vector3 rel = to - from;
 
-        if (r_normal) {
-            Vector3 normal;
-            normal[axis] = sign;
-            *r_normal = normal;
+        if (normal) {
+            Vector3 normal_;
+            normal_[axis] = sign;
+            *normal = normal_;
         }
 
-        if (r_clip)
-            *r_clip = p_from + rel * min;
+        if (clip)
+            *clip = from + rel * min;
 
         return true;
     }
 
-    bool intersectsPlane(in Plane p_plane) const {
+    bool intersectsPlane(in Plane plane) const {
         Vector3[8] points = [
             Vector3(position.x, position.y, position.z),
             Vector3(position.x, position.y, position.z + size.z),
@@ -439,7 +533,7 @@ struct AABB {
         bool under = false;
 
         for (int i = 0; i < 8; i++) {
-            if (p_plane.distanceTo(points[i]) > 0)
+            if (plane.distanceTo(points[i]) > 0)
                 over = true;
             else
                 under = true;
@@ -515,86 +609,85 @@ struct AABB {
         return axis;
     }
 
-    AABB merge(in AABB p_with) const {
+    AABB merge(in AABB with_) const {
         AABB aabb = this;
-        aabb.mergeWith(p_with);
+        aabb.mergeWith(with_);
         return aabb;
     }
 
-    AABB expand(in Vector3 p_vector) const {
+    AABB expand(in Vector3 vector) const {
         AABB aabb = this;
-        aabb.expandTo(p_vector);
-        return aabb;
-
-    }
-
-    AABB grow(real_t p_by) const {
-        AABB aabb = this;
-        aabb.growBy(p_by);
+        aabb.expandTo(vector);
         return aabb;
     }
 
-    void getEdge(int p_edge, out Vector3 r_from, out Vector3 r_to) const {
-        ///ERR_FAIL_INDEX(p_edge,12);
-        switch (p_edge) {
+    AABB grow(real_t by) const {
+        AABB aabb = this;
+        aabb.growBy(by);
+        return aabb;
+    }
+
+    void getEdge(int edge, out Vector3 from, out Vector3 to) const {
+        ///ERR_FAIL_INDEX(edge,12);
+        switch (edge) {
         case 0: {
-                r_from = Vector3(position.x + size.x, position.y, position.z);
-                r_to = Vector3(position.x, position.y, position.z);
+                from = Vector3(position.x + size.x, position.y, position.z);
+                to = Vector3(position.x, position.y, position.z);
             }
             break;
         case 1: {
-                r_from = Vector3(position.x + size.x, position.y, position.z + size.z);
-                r_to = Vector3(position.x + size.x, position.y, position.z);
+                from = Vector3(position.x + size.x, position.y, position.z + size.z);
+                to = Vector3(position.x + size.x, position.y, position.z);
             }
             break;
         case 2: {
-                r_from = Vector3(position.x, position.y, position.z + size.z);
-                r_to = Vector3(position.x + size.x, position.y, position.z + size.z);
+                from = Vector3(position.x, position.y, position.z + size.z);
+                to = Vector3(position.x + size.x, position.y, position.z + size.z);
             }
             break;
         case 3: {
-                r_from = Vector3(position.x, position.y, position.z);
-                r_to = Vector3(position.x, position.y, position.z + size.z);
+                from = Vector3(position.x, position.y, position.z);
+                to = Vector3(position.x, position.y, position.z + size.z);
             }
             break;
         case 4: {
-                r_from = Vector3(position.x, position.y + size.y, position.z);
-                r_to = Vector3(position.x + size.x, position.y + size.y, position.z);
+                from = Vector3(position.x, position.y + size.y, position.z);
+                to = Vector3(position.x + size.x, position.y + size.y, position.z);
             }
             break;
         case 5: {
-                r_from = Vector3(position.x + size.x, position.y + size.y, position.z);
-                r_to = Vector3(position.x + size.x, position.y + size.y, position.z + size.z);
+                from = Vector3(position.x + size.x, position.y + size.y, position.z);
+                to = Vector3(position.x + size.x, position.y + size.y, position.z + size.z);
             }
             break;
         case 6: {
-                r_from = Vector3(position.x + size.x, position.y + size.y, position.z + size.z);
-                r_to = Vector3(position.x, position.y + size.y, position.z + size.z);
+                from = Vector3(position.x + size.x, position.y + size.y, position.z + size.z);
+                to = Vector3(position.x, position.y + size.y, position.z + size.z);
             }
             break;
         case 7: {
-                r_from = Vector3(position.x, position.y + size.y, position.z + size.z);
-                r_to = Vector3(position.x, position.y + size.y, position.z);
+                from = Vector3(position.x, position.y + size.y, position.z + size.z);
+                to = Vector3(position.x, position.y + size.y, position.z);
             }
             break;
         case 8: {
-                r_from = Vector3(position.x, position.y, position.z + size.z);
-                r_to = Vector3(position.x, position.y + size.y, position.z + size.z);
+                from = Vector3(position.x, position.y, position.z + size.z);
+                to = Vector3(position.x, position.y + size.y, position.z + size.z);
             }
             break;
         case 9: {
-                r_from = Vector3(position.x, position.y, position.z);
-                r_to = Vector3(position.x, position.y + size.y, position.z);
+                from = Vector3(position.x, position.y, position.z);
+                to = Vector3(position.x, position.y + size.y, position.z);
             }
             break;
         case 10: {
-                r_from = Vector3(position.x + size.x, position.y, position.z);
-                r_to = Vector3(position.x + size.x, position.y + size.y, position.z);
+                from = Vector3(position.x + size.x, position.y, position.z);
+                to = Vector3(position.x + size.x, position.y + size.y, position.z);
             }
             break;
         case 11: {
-                r_from = Vector3(position.x + size.x, position.y, position.z + size.z);
-                r_to = Vector3(position.x + size.x, position.y + size.y, position.z + size.z);
+                from = Vector3(position.x + size.x, position.y, position.z + size.z);
+                to = Vector3(position.x + size.x, position.y + size.y, position.z + size.z);
             }
             break;
         default:
