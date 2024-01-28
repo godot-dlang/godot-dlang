@@ -765,7 +765,10 @@ struct VirtualMethodsHelper(T) {
     static bool matchesNamingConv(string name)() {
         import std.uni : isAlphaNum;
 
-        return name[0] == '_' && name[1].isAlphaNum;
+        static if (name.length > 1)
+            return name[0] == '_' && name[1].isAlphaNum;
+        else
+            return false;
     }
     import std.meta;
     static bool isFunc(alias member)() {
