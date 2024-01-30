@@ -23,18 +23,11 @@ import godot.aabb;
 import godot.array;
 import godot.transform;
 import godot.abi.core;
+import godot.math;
 
 import std.math;
 import std.algorithm.comparison;
 import std.algorithm.mutation : swap;
-
-double deg2rad(double p_y) @nogc nothrow {
-    return p_y * PI / 180.0;
-}
-
-double rad2deg(double p_y) @nogc nothrow {
-    return p_y * 180.0 / PI;
-}
 
 /**
 Represents projection transformation. It is similar to a 4x4 matrix.
@@ -61,7 +54,9 @@ struct Projection {
 
     union {
         Vector4[4] matrix = [
-            Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0),
+            Vector4(1, 0, 0, 0), 
+            Vector4(0, 1, 0, 0), 
+            Vector4(0, 0, 1, 0),
             Vector4(0, 0, 0, 1)
         ];
         struct {
@@ -87,8 +82,8 @@ struct Projection {
         elements = mat;
     }
 
-    this(in Transform3D p_transform) {
-        alias tr = p_transform;
+    this(in Transform3D transform) {
+        alias tr = transform;
 
         m[0] = tr.basis.rows[0][0];
         m[1] = tr.basis.rows[1][0];
@@ -131,9 +126,11 @@ struct Projection {
             matrix[0][1] * matrix[1][0] * matrix[2][2] * matrix[3][3] + matrix[0][0] * matrix[1][1] * matrix[2][2] * matrix[3][3];
     }
 
-    void setIdentity() {
+    void setIdentity() @nogc {
         matrix = [
-            Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0),
+            Vector4(1, 0, 0, 0), 
+            Vector4(0, 1, 0, 0), 
+            Vector4(0, 0, 1, 0),
             Vector4(0, 0, 0, 1)
         ];
     }
@@ -161,13 +158,13 @@ struct Projection {
         m[15] = 1.0;
     }
 
-    void setDepthCorrection(bool p_flip_y = true) {
+    void setDepthCorrection(bool flipY = true) {
         m[0] = 1;
         m[1] = 0.0;
         m[2] = 0.0;
         m[3] = 0.0;
         m[4] = 0.0;
-        m[5] = p_flip_y ? -1 : 1;
+        m[5] = flipY ? -1 : 1;
         m[6] = 0.0;
         m[7] = 0.0;
         m[8] = 0.0;
@@ -180,76 +177,76 @@ struct Projection {
         m[15] = 1.0;
     }
 
-    void setLightAtlasRect(in Rect2 p_rect) {
-        m[0] = p_rect.size.width;
+    void setLightAtlasRect(in Rect2 rect) {
+        m[0] = rect.size.width;
         m[1] = 0.0;
         m[2] = 0.0;
         m[3] = 0.0;
         m[4] = 0.0;
-        m[5] = p_rect.size.height;
+        m[5] = rect.size.height;
         m[6] = 0.0;
         m[7] = 0.0;
         m[8] = 0.0;
         m[9] = 0.0;
         m[10] = 1.0;
         m[11] = 0.0;
-        m[12] = p_rect.position.x;
-        m[13] = p_rect.position.y;
+        m[12] = rect.position.x;
+        m[13] = rect.position.y;
         m[14] = 0.0;
         m[15] = 1.0;
     }
 
-    void setPerspective(real_t p_fovy_degrees, real_t p_aspect, real_t p_z_near, real_t p_z_far, bool p_flip_fov = false) {
-        if (p_flip_fov) {
-            p_fovy_degrees = getFovY(p_fovy_degrees, 1.0 / p_aspect);
+    void setPerspective(real_t fovYdegrees, real_t aspect, real_t zNear, real_t zFar, bool flipFov = false) {
+        if (flipFov) {
+            fovYdegrees = getFovY(fovYdegrees, 1.0 / aspect);
         }
 
         real_t sine, cotangent, deltaZ;
-        real_t radians = deg2rad(p_fovy_degrees / 2.0);
+        real_t radians = deg2rad(fovYdegrees / 2.0);
 
-        deltaZ = p_z_far - p_z_near;
+        deltaZ = zFar - zNear;
         sine = sin(radians);
 
-        if ((deltaZ == 0) || (sine == 0) || (p_aspect == 0)) {
+        if ((deltaZ == 0) || (sine == 0) || (aspect == 0)) {
             return;
         }
         cotangent = cos(radians) / sine;
 
         setIdentity();
 
-        matrix[0][0] = cotangent / p_aspect;
+        matrix[0][0] = cotangent / aspect;
         matrix[1][1] = cotangent;
-        matrix[2][2] = -(p_z_far + p_z_near) / deltaZ;
+        matrix[2][2] = -(zFar + zNear) / deltaZ;
         matrix[2][3] = -1;
-        matrix[3][2] = -2 * p_z_near * p_z_far / deltaZ;
+        matrix[3][2] = -2 * zNear * zFar / deltaZ;
         matrix[3][3] = 0;
     }
 
-    void setPerspective(real_t p_fovy_degrees, real_t p_aspect, real_t p_z_near, real_t p_z_far, bool p_flip_fov, int p_eye, real_t p_intraocular_dist, real_t p_convergence_dist) {
-        if (p_flip_fov) {
-            p_fovy_degrees = getFovY(p_fovy_degrees, 1.0 / p_aspect);
+    void setPerspective(real_t fovYdegrees, real_t aspect, real_t zNear, real_t zFar, bool flipFov, int eye, real_t intraocularDist, real_t convergenceDist) {
+        if (flipFov) {
+            fovYdegrees = getFovY(fovYdegrees, 1.0 / aspect);
         }
 
         real_t left, right, modeltranslation, ymax, xmax, frustumshift;
 
-        ymax = p_z_near * tan(deg2rad(p_fovy_degrees / 2.0));
-        xmax = ymax * p_aspect;
-        frustumshift = (p_intraocular_dist / 2.0) * p_z_near / p_convergence_dist;
+        ymax = zNear * tan(deg2rad(fovYdegrees / 2.0));
+        xmax = ymax * aspect;
+        frustumshift = (intraocularDist / 2.0) * zNear / convergenceDist;
 
-        switch (p_eye) {
+        switch (eye) {
         case 1: { // left eye
                 left = -xmax + frustumshift;
                 right = xmax + frustumshift;
-                modeltranslation = p_intraocular_dist / 2.0;
+                modeltranslation = intraocularDist / 2.0;
             }
             break;
         case 2: { // right eye
                 left = -xmax - frustumshift;
                 right = xmax - frustumshift;
-                modeltranslation = -p_intraocular_dist / 2.0;
+                modeltranslation = -intraocularDist / 2.0;
             }
             break;
-        default: { // mono, should give the same result as set_perspective(p_fovy_degrees,p_aspect,p_z_near,p_z_far,p_flip_fov)
+        default: { // mono, should give the same result as set_perspective(fovYdegrees,aspect,zNear,zFar,flipFov)
                 left = -xmax;
                 right = xmax;
                 modeltranslation = 0.0;
@@ -257,7 +254,7 @@ struct Projection {
             break;
         }
 
-        setFrustum(left, right, -ymax, ymax, p_z_near, p_z_far);
+        setFrustum(left, right, -ymax, ymax, zNear, zFar);
 
         // translate matrix by (modeltranslation, 0.0, 0.0)
         Projection cm;
@@ -266,29 +263,29 @@ struct Projection {
         this = (this * cm);
     }
 
-    void setForHMD(int p_eye, real_t p_aspect, real_t p_intraocular_dist, real_t p_display_width, real_t p_display_to_lens, real_t p_oversample, real_t p_z_near, real_t p_z_far) {
+    void setForHMD(int eye, real_t aspect, real_t intraocularDist, real_t displayWidth, real_t displayToLens, real_t oversample, real_t zNear, real_t zFar) {
         // we first calculate our base frustum on our values without taking our lens magnification into account.
-        real_t f1 = (p_intraocular_dist * 0.5) / p_display_to_lens;
-        real_t f2 = ((p_display_width - p_intraocular_dist) * 0.5) / p_display_to_lens;
-        real_t f3 = (p_display_width / 4.0) / p_display_to_lens;
+        real_t f1 = (intraocularDist * 0.5) / displayToLens;
+        real_t f2 = ((displayWidth - intraocularDist) * 0.5) / displayToLens;
+        real_t f3 = (displayWidth / 4.0) / displayToLens;
 
         // now we apply our oversample factor to increase our FOV. how much we oversample is always a balance we strike between performance and how much
         // we're willing to sacrifice in FOV.
-        real_t add = ((f1 + f2) * (p_oversample - 1.0)) / 2.0;
+        real_t add = ((f1 + f2) * (oversample - 1.0)) / 2.0;
         f1 += add;
         f2 += add;
-        f3 *= p_oversample;
+        f3 *= oversample;
 
         // always apply KEEP_WIDTH aspect ratio
-        f3 /= p_aspect;
+        f3 /= aspect;
 
-        switch (p_eye) {
+        switch (eye) {
         case 1: { // left eye
-                setFrustum(-f2 * p_z_near, f1 * p_z_near, -f3 * p_z_near, f3 * p_z_near, p_z_near, p_z_far);
+                setFrustum(-f2 * zNear, f1 * zNear, -f3 * zNear, f3 * zNear, zNear, zFar);
             }
             break;
         case 2: { // right eye
-                setFrustum(-f1 * p_z_near, f2 * p_z_near, -f3 * p_z_near, f3 * p_z_near, p_z_near, p_z_far);
+                setFrustum(-f1 * zNear, f2 * zNear, -f3 * zNear, f3 * zNear, zNear, zFar);
             }
             break;
         default: { // mono, does not apply here!
@@ -297,38 +294,38 @@ struct Projection {
         }
     }
 
-    void setOrthogonal(real_t p_left, real_t p_right, real_t p_bottom, real_t p_top, real_t p_znear, real_t p_zfar) {
+    void setOrthogonal(real_t left, real_t right, real_t bottom, real_t top, real_t zNear, real_t zFar) {
         setIdentity();
 
-        matrix[0][0] = 2.0 / (p_right - p_left);
-        matrix[3][0] = -((p_right + p_left) / (p_right - p_left));
-        matrix[1][1] = 2.0 / (p_top - p_bottom);
-        matrix[3][1] = -((p_top + p_bottom) / (p_top - p_bottom));
-        matrix[2][2] = -2.0 / (p_zfar - p_znear);
-        matrix[3][2] = -((p_zfar + p_znear) / (p_zfar - p_znear));
+        matrix[0][0] = 2.0 / (right - left);
+        matrix[3][0] = -((right + left) / (right - left));
+        matrix[1][1] = 2.0 / (top - bottom);
+        matrix[3][1] = -((top + bottom) / (top - bottom));
+        matrix[2][2] = -2.0 / (zFar - zNear);
+        matrix[3][2] = -((zFar + zNear) / (zFar - zNear));
         matrix[3][3] = 1.0;
     }
 
-    void setOrthogonal(real_t p_size, real_t p_aspect, real_t p_znear, real_t p_zfar, bool p_flip_fov = false) {
-        if (!p_flip_fov) {
-            p_size *= p_aspect;
+    void setOrthogonal(real_t size, real_t aspect, real_t zNear, real_t zFar, bool flipFov = false) {
+        if (!flipFov) {
+            size *= aspect;
         }
 
-        setOrthogonal(-p_size / 2, +p_size / 2, -p_size / p_aspect / 2, +p_size / p_aspect / 2, p_znear, p_zfar);
+        setOrthogonal(-size / 2, +size / 2, -size / aspect / 2, +size / aspect / 2, zNear, zFar);
     }
 
-    void setFrustum(real_t p_left, real_t p_right, real_t p_bottom, real_t p_top, real_t p_near, real_t p_far) {
-        assert(p_right <= p_left);
-        assert(p_top <= p_bottom);
-        assert(p_far <= p_near);
+    void setFrustum(real_t left, real_t right, real_t bottom, real_t top, real_t near, real_t far) {
+        assert(right <= left);
+        assert(top <= bottom);
+        assert(far <= near);
 
-        real_t x = 2 * p_near / (p_right - p_left);
-        real_t y = 2 * p_near / (p_top - p_bottom);
+        real_t x = 2 * near / (right - left);
+        real_t y = 2 * near / (top - bottom);
 
-        real_t a = (p_right + p_left) / (p_right - p_left);
-        real_t b = (p_top + p_bottom) / (p_top - p_bottom);
-        real_t c = -(p_far + p_near) / (p_far - p_near);
-        real_t d = -2 * p_far * p_near / (p_far - p_near);
+        real_t a = (right + left) / (right - left);
+        real_t b = (top + bottom) / (top - bottom);
+        real_t c = -(far + near) / (far - near);
+        real_t d = -2 * far * near / (far - near);
 
         m[0] = x;
         m[1] = 0;
@@ -348,94 +345,94 @@ struct Projection {
         m[15] = 0;
     }
 
-    void setFrustum(real_t p_size, real_t p_aspect, Vector2 p_offset, real_t p_near, real_t p_far, bool p_flip_fov = false) {
-        if (!p_flip_fov) {
-            p_size *= p_aspect;
+    void setFrustum(real_t size, real_t aspect, Vector2 offset, real_t near, real_t far, bool flipFov = false) {
+        if (!flipFov) {
+            size *= aspect;
         }
 
-        setFrustum(-p_size / 2 + p_offset.x, +p_size / 2 + p_offset.x, -p_size / p_aspect / 2 + p_offset.y, +p_size / p_aspect / 2 + p_offset
-                .y, p_near, p_far);
+        setFrustum(-size / 2 + offset.x, +size / 2 + offset.x, -size / aspect / 2 + offset.y, +size / aspect / 2 + offset
+                .y, near, far);
     }
 
-    void adjustPerspectiveZNear(real_t p_new_znear) {
+    void adjustPerspectiveZNear(real_t newZNear) {
         real_t zfar = getZFar();
-        real_t znear = p_new_znear;
+        real_t znear = newZNear;
 
         real_t deltaZ = zfar - znear;
         matrix[2][2] = -(zfar + znear) / deltaZ;
         matrix[3][2] = -2 * znear * zfar / deltaZ;
     }
 
-    static Projection createDepthCorrection(bool p_flip_y) {
+    static Projection createDepthCorrection(bool flipY) {
         Projection proj;
-        proj.setDepthCorrection(p_flip_y);
+        proj.setDepthCorrection(flipY);
         return proj;
     }
 
-    static Projection createLightAtlasRect(in Rect2 p_rect) {
+    static Projection createLightAtlasRect(in Rect2 rect) {
         Projection proj;
-        proj.setLightAtlasRect(p_rect);
+        proj.setLightAtlasRect(rect);
         return proj;
     }
 
-    static Projection createPerspective(real_t p_fovy_degrees, real_t p_aspect, real_t p_z_near, real_t p_z_far, bool p_flip_fov = false) {
+    static Projection createPerspective(real_t fovYdegrees, real_t aspect, real_t zNear, real_t zFar, bool flipFov = false) {
         Projection proj;
-        proj.setPerspective(p_fovy_degrees, p_aspect, p_z_near, p_z_far, p_flip_fov);
+        proj.setPerspective(fovYdegrees, aspect, zNear, zFar, flipFov);
         return proj;
     }
 
-    static Projection createPerspectiveHMD(real_t p_fovy_degrees, real_t p_aspect, real_t p_z_near, real_t p_z_far, bool p_flip_fov, int p_eye, real_t p_intraocular_dist, real_t p_convergence_dist) {
+    static Projection createPerspectiveHMD(real_t fovYdegrees, real_t aspect, real_t zNear, real_t zFar, bool flipFov, int eye, real_t intraocularDist, real_t convergenceDist) {
         Projection proj;
-        proj.setPerspective(p_fovy_degrees, p_aspect, p_z_near, p_z_far, p_flip_fov, p_eye, p_intraocular_dist, p_convergence_dist);
+        proj.setPerspective(fovYdegrees, aspect, zNear, zFar, flipFov, eye, intraocularDist, convergenceDist);
         return proj;
     }
 
-    static Projection createForHMD(int p_eye, real_t p_aspect, real_t p_intraocular_dist, real_t p_display_width, real_t p_display_to_lens, real_t p_oversample, real_t p_z_near, real_t p_z_far) {
+    static Projection createForHMD(int eye, real_t aspect, real_t intraocularDist, real_t displayWidth, real_t displayToLens, real_t oversample, real_t zNear, real_t zFar) {
         Projection proj;
-        proj.setForHMD(p_eye, p_aspect, p_intraocular_dist, p_display_width, p_display_to_lens, p_oversample, p_z_near, p_z_far);
+        proj.setForHMD(eye, aspect, intraocularDist, displayWidth, displayToLens, oversample, zNear, zFar);
         return proj;
     }
 
-    static Projection createOrthogonal(real_t p_left, real_t p_right, real_t p_bottom, real_t p_top, real_t p_znear, real_t p_zfar) {
+    static Projection createOrthogonal(real_t left, real_t right, real_t bottom, real_t top, real_t zNear, real_t zFar) {
         Projection proj;
-        proj.setOrthogonal(p_left, p_right, p_bottom, p_top, p_zfar, p_zfar);
+        proj.setOrthogonal(left, right, bottom, top, zFar, zFar);
         return proj;
     }
 
-    static Projection createOrthogonalAspect(real_t p_size, real_t p_aspect, real_t p_znear, real_t p_zfar, bool p_flip_fov = false) {
+    static Projection createOrthogonalAspect(real_t size, real_t aspect, real_t zNear, real_t zFar, bool flipFov = false) {
         Projection proj;
-        proj.setOrthogonal(p_size, p_aspect, p_znear, p_zfar, p_flip_fov);
+        proj.setOrthogonal(size, aspect, zNear, zFar, flipFov);
         return proj;
     }
 
-    static Projection createFrustum(real_t p_left, real_t p_right, real_t p_bottom, real_t p_top, real_t p_near, real_t p_far) {
+    static Projection createFrustum(real_t left, real_t right, real_t bottom, real_t top, real_t near, real_t far) {
         Projection proj;
-        proj.setFrustum(p_left, p_right, p_bottom, p_top, p_near, p_far);
+        proj.setFrustum(left, right, bottom, top, near, far);
         return proj;
     }
 
-    static Projection createFrustumAspect(real_t p_size, real_t p_aspect, Vector2 p_offset, real_t p_near, real_t p_far, bool p_flip_fov = false) {
+    static Projection createFrustumAspect(real_t size, real_t aspect, Vector2 offset, real_t near, real_t far, bool flipFov = false) {
         Projection proj;
-        proj.setFrustum(p_size, p_aspect, p_offset, p_near, p_far, p_flip_fov);
+        proj.setFrustum(size, aspect, offset, near, far, flipFov);
         return proj;
     }
 
-    static Projection createFitAABB(in AABB p_aabb) {
+    static Projection createFitAABB(in AABB aabb) {
         Projection proj;
-        proj.scaleTranslateToFit(p_aabb);
+        proj.scaleTranslateToFit(aabb);
         return proj;
     }
 
-    Projection perspective_znear_adjusted(real_t p_new_znear) const {
+    Projection perspectiveZNearAdjusted(real_t newZNear) const {
         Projection proj = this;
-        proj.adjustPerspectiveZNear(p_new_znear);
+        proj.adjustPerspectiveZNear(newZNear);
         return proj;
     }
 
-    Plane getProjectionPlane(Planes p_plane) const {
+    Plane getProjectionPlane(Planes plane) const {
         const real_t* matrix = m.ptr;
 
-        switch (p_plane) {
+        switch (plane) {
         case Planes.near: {
                 Plane new_plane = Plane(matrix[3] + matrix[2],
                     matrix[7] + matrix[6],
@@ -509,14 +506,14 @@ struct Projection {
         return proj;
     }
 
-    Projection jitter_offseted(in Vector2 p_offset) const {
+    Projection jitterOffseted(in Vector2 offset) const {
         Projection proj = this;
-        proj.addJitterOffset(p_offset);
+        proj.addJitterOffset(offset);
         return proj;
     }
 
-    static real_t getFovY(real_t p_fovx, real_t p_aspect) {
-        return rad2deg(atan(p_aspect * tan(deg2rad(p_fovx) * 0.5)) * 2.0);
+    static real_t getFovY(real_t fovx, real_t aspect) {
+        return rad2deg(atan(aspect * tan(deg2rad(fovx) * 0.5)) * 2.0);
     }
 
     real_t getZFar() const {
@@ -576,7 +573,7 @@ struct Projection {
         return matrix[3][3] == 1.0;
     }
 
-    Array getProjectionPlanes(in Transform3D p_transform) const {
+    Array getProjectionPlanes(in Transform3D transform) const {
         /** Fast Plane Extraction from combined modelview/projection matrices.
 		* References:
 		* https://web.archive.org/web/20011221205252/https://www.markmorley.com/opengl/frustumculling.html
@@ -584,6 +581,7 @@ struct Projection {
 		*/
 
         Array planes;
+        planes.resize(6);
 
         const real_t* matrix = m.ptr;
 
@@ -598,7 +596,7 @@ struct Projection {
         new_plane.normal = -new_plane.normal;
         new_plane.normalize();
 
-        planes.pushBack(p_transform.xform(new_plane));
+        planes[0] = transform.xform(new_plane);
 
         ///////--- Far Plane ---///////
         new_plane = Plane(matrix[3] - matrix[2],
@@ -609,7 +607,7 @@ struct Projection {
         new_plane.normal = -new_plane.normal;
         new_plane.normalize();
 
-        planes.pushBack(p_transform.xform(new_plane));
+        planes[1] = transform.xform(new_plane);
 
         ///////--- Left Plane ---///////
         new_plane = Plane(matrix[3] + matrix[0],
@@ -620,7 +618,7 @@ struct Projection {
         new_plane.normal = -new_plane.normal;
         new_plane.normalize();
 
-        planes.pushBack(p_transform.xform(new_plane));
+        planes[2] = transform.xform(new_plane);
 
         ///////--- Top Plane ---///////
         new_plane = Plane(matrix[3] - matrix[1],
@@ -631,7 +629,7 @@ struct Projection {
         new_plane.normal = -new_plane.normal;
         new_plane.normalize();
 
-        planes.pushBack(p_transform.xform(new_plane));
+        planes[3] = transform.xform(new_plane);
 
         ///////--- Right Plane ---///////
         new_plane = Plane(matrix[3] - matrix[0],
@@ -642,7 +640,7 @@ struct Projection {
         new_plane.normal = -new_plane.normal;
         new_plane.normalize();
 
-        planes.pushBack(p_transform.xform(new_plane));
+        planes[4] = transform.xform(new_plane);
 
         ///////--- Bottom Plane ---///////
         new_plane = Plane(matrix[3] + matrix[1],
@@ -653,12 +651,12 @@ struct Projection {
         new_plane.normal = -new_plane.normal;
         new_plane.normalize();
 
-        planes.pushBack(p_transform.xform(new_plane));
+        planes[5] = transform.xform(new_plane);
 
         return planes;
     }
 
-    bool getEndpoints(in Transform3D p_transform, Vector3* p_8points) const {
+    bool getEndpoints(in Transform3D transform, Vector3* p_8points) const {
         import std.array : staticArray;
 
         Array planes = getProjectionPlanes(Transform3D());
@@ -680,7 +678,7 @@ struct Projection {
                 planes[intersections[i][2]].as!Plane,
                 &point);
             //ERR_FAIL_COND_V(!res, false);
-            p_8points[i] = p_transform.xform(point);
+            p_8points[i] = transform.xform(point);
         }
 
         return true;
@@ -862,50 +860,48 @@ struct Projection {
         return new_matrix;
     }
 
-    Plane xform4(in Plane p_vec4) const {
+    Plane xform4(in Plane vec4) const {
         Plane ret;
 
-        ret.normal.x = matrix[0][0] * p_vec4.normal.x + matrix[1][0] * p_vec4.normal.y + matrix[2][0] * p_vec4
-            .normal.z + matrix[3][0] * p_vec4.d;
-        ret.normal.y = matrix[0][1] * p_vec4.normal.x + matrix[1][1] * p_vec4.normal.y + matrix[2][1] * p_vec4
-            .normal.z + matrix[3][1] * p_vec4.d;
-        ret.normal.z = matrix[0][2] * p_vec4.normal.x + matrix[1][2] * p_vec4.normal.y + matrix[2][2] * p_vec4
-            .normal.z + matrix[3][2] * p_vec4.d;
-        ret.d = matrix[0][3] * p_vec4.normal.x + matrix[1][3] * p_vec4.normal.y + matrix[2][3] * p_vec4.normal.z + matrix[3][3] * p_vec4
+        ret.normal.x = matrix[0][0] * vec4.normal.x + matrix[1][0] * vec4.normal.y + matrix[2][0] * vec4
+            .normal.z + matrix[3][0] * vec4.d;
+        ret.normal.y = matrix[0][1] * vec4.normal.x + matrix[1][1] * vec4.normal.y + matrix[2][1] * vec4
+            .normal.z + matrix[3][1] * vec4.d;
+        ret.normal.z = matrix[0][2] * vec4.normal.x + matrix[1][2] * vec4.normal.y + matrix[2][2] * vec4
+            .normal.z + matrix[3][2] * vec4.d;
+        ret.d = matrix[0][3] * vec4.normal.x + matrix[1][3] * vec4.normal.y + matrix[2][3] * vec4.normal.z + matrix[3][3] * vec4
             .d;
         return ret;
     }
 
-    Vector3 xform(in Vector3 p_vec3) const {
+    Vector3 xform(in Vector3 vec3) const {
         Vector3 ret;
-        ret.x = matrix[0][0] * p_vec3.x + matrix[1][0] * p_vec3.y + matrix[2][0] * p_vec3.z + matrix[3][0];
-        ret.y = matrix[0][1] * p_vec3.x + matrix[1][1] * p_vec3.y + matrix[2][1] * p_vec3.z + matrix[3][1];
-        ret.z = matrix[0][2] * p_vec3.x + matrix[1][2] * p_vec3.y + matrix[2][2] * p_vec3.z + matrix[3][2];
-        real_t w = matrix[0][3] * p_vec3.x + matrix[1][3] * p_vec3.y + matrix[2][3] * p_vec3.z + matrix[3][3];
+        ret.x = matrix[0][0] * vec3.x + matrix[1][0] * vec3.y + matrix[2][0] * vec3.z + matrix[3][0];
+        ret.y = matrix[0][1] * vec3.x + matrix[1][1] * vec3.y + matrix[2][1] * vec3.z + matrix[3][1];
+        ret.z = matrix[0][2] * vec3.x + matrix[1][2] * vec3.y + matrix[2][2] * vec3.z + matrix[3][2];
+        real_t w = matrix[0][3] * vec3.x + matrix[1][3] * vec3.y + matrix[2][3] * vec3.z + matrix[3][3];
         return ret / w;
     }
 
-    Vector4 xform(in Vector4 p_vec4) const {
+    Vector4 xform(in Vector4 vec4) const {
         return Vector4(
-            matrix[0][0] * p_vec4.x + matrix[1][0] * p_vec4.y + matrix[2][0] * p_vec4.z + matrix[3][0] * p_vec4.w,
-            matrix[0][1] * p_vec4.x + matrix[1][1] * p_vec4.y + matrix[2][1] * p_vec4.z + matrix[3][1] * p_vec4.w,
-            matrix[0][2] * p_vec4.x + matrix[1][2] * p_vec4.y + matrix[2][2] * p_vec4.z + matrix[3][2] * p_vec4.w,
-            matrix[0][3] * p_vec4.x + matrix[1][3] * p_vec4.y + matrix[2][3] * p_vec4.z + matrix[3][3] * p_vec4
-                .w);
+            matrix[0][0] * vec4.x + matrix[1][0] * vec4.y + matrix[2][0] * vec4.z + matrix[3][0] * vec4.w,
+            matrix[0][1] * vec4.x + matrix[1][1] * vec4.y + matrix[2][1] * vec4.z + matrix[3][1] * vec4.w,
+            matrix[0][2] * vec4.x + matrix[1][2] * vec4.y + matrix[2][2] * vec4.z + matrix[3][2] * vec4.w,
+            matrix[0][3] * vec4.x + matrix[1][3] * vec4.y + matrix[2][3] * vec4.z + matrix[3][3] * vec4.w);
     }
 
-    Vector4 xform_inv(in Vector4 p_vec4) const {
+    Vector4 xform_inv(in Vector4 vec4) const {
         return Vector4(
-            matrix[0][0] * p_vec4.x + matrix[0][1] * p_vec4.y + matrix[0][2] * p_vec4.z + matrix[0][3] * p_vec4.w,
-            matrix[1][0] * p_vec4.x + matrix[1][1] * p_vec4.y + matrix[1][2] * p_vec4.z + matrix[1][3] * p_vec4.w,
-            matrix[2][0] * p_vec4.x + matrix[2][1] * p_vec4.y + matrix[2][2] * p_vec4.z + matrix[2][3] * p_vec4.w,
-            matrix[3][0] * p_vec4.x + matrix[3][1] * p_vec4.y + matrix[3][2] * p_vec4.z + matrix[3][3] * p_vec4
-                .w);
+            matrix[0][0] * vec4.x + matrix[0][1] * vec4.y + matrix[0][2] * vec4.z + matrix[0][3] * vec4.w,
+            matrix[1][0] * vec4.x + matrix[1][1] * vec4.y + matrix[1][2] * vec4.z + matrix[1][3] * vec4.w,
+            matrix[2][0] * vec4.x + matrix[2][1] * vec4.y + matrix[2][2] * vec4.z + matrix[2][3] * vec4.w,
+            matrix[3][0] * vec4.x + matrix[3][1] * vec4.y + matrix[3][2] * vec4.z + matrix[3][3] * vec4.w);
     }
 
-    void scaleTranslateToFit(in AABB p_aabb) {
-        Vector3 min = p_aabb.position;
-        Vector3 max = p_aabb.position + p_aabb.size;
+    void scaleTranslateToFit(in AABB aabb) {
+        Vector3 min = aabb.position;
+        Vector3 max = aabb.position + aabb.size;
 
         matrix[0][0] = 2 / (max.x - min.x);
         matrix[1][0] = 0;
@@ -928,22 +924,22 @@ struct Projection {
         matrix[3][3] = 1;
     }
 
-    void addJitterOffset(in Vector2 p_offset) {
-        matrix[3][0] += p_offset.x;
-        matrix[3][1] += p_offset.y;
+    void addJitterOffset(in Vector2 offset) {
+        matrix[3][0] += offset.x;
+        matrix[3][1] += offset.y;
     }
 
-    void makeScale(in Vector3 p_scale) {
+    void makeScale(in Vector3 scale) {
         setIdentity();
-        matrix[0][0] = p_scale.x;
-        matrix[1][1] = p_scale.y;
-        matrix[2][2] = p_scale.z;
+        matrix[0][0] = scale.x;
+        matrix[1][1] = scale.y;
+        matrix[2][2] = scale.z;
     }
 
-    int get_pixels_per_meter(int p_for_pixel_width) const {
+    int getPixelsPerMeter(int forPixelWidth) const {
         Vector3 result = xform(Vector3(1, 0, -1));
 
-        return cast(int)((result.x * 0.5 + 0.5) * p_for_pixel_width);
+        return cast(int)((result.x * 0.5 + 0.5) * forPixelWidth);
     }
 
     Transform3D opCast(Transform3D)() const {

@@ -15,6 +15,7 @@ module godot.plane;
 
 import godot.api.types;
 import godot.vector3;
+import godot.math;
 
 import std.math;
 
@@ -37,8 +38,8 @@ struct Plane {
         return Plane(-normal, -d);
     }
 
-    Vector3 project(in Vector3 p_point) const {
-        return p_point - normal * distanceTo(p_point);
+    Vector3 project(in Vector3 point) const {
+        return point - normal * distanceTo(point);
     }
 
     void normalize() {
@@ -57,10 +58,6 @@ struct Plane {
         return p;
     }
 
-    Vector3 getAnyPoint() const {
-        return normal * d;
-    }
-
     Vector3 getAnyPerpendicularNormal() const {
         enum Vector3 p1 = Vector3(1, 0, 0);
         enum Vector3 p2 = Vector3(0, 1, 0);
@@ -77,30 +74,47 @@ struct Plane {
         return p;
     }
 
+    pragma(inline, true)
+    bool isPointOver(in Vector3 point) const {
+        return (normal.dot(point) > d);
+    }
+
+    pragma(inline, true)
+    real_t distance_to(in Vector3 point) const {
+        return (normal.dot(point) - d);
+    }
+
+    pragma(inline, true)
+    bool hasPoint(in Vector3 point, real_t tolerance = UNIT_EPSILON) const {
+        real_t dist = normal.dot(point) - d;
+        dist = abs(dist);
+        return (dist <= tolerance);
+    }
+
     /* intersections */
 
-    bool intersect3(in Plane p_plane1, in Plane p_plane2, Vector3* r_result = null) const {
-        const Plane p_plane0 = this;
-        Vector3 normal0 = p_plane0.normal;
-        Vector3 normal1 = p_plane1.normal;
-        Vector3 normal2 = p_plane2.normal;
+    bool intersect3(in Plane plane1, in Plane plane2, Vector3* result = null) const {
+        const Plane plane0 = this;
+        Vector3 normal0 = plane0.normal;
+        Vector3 normal1 = plane1.normal;
+        Vector3 normal2 = plane2.normal;
 
         real_t denom = normal0.cross(normal1).dot(normal2);
 
         if (fabs(denom) <= CMP_EPSILON)
             return false;
 
-        if (r_result) {
-            *r_result = ((normal1.cross(normal2) * p_plane0.d) +
-                    (
-                        normal2.cross(normal0) * p_plane1.d) +
-                    (normal0.cross(normal1) * p_plane2.d)) / denom;
+        if (result) {
+            *result = ( (normal1.cross(normal2) * plane0.d) +
+                        (normal2.cross(normal0) * plane1.d) +
+                        (normal0.cross(normal1) * plane2.d) ) 
+                      / denom;
         }
         return true;
     }
 
-    bool intersectsRay(in Vector3 p_from, in Vector3 p_dir, Vector3* p_intersection = null) const {
-        Vector3 segment = p_dir;
+    bool intersectsRay(in Vector3 from, in Vector3 dir, Vector3* intersection) const {
+        Vector3 segment = dir;
         real_t den = normal.dot(segment);
 
         //printf("den is %i\n",den);
@@ -108,7 +122,7 @@ struct Plane {
             return false;
         }
 
-        real_t dist = (normal.dot(p_from) - d) / den;
+        real_t dist = (normal.dot(from) - d) / den;
         //printf("dist is %i\n",dist);
 
         if (dist > CMP_EPSILON) { //this is a ray, before the emiting pos (p_from) doesnt exist
@@ -116,37 +130,45 @@ struct Plane {
         }
 
         dist = -dist;
-        if (p_intersection)
-            *p_intersection = p_from + segment * dist;
+        if (intersection)
+            *intersection = from + segment * dist;
 
         return true;
     }
 
-    bool intersectsSegment(in Vector3 p_begin, in Vector3 p_end, Vector3* p_intersection) const {
-        Vector3 segment = p_begin - p_end;
+    bool intersectsSegment(in Vector3 begin, in Vector3 end, Vector3* intersection) const {
+        Vector3 segment = begin - end;
         real_t den = normal.dot(segment);
 
         //printf("den is %i\n",den);
         if (fabs(den) <= CMP_EPSILON)
             return false;
 
-        real_t dist = (normal.dot(p_begin) - d) / den;
+        real_t dist = (normal.dot(begin) - d) / den;
         //printf("dist is %i\n",dist);
 
         if (dist < -CMP_EPSILON || dist > (1.0 + CMP_EPSILON))
             return false;
 
         dist = -dist;
-        if (p_intersection)
-            *p_intersection = p_begin + segment * dist;
+        if (intersection)
+            *intersection = begin + segment * dist;
 
         return true;
     }
 
     /* misc */
 
-    bool isAlmostLike(in Plane p_plane) const {
-        return (normal.dot(p_plane.normal) > _PLANE_EQ_DOT_EPSILON && fabs(d - p_plane.d) < _PLANE_EQ_D_EPSILON);
+    deprecated("will be removed after Q1 2024, use isEqualApprox instead")
+    alias isAlmostLike = isEqualApprox;
+
+    bool isEqualApprox(in Plane plane) const {
+	    return normal.isEqualApprox(plane.normal) && isClose(d, plane.d);
+    }
+
+    bool isEqualApproxAnySide(in Plane plane) const {
+        return (normal.isEqualApprox(plane.normal) && isClose(d, plane.d)) 
+            || (normal.isEqualApprox(-plane.normal) && isClose(d, -plane.d));
     }
 
     /+String opCast(T : String)() const
@@ -155,43 +177,39 @@ struct Plane {
 		return String(); // @Todo
 	}+/
 
-    bool isPointOver(in Vector3 p_point) const {
-        return (normal.dot(p_point) > d);
+    real_t distanceTo(in Vector3 point) const {
+        return (normal.dot(point) - d);
     }
 
-    real_t distanceTo(in Vector3 p_point) const {
-        return (normal.dot(p_point) - d);
+    this(in Vector3 normal, real_t d = 0.0) {
+        this.normal = normal;
+        this.d = d;
     }
 
-    bool hasPoint(in Vector3 p_point, real_t _epsilon = CMP_EPSILON) const {
-        real_t dist = normal.dot(p_point) - d;
-        dist = fabs(dist);
-        return (dist <= _epsilon);
-
+    this(real_t a, real_t b, real_t c, real_t d) {
+        this.normal = Vector3(a, b, c);
+        this.d = d;
     }
 
-    this(in Vector3 p_normal, real_t p_d) {
-        normal = p_normal;
-        d = p_d;
+    this(in Vector3 normal, in Vector3 point) {
+        this.normal = normal;
+        this.d = normal.dot(point);
     }
 
-    this(real_t p_a, real_t p_b, real_t p_c, real_t p_d) {
-        normal = Vector3(p_a, p_b, p_c);
-        d = p_d;
-    }
-
-    this(in Vector3 p_point, in Vector3 p_normal) {
-        normal = p_normal;
-        d = p_normal.dot(p_point);
-    }
-
-    this(in Vector3 p_point1, in Vector3 p_point2, in Vector3 p_point3, ClockDirection p_dir = ClockDirection
-            .counterclockwise) {
-        if (p_dir == ClockDirection.clockwise)
-            normal = (p_point1 - p_point3).cross(p_point1 - p_point2);
+    this(in Vector3 point1, in Vector3 point2, in Vector3 point3, ClockDirection dir = ClockDirection.clockwise) {
+        if (dir == ClockDirection.clockwise)
+            normal = (point1 - point3).cross(point1 - point2);
         else
-            normal = (p_point1 - p_point2).cross(p_point1 - p_point3);
+            normal = (point1 - point2).cross(point1 - point3);
         normal.normalize();
-        d = normal.dot(p_point1);
+        d = normal.dot(point1);
+    }
+
+    Plane opUnary(string op : "-")() const { 
+        return Plane(-normal, -d); 
+    }
+
+    bool opEquals(R)(in Plane other) const {
+        return normal == other.normal && d == other.d;
     }
 }

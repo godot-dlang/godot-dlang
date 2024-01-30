@@ -17,8 +17,11 @@ module godot.vector4;
 import godot.abi.types;
 import godot.basis;
 import godot.string;
+import godot.math;
+import godot.api.types; // CMP_EPSILON
 
 import std.math;
+import std.algorithm; // min, max, minIndex, maxIndex
 
 private bool isValidSwizzle(dstring s) {
     import std.algorithm : canFind;
@@ -122,12 +125,12 @@ struct Vector4 {
         this.w = b.w;
     }
 
-    const(real_t) opIndex(int p_axis) const {
-        return coord[p_axis];
+    const(real_t) opIndex(int axis) const {
+        return coord[axis];
     }
 
-    ref real_t opIndex(int p_axis) return {
-        return coord[p_axis];
+    ref real_t opIndex(int axis) return {
+        return coord[axis];
     }
 
     Vector4 opBinary(string op)(in Vector4 other) const
@@ -185,50 +188,93 @@ struct Vector4 {
         return cmp(this.coord[], other.coord[]);
     }
 
+    bool opEquals(in Vector4 other) const {
+        return coord[] == other.coord[];
+    }
+
+    bool isEqualApprox(in Vector4 other) const {
+        return isClose(x, other.x) 
+            && isClose(y, other.y)
+            && isClose(z, other.z)
+            && isClose(w, other.w);
+    }
+
+    bool isZeroApprox(in Vector4 other) const {
+        return isClose(x, 0) 
+            && isClose(y, 0)
+            && isClose(z, 0)
+            && isClose(w, 0);
+    }
+
+    Vector4.Axis minAxisIndex() const {
+        return cast(Axis) coord[].minIndex!();
+    }
+
+    Vector4.Axis maxAxisIndex() const {
+        return cast(Axis) coord[].maxIndex!();
+    }
+    
+    deprecated("use maxAxisIndex")
+    alias maxAxis = maxAxisIndex;
+
+    deprecated("use minAxisIndex")
+    alias minAxis = minAxisIndex;
+
+    Vector4 min(in Vector4 other) const {
+		return Vector4(.min(x, other.x), .min(y, other.y), .min(z, other.z), .min(w, other.w));
+	}
+
+	Vector4 max(in Vector4 other) const {
+		return Vector4(.max(x, other.x), .max(y, other.y), .max(z, other.z), .max(w, other.w));
+	}
+
     Vector4 abs() const {
         return Vector4(fabs(x), fabs(y), fabs(z), fabs(w));
+    }
+
+    Vector4 sign() const {
+        return Vector4(sgn(x), sgn(y), sgn(z), sgn(w));
     }
 
     Vector4 ceil() const {
         return Vector4(.ceil(x), .ceil(y), .ceil(z), .ceil(w));
     }
 
-    // doesn't makes sense
-    //Vector3 cross(in Vector3 b) const
-    //{
-    //	return Vector3(
-    //		(y * b.z) - (z * b.y),
-    //		(z * b.x) - (x * b.z),
-    //		(x * b.y) - (y * b.x)
-    //	);
-    //}
+    Vector4 floor() const {
+        return Vector4(.floor(x), .floor(y), .floor(z), .floor(w));
+    }
 
-    Vector4 linearInterpolate(in Vector4 p_b, real_t p_t) const {
+    Vector4 round() const {
+        return Vector4(.round(x), .round(y), .round(z), .round(w));
+    }
+
+    Vector4 linearInterpolate(in Vector4 b, real_t weight) const {
         return Vector4(
-            x + (p_t * (p_b.x - x)),
-            y + (p_t * (p_b.y - y)),
-            z + (p_t * (p_b.z - z)),
-            w + (p_t * (p_b.w - w)),
+            x + (weight * (b.x - x)),
+            y + (weight * (b.y - y)),
+            z + (weight * (b.z - z)),
+            w + (weight * (b.w - w)),
         );
     }
 
     alias lerp = linearInterpolate;
 
-    Vector4 cubicInterpolate(in Vector4 b, in Vector4 pre_a, in Vector4 post_b, in real_t t) const {
-        Vector4 p0 = pre_a;
-        Vector4 p1 = this;
-        Vector4 p2 = b;
-        Vector4 p3 = post_b;
+    Vector4 cubicInterpolate(in Vector4 b, in Vector4 pre_a, in Vector4 post_b, in real_t weight) const {
+        Vector4 res = this;
+        res.x = .cubicInterpolate(res.x, b.x, pre_a.x, post_b.x, weight);
+        res.y = .cubicInterpolate(res.y, b.y, pre_a.y, post_b.y, weight);
+        res.z = .cubicInterpolate(res.z, b.z, pre_a.z, post_b.z, weight);
+        res.w = .cubicInterpolate(res.w, b.w, pre_a.w, post_b.w, weight);
+        return res;
+    }
 
-        real_t t2 = t * t;
-        real_t t3 = t2 * t;
-
-        Vector4 ret;
-        ret = ((p1 * 2.0) +
-                (-p0 + p2) * t +
-                (p0 * 2.0 - p1 * 5.0 + p2 * 4 - p3) * t2 +
-                (-p0 + p1 * 3.0 - p2 * 3.0 + p3) * t3) * 0.5;
-        return ret;
+    Vector4 cubicInterpolateInTime(in Vector4 b, in Vector4 pre_a, in Vector4 post_b, const real_t weight, const real_t b_t, const real_t pre_a_t, const real_t post_b_t) const {
+        Vector4 res = this;
+        res.x = .cubicInterpolateInTime(res.x, b.x, pre_a.x, post_b.x, weight, b_t, pre_a_t, post_b_t);
+        res.y = .cubicInterpolateInTime(res.y, b.y, pre_a.y, post_b.y, weight, b_t, pre_a_t, post_b_t);
+        res.z = .cubicInterpolateInTime(res.z, b.z, pre_a.z, post_b.z, weight, b_t, pre_a_t, post_b_t);
+        res.w = .cubicInterpolateInTime(res.w, b.w, pre_a.w, post_b.w, weight, b_t, pre_a_t, post_b_t);
+        return res;
     }
 
     real_t length() const {
@@ -257,28 +303,18 @@ struct Vector4 {
         return (b - this).lengthSquared();
     }
 
+    Vector4 directionTo(in Vector4 to) const {
+        Vector4 ret = Vector4(to.x - x, to.y - y, to.z - z, to.w - w);
+        ret.normalize();
+        return ret;
+    }
+
     real_t dot(in Vector4 b) const {
         return x * b.x + y * b.y + z * b.z + w * b.w;
     }
 
-    Vector4 floor() const {
-        return Vector4(.floor(x), .floor(y), .floor(z), .floor(w));
-    }
-
     Vector4 inverse() const {
         return Vector4(1.0 / x, 1.0 / y, 1.0 / z, 1.0 / w);
-    }
-
-    int maxAxis() const {
-        import std.algorithm : maxIndex;
-
-        return cast(int) coord[].maxIndex!();
-    }
-
-    int minAxis() const {
-        import std.algorithm : minIndex;
-
-        return cast(int) coord[].minIndex!();
     }
 
     void normalize() {
@@ -299,9 +335,31 @@ struct Vector4 {
         return v;
     }
 
+    bool isNormalized() const {
+        return isClose(lengthSquared(), 1, UNIT_EPSILON);
+    }
+
+    Vector4 posmod(const real_t mod) const {
+        return Vector4(fposmod(x, mod), fposmod(y, mod), fposmod(z, mod), fposmod(w, mod));
+    }
+
+	Vector4 posmodv(in Vector4 modv) const {
+        return Vector4(fposmod(x, modv.x), fposmod(y, modv.y), fposmod(z, modv.z), fposmod(w, modv.w));
+    }
+
+    // deprecated, but keep for convenience
     void snap(real_t step) {
-        foreach (ref v; coord)
-            v = (step != 0) ? (.floor(v / step + 0.5) * step) : v;
+        x = .snapped(x, step);
+        y = .snapped(y, step);
+        z = .snapped(z, step);
+        w = .snapped(w, step);
+    }
+
+    void snap(Vector4 step) {
+        x = .snapped(x, step.x);
+        y = .snapped(y, step.y);
+        z = .snapped(z, step.z);
+        w = .snapped(w, step.w);
     }
 
     Vector4 snapped(in real_t step) const {
@@ -309,9 +367,19 @@ struct Vector4 {
         v.snap(step);
         return v;
     }
+
+    Vector4 clamp(in Vector4 min, in Vector4 max) const {
+        return Vector4(
+            .clamp(x, min.x, max.x),
+            .clamp(y, min.y, max.y),
+            .clamp(z, min.z, max.z),
+            .clamp(w, min.w, max.w));
+    }
 }
 
-// TODO: replace this stub
+
+// ################ Vector4i ##################################################
+
 struct Vector4i {
 @nogc nothrow:
 
@@ -355,6 +423,13 @@ struct Vector4i {
         this.w = b.w;
     }
 
+    this(in Vector4 b) {
+        this.x = cast(godot_int) b.x;
+        this.y = cast(godot_int) b.y;
+        this.z = cast(godot_int) b.z;
+        this.w = cast(godot_int) b.w;
+    }
+
     void opAssign(in Vector4i b) {
         this.x = b.x;
         this.y = b.y;
@@ -369,16 +444,16 @@ struct Vector4i {
         this.w = b._opaque[3];
     }
 
-    Vector3 opCast(Vector3)() const {
-        return Vector3(x, y, z);
+    Vector4 opCast(Vector4)() const {
+        return Vector4(x, y, z, w);
     }
 
-    const(godot_int) opIndex(int p_axis) const {
-        return coord[p_axis];
+    const(godot_int) opIndex(int axis) const {
+        return coord[axis];
     }
 
-    ref godot_int opIndex(int p_axis) return {
-        return coord[p_axis];
+    ref godot_int opIndex(int axis) return {
+        return coord[axis];
     }
 
     Vector4i opBinary(string op)(in Vector4i other) const
@@ -440,17 +515,31 @@ struct Vector4i {
         return Vector4(x, y, z, w);
     }
 
-    int maxAxis() const {
+    deprecated("use maxAxisIndex")
+    alias maxAxis = maxAxisIndex; 
+
+    int maxAxisIndex() const {
         import std.algorithm : maxIndex;
 
         return cast(int) coord[].maxIndex!();
     }
 
-    int minAxis() const {
+    deprecated("use minAxisIndex")
+    alias minAxis = minAxisIndex;
+
+    int minAxisIndex() const {
         import std.algorithm : minIndex;
 
         return cast(int) coord[].minIndex!();
     }
+
+    Vector4i min(in Vector4i other) const {
+		return Vector4i(.min(x, other.x), .min(y, other.y), .min(z, other.z), .min(w, other.w));
+	}
+
+	Vector4i max(in Vector4i other) const {
+		return Vector4i(.max(x, other.x), .max(y, other.y), .max(z, other.z), .max(w, other.w));
+	}
 
     void zero() {
         coord[] = 0;
@@ -464,6 +553,14 @@ struct Vector4i {
         return Vector4i(sgn(x), sgn(y), sgn(z), sgn(w));
     }
 
+    Vector4i clamp(in Vector4i min, in Vector4i max) const {
+        return Vector4i(
+			.clamp(x, min.x, max.x),
+			.clamp(y, min.y, max.y),
+			.clamp(z, min.z, max.z),
+			.clamp(w, min.w, max.w));
+    }
+
     real_t length() const {
         return sqrt(cast(double) lengthSquared());
     }
@@ -475,5 +572,13 @@ struct Vector4i {
         godot_int w2 = w * w;
 
         return x2 + y2 + z2 + w2;
+    }
+
+    int64_t distanceSquaredTo(in Vector4i to) const {
+        return (to - this).lengthSquared();
+    }
+
+    double distanceTo(in Vector4i to) const {
+        return (to - this).length();
     }
 }
