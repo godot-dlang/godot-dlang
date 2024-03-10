@@ -620,12 +620,17 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
             alias udas = getUDAs!(mixin("T." ~ pName), Singleton);
             enum Singleton uda = is(udas[0]) ? Singleton.init : udas[0];
 
-            StringName snPropName = StringName(pName);
+            alias renameAttr = getUDAs!(mixin("T." ~ pName), Rename);
+            enum Rename renamed = is(renameAttr[0]) ? Rename.init : renameAttr[0];
+            static if (renamed.name)
+                StringName snPropName = StringName(renamed.name);
+            else
+                StringName snPropName = StringName(pName);
 
             storageField = memnew!P;
             
             import godot.engine;
-            Engine.registerSingleton(snPropName, storageField);
+            Engine.registerSingleton(snPropName, storageField._godot_base);
         }
     }
 
@@ -669,7 +674,13 @@ void unregister(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
             alias udas = getUDAs!(mixin("T." ~ pName), Singleton);
             enum Singleton uda = is(udas[0]) ? Singleton.init : udas[0];
 
-            StringName snPropName = StringName(pName);
+            alias renameAttr = getUDAs!(mixin("T." ~ pName), Rename);
+            enum Rename renamed = is(renameAttr[0]) ? Rename.init : renameAttr[0];
+            static if (renamed.name)
+                StringName snPropName = StringName(renamed.name);
+            else
+                StringName snPropName = StringName(pName);
+                
             Engine.unregisterSingleton(snPropName);
             memdelete(storageField);
         }}
