@@ -214,10 +214,10 @@ struct OnInit {
         && extends!(GodotClass!Owner, Node);
 
     static OnInit makeDefault(R, Owner)() {
-        import godot.reference, godot.node, godot.resource;
+        import godot.refcounted, godot.node, godot.resource;
 
         OnInit ret;
-        static if (is(GodotClass!R : Reference))
+        static if (is(GodotClass!R : RefCounted))
             ret.autoDelete = false; // ref-counted
         static if (canAddChild!(R, Owner)) {
             ret.autoAddChild = true;

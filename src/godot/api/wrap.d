@@ -635,7 +635,16 @@ package(godot) PropertyInfo makePropertyInfo(alias T, string Name)() {
     else
         String snHint = String();
 
-    static if (Variant.variantTypeOf!T == VariantType.object) {
+    // this will probably require same fix for other conainers like TypedArray
+    alias typeRenameAttr = getUDAs!(NonRef!T, Rename); // Ref itself has no attributes
+    static if (typeRenameAttr.length)
+        enum Rename typeRenamed = typeRenameAttr[0];
+    else
+        enum Rename typeRenamed = Rename.init;
+    static if (typeRenamed.name) {
+        StringName snClassName = StringName(typeRenamed.name);
+    }
+    else static if (Variant.variantTypeOf!T == VariantType.object) {
         static if (is(T == GodotObject))
             StringName snClassName = StringName("Object");
         else static if (is(T == Ref!U, U))
