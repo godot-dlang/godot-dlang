@@ -69,8 +69,7 @@ struct Dictionary {
     }
 
     this(this) {
-        const godot_dictionary tmp = _godot_dictionary;
-        gdextension_interface_variant_new_copy(&_godot_dictionary, &tmp);
+        _godot_dictionary = _bind.new1(_godot_dictionary);
     }
 
     Dictionary opAssign(in Dictionary other) {
@@ -91,9 +90,7 @@ struct Dictionary {
     static Dictionary make(Args...)(Args args)
             if (Args.length % 2 == 0 && allSatisfy!(Variant.compatibleToGodot, Args)) {
         Dictionary ret = void;
-        //gdextension_interface_dictionary_new(&ret._godot_dictionary);
-        gdextension_interface_get_variant_from_type_constructor(GDEXTENSION_VARIANT_TYPE_DICTIONARY)(
-            cast(GDExtensionTypePtr)&ret._godot_dictionary, null);
+        gdextension_interface_variant_get_ptr_constructor(GDEXTENSION_VARIANT_TYPE_DICTIONARY, 0)(&ret._godot_dictionary, null);
         /+
 		BUG: wtf? when using static foreach(i; 0..Args.length/2):
 		Error: cannot use operator ~= in @nogc delegate godot.dictionary.Dictionary.make!(GodotStringLiteral!"name", String, GodotStringLiteral!"type", int).make.__lambda6
@@ -164,16 +161,12 @@ struct Dictionary {
     }
 
     void opIndexAssign(K, V)(in auto ref V value, in auto ref K key)
-            if (
-                (is(K : Variant) || Variant.compatibleToGodot!K) &&
-            (is(V
-            : Variant) || Variant.compatibleToGodot!V)) {
+            if ((is(K : Variant) || Variant.compatibleToGodot!K) &&
+                (is(V : Variant) || Variant.compatibleToGodot!V)) {
         const Variant k = key;
         const Variant v = value;
-        auto tmp = gdextension_interface_dictionary_operator_index(&_godot_dictionary, &k._godot_variant);
-        Variant t = void;
-        t._godot_variant = tmp;
-        t = value;
+        Variant* t = cast(Variant*) gdextension_interface_dictionary_operator_index(&_godot_dictionary, &k._godot_variant);
+        *t = v;
     }
 
     int size() const {
@@ -181,17 +174,15 @@ struct Dictionary {
         return cast(int) _bind.size;
     }
 
+    // compatibility method kept from Godot 3, use JSON.stringify(dict) for more control
     String toJson() const {
         import godot.json;
         import godot.api;
 
         Variant v = void;
-        v._godot_variant = *cast(godot_variant*)&this;
-        Ref!JSON json = memnew!JSON();
-        return json.stringify(v, gs!(`""`), true, false);
-
-        //godot_string s = gdextension_interface_dictionary_to_json(&_godot_dictionary);
-        //return cast(String)s;
+        gdextension_interface_get_variant_from_type_constructor(GDEXTENSION_VARIANT_TYPE_DICTIONARY)(
+            &v, cast(GDExtensionTypePtr)&_godot_dictionary);
+        return JSON.stringify(v, gs!(""), true, false);
     }
 
     Array values() const {
@@ -201,6 +192,7 @@ struct Dictionary {
     }
 
     ~this() {
-        gdextension_interface_variant_destroy(&_godot_dictionary);
+        //gdextension_interface_variant_destroy(&_godot_dictionary);
+        _bind._destructor();
     }
 }
