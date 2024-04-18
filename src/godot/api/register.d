@@ -429,11 +429,7 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
                     ~ " must be static. Otherwise it would take up memory in every instance of " ~ T
                     .stringof);
 
-            static if (hasUDA!(s, Rename))
-                enum string externalName = godotName!s;
-            else
-                enum string externalName = (fullyQualifiedName!s).replace(".", "_");
-
+            enum string externalName = godotName!s;
 
             PropertyInfo[Parameters!s.length] propData;
             GDExtensionPropertyInfo[Parameters!s.length] pinfo;
@@ -450,8 +446,12 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
                 static if (PARAMS.length > 0) {
                     // "(String message)" gets split in half, and then chop out closing parenthesis
                     // "(String message, String test)" handled as well
+                    // static if checks if there is a parameter name, otherwise it will use generic arg# name
                     //pragma(msg, PARAMS[i..i+1].stringof.split()[1][0..$-1]);
-                    enum string ArgName = PARAMS[i..i+1].stringof.split()[1][0..$-1];
+                    static if (PARAMS[i..i+1].stringof.split().length > 1)
+                        enum string ArgName = PARAMS[i..i+1].stringof.split()[1][0..$-1];
+                    else
+                        enum string ArgName = "arg" ~ i.stringof;
                 }
                 else {
                     enum string ArgName = "arg" ~ i.stringof;
