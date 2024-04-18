@@ -230,7 +230,16 @@ extern (C) package(godot) void* createFunc(T)(void* data) //nothrow @nogc
     import std.conv;
 
     static assert(is(T == class));
-    static assert(__traits(compiles, new T()), "script class " ~ T.stringof ~ " must have default constructor");
+
+    // abstract classes can't be instantiated
+    static if (__traits(isAbstractClass, T)) {
+        static assert(0, "Abstract classes is not yet supported");
+        printerr("Attempted to instantiate abstract class ", godotName!T);
+        return null;
+    }
+    else {
+        static assert(__traits(compiles, new T()), "script class " ~ T.stringof ~ " must have default constructor");
+    }
     static import godot;
 
     import std.exception;
@@ -244,7 +253,11 @@ extern (C) package(godot) void* createFunc(T)(void* data) //nothrow @nogc
 
     enum allocSize = __traits(classInstanceSize, T);
     T t = cast(T) gdextension_interface_mem_alloc(allocSize);
-    emplace(t);
+
+    // isAbstractClass check above will not prevent codegen for this part,
+    // so do this in order to allow compilation to work and to avoid putting whole function under static if
+    static if (!__traits(isAbstractClass, T))
+        emplace(t);
 
 
     //static if(extendsGodotBaseClass!T)
@@ -311,7 +324,8 @@ extern(C) package(godot) GDExtensionClassInstancePtr recreateFunc(T)(void* p_cla
         enum allocSize = __traits(classInstanceSize, T);
         T o = cast(T) gdextension_interface_mem_alloc(allocSize);
         if (o) {
-            emplace(o);
+            static if (!__traits(isAbstractClass, T)) // allows it to build, abstract classes can't be instantiated anyway
+                emplace(o);
 
             // set owning godot object and instance bindings for new D instance to the same Godot object
             o._gdextension_handle = godot_object(p_object);
