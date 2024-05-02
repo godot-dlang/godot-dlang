@@ -217,11 +217,15 @@ mixin template GodotNativeLibrary(string symbolPrefix, Args...) {
         import godot.api.output;
         import godot.api.traits;
 
+        // this will only check if classes share inheritance chain, probably ok 
+        // but maybe also need to check properties/method parameters.
+        // note the order is reversed since we de-initilizing here
+        enum SortHierarchy(C1, C2) = staticIndexOf!(C2, BaseClassesTuple!C1) == -1 ? 1 : -1;
 
         // TODO: this will likely crash in a real project, classes has to be sorted in such way that
         // descendants unregistered before parent
         alias classList = staticMap!(fileClassesAsLazyImports, aliasSeqOf!(_GODOT_projectInfo.files));
-        static foreach (C; NoDuplicates!(classList, Filter!(is_, Args))) {
+        static foreach (C; NoDuplicates!(classList, staticSort!(SortHierarchy, Filter!(is_, Args)))) {
             static if (is(C)) {
                 static if (extendsGodotBaseClass!C) {
                     if (level == GDEXTENSION_INITIALIZATION_SCENE)
@@ -266,7 +270,13 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
 
     static if (BaseClassesTuple!T.length == 2) // base class is GodotScript; use owner
     {
-            alias Base = typeof(T._godot_base);
+            // classes version may fail when deriving GodotObject directly as it doesn't have _godot_base field
+            // if you change this then also see unregister()
+            version(USE_CLASSES){
+                alias Base = BaseClassesTuple!T[0];
+            } else {
+                alias Base = typeof(T._godot_base);
+            }
             alias baseName = Base._GODOT_internal_name;
     }
     else // base class is another D script
@@ -300,6 +310,11 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
     static if (isGodot42orNewer) {
         class_info.recreate_instance_func = &recreateFunc!T;
         class_info.is_exposed = true; // TODO: add some control over what class should be exposed
+        class_info.is_abstract = __traits(isAbstractClass, T);
+    }
+
+    static if (!isGodot42orNewer) {
+        static assert(!__traits(isAbstractClass, T), "abstract class support requires godot version 4.2 or higher");
     }
 
     
@@ -647,7 +662,13 @@ void unregister(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
 
     static if (BaseClassesTuple!T.length == 2) // base class is GodotScript; use owner
     {
-        alias Base = typeof(T._godot_base);
+        // classes version may fail when deriving GodotObject directly as it doesn't have _godot_base field
+        // if you change this also see register()
+        version(USE_CLASSES){
+            alias Base = BaseClassesTuple!T[0];
+        } else {
+            alias Base = typeof(T._godot_base);
+        }
         alias baseName = Base._GODOT_internal_name;
     }
     else // base class is another D script

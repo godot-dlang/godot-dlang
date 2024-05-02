@@ -532,9 +532,59 @@ class RefTest : GodotScript!RefCounted {
     }
 }
 
+import godotversion = godot.apiinfo;
+
+// we assume this is godot 4 anyways, and we don't want the test to fail in CI
+static if (godotversion.VERSION_MINOR > 1) {
+    abstract class SomeBaseClass : GodotScript!GodotObject {
+        version (USE_CLASSES) {
+            // nothing to do
+        }
+        else {
+            // note that this is done implicitly in GodotScript wrapper, but you can do that explicitly
+            alias _godot_base this;
+        }
+
+        @Property int foo;
+
+        @Method void doSomething() {}
+    }
+}
+else {
+    class SomeBaseClass : GodotScript!GodotObject {
+        // add fallback for base inheritance
+        version (USE_CLASSES) {
+            // nothing to do
+        }
+        else {
+            // note that this is done implicitly in GodotScript wrapper, but you can do that explicitly
+            alias _godot_base this;
+        }
+
+        @Property int foo;
+
+        @Method void doSomething() {}
+    }
+}
+
+class SomeConcreteClass : SomeBaseClass {
+    @Property float bar;
+
+    // FIXME: fix this
+    // godot-dlang.lib(types.obj) : warning LNK4255: library contain multiple objects of the same name; linking object as if no debug info
+    @Method
+    override void doSomething() {
+        foo = 42; // test expects it to be 42
+        print("i'm concrete class");
+    }
+}
+
 // register classes, initialize and terminate D runtime
 mixin GodotNativeLibrary!(
     "test",
     Test,
     RefTest,
+
+    SomeBaseClass,
+    SomeConcreteClass
 );
