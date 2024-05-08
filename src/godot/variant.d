@@ -319,8 +319,12 @@ struct Variant {
         GodotObject o = cast()(as!GodotObject);
         version (USE_CLASSES)
           return cast(T) o;
-        else
-          return o.as!T;
+        else {
+          if (o)
+            return o.as!T;
+          else
+            return T.init;
+        }
     }
 
     ///
