@@ -217,7 +217,7 @@ mixin template GodotNativeLibrary(string symbolPrefix, Args...) {
         import godot.api.output;
         import godot.api.traits;
 
-        // this will only check if classes share inheritance chain, probably ok 
+        // this will only check if classes share inheritance chain, probably ok
         // but maybe also need to check properties/method parameters.
         // note the order is reversed since we de-initilizing here
         enum SortHierarchy(C1, C2) = staticIndexOf!(C2, BaseClassesTuple!C1) == -1 ? 1 : -1;
@@ -317,7 +317,7 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
         static assert(!__traits(isAbstractClass, T), "abstract class support requires godot version 4.2 or higher");
     }
 
-    
+
 
     // This function will be called for any virtual script method, the returned pointer is then cached internally by godot
     extern (C) static GDExtensionClassCallVirtual getVirtualFn(void* p_userdata, const GDExtensionStringNamePtr p_name) {
@@ -329,7 +329,7 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
         auto name = *cast(StringName*) p_name;
         static if (__traits(compiles, __traits(getMember, T, "_ready"))) {
             if (name == StringName("_ready")) {
-                return cast(GDExtensionClassCallVirtual) 
+                return cast(GDExtensionClassCallVirtual)
                     &OnReadyWrapper!(T, __traits(getMember, T, "_ready")).callOnReady;
             }
         }
@@ -384,7 +384,7 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
 
             methodInfo.defaultArgsNum, //uint32_t default_argument_count;
             methodInfo.defaultArgs, //GDExtensionVariantPtr *default_arguments;
-        
+
         };
         gdextension_interface_classdb_register_extension_class_method(lib, cast(GDExtensionStringNamePtr) snClass, &mi);
         // cache StringName for comparison later on
@@ -440,9 +440,6 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
     static foreach (sName; godotSignals!T) {
         {
             alias s = Alias!(mixin("T." ~ sName));
-            static assert(hasStaticMember!(T, sName), "Signal declaration " ~ fullyQualifiedName!s
-                    ~ " must be static. Otherwise it would take up memory in every instance of " ~ T
-                    .stringof);
 
             enum string externalName = godotName!s;
 
@@ -483,10 +480,10 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
 
             StringName snExternalName = StringName(externalName);
             gdextension_interface_classdb_register_extension_class_signal(
-                lib, 
-                cast(GDExtensionStringNamePtr) snClass, 
-                cast(GDExtensionStringNamePtr) snExternalName, 
-                pinfo.ptr, 
+                lib,
+                cast(GDExtensionStringNamePtr) snClass,
+                cast(GDExtensionStringNamePtr) snExternalName,
+                pinfo.ptr,
                 Parameters!s.length
             );
         }
@@ -513,7 +510,7 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
 
             PropertyInfo propData = makePropertyInfo!(P, pName)();
             GDExtensionPropertyInfo pinfo;
-            
+
             pinfo.name = cast(GDExtensionStringNamePtr) propData.snName;
             pinfo.class_name = cast(GDExtensionStringNamePtr) propData.snClassName;
             pinfo.type = cast(GDExtensionVariantType) propData.typeKind;
@@ -538,10 +535,10 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
             StringName snSetProp = StringName(set_prop);
             StringName snGetProp = StringName(get_prop);
             gdextension_interface_classdb_register_extension_class_property(
-                lib, 
-                cast(GDExtensionStringNamePtr) snClass, 
-                &pinfo, 
-                cast(GDExtensionStringNamePtr) snSetProp, 
+                lib,
+                cast(GDExtensionStringNamePtr) snClass,
+                &pinfo,
+                cast(GDExtensionStringNamePtr) snSetProp,
                 cast(GDExtensionStringNamePtr) snGetProp
             );
         }
@@ -579,11 +576,11 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
             StringName snSetProp = StringName(set_prop);
             StringName snGetProp = StringName(get_prop);
             gdextension_interface_classdb_register_extension_class_property(
-                lib, 
-                cast(GDExtensionStringNamePtr) snClass, 
-                &pinfo, 
-                cast(GDExtensionStringNamePtr) snSetProp, 
-                cast(GDExtensionStringNamePtr) snGetProp 
+                lib,
+                cast(GDExtensionStringNamePtr) snClass,
+                &pinfo,
+                cast(GDExtensionStringNamePtr) snSetProp,
+                cast(GDExtensionStringNamePtr) snGetProp
             );
         }
     }
@@ -596,10 +593,10 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
                 mixin("StringName snEnum" ~ i.stringof ~ " = StringName(__traits(identifier, E));");
                 mixin("StringName snVal" ~ i.stringof ~ "= StringName(ev);");
                 gdextension_interface_classdb_register_extension_class_integer_constant(
-                    lib, 
-                    cast(GDExtensionStringNamePtr) snClass, 
-                    cast(GDExtensionStringNamePtr) mixin("snEnum"~i.stringof), 
-                    cast(GDExtensionStringNamePtr) mixin("snVal"~i.stringof), 
+                    lib,
+                    cast(GDExtensionStringNamePtr) snClass,
+                    cast(GDExtensionStringNamePtr) mixin("snEnum"~i.stringof),
+                    cast(GDExtensionStringNamePtr) mixin("snVal"~i.stringof),
                     cast(int) __traits(getMember, E, ev), // constant value
                     false // is a bitfield constant?
                 );
@@ -614,11 +611,11 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
             // FIXME: static foreach scope complains about duplicate names
             mixin("StringName snProp" ~ pName ~ " = StringName(pName);");
             gdextension_interface_classdb_register_extension_class_integer_constant(
-                lib, 
-                cast(GDExtensionStringNamePtr) snClass, 
-                cast(GDExtensionStringNamePtr) stringName(), 
-                cast(GDExtensionStringNamePtr) mixin("snProp"~pName), 
-                cast(int) E, 
+                lib,
+                cast(GDExtensionStringNamePtr) snClass,
+                cast(GDExtensionStringNamePtr) stringName(),
+                cast(GDExtensionStringNamePtr) mixin("snProp"~pName),
+                cast(int) E,
                 false
             );
         }
@@ -643,7 +640,7 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
                 StringName snPropName = StringName(pName);
 
             storageField = memnew!P;
-            
+
             import godot.engine;
             Engine.registerSingleton(snPropName, storageField._godot_base);
         }
@@ -701,7 +698,7 @@ void unregister(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
                 StringName snPropName = StringName(renamed.name);
             else
                 StringName snPropName = StringName(pName);
-                
+
             Engine.unregisterSingleton(snPropName);
             memdelete(storageField);
         }}
