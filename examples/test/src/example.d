@@ -145,6 +145,11 @@ class Test : GodotScript!Label {
     @Signal @Rename("send_message")
     static void function(String message) sendMessage;
 
+    /// Another way to define signal by using regular method, can be useful for cleaner API designs
+    @Signal void anotherSignal(int v) {
+        emitSignal("another_signal", v);
+    }
+
 version(USE_CLASSES) {
 
     @Method
@@ -175,6 +180,9 @@ version(USE_CLASSES) {
         emitSignal("send_message", "Some text sent by a signal");
         // alternative syntax using types instead of plain string
         emit!sendMessage("Some text sent by a signal");
+        // anotherSignal can be invoked as above, 
+        // or as in this case by just calling D function that emits signal
+        anotherSignal(42);
 
         // internal inheritance test, _godot_base is a struct serving as a base interface.
         // this is an implementation detail, users don't need to use it at all.

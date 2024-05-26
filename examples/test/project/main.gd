@@ -1,5 +1,6 @@
 extends Node
 
+var anotherSignalOk: bool
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
@@ -34,3 +35,12 @@ func _process(delta):
 func _on_label_send_message(arg0):
 	print("send_message received: ", arg0)
 	$Panel/Label/One/Looooong/Incredibly/Unbroken/Node/Path/Label2.set_text(arg0)
+
+
+func _on_label_another_signal(v):
+	assert(v == 42)
+	print("another signal called with value: ", v)
+	anotherSignalOk = true
+
+func _exit_tree():
+	assert(anotherSignalOk, "another signal was never called")

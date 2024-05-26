@@ -22,10 +22,15 @@ jobs:
         flavor: ['structs', 'classes']
 
     steps:
-    - uses: actions/checkout@v3
-    - uses: dlang-community/setup-dlang@4c99aa991ce7d19dd3064de0a4f2f6b2f152e2d7
+    - uses: actions/checkout@v4
+    - uses: dlang-community/setup-dlang@v1
       with:
         compiler: ldc-latest
+    - uses: dsaltares/fetch-gh-release-asset@master
+      with:
+        repo: 'godotengine/godot'
+        version: 'tags/4.2.2-stable'
+        file: 'Godot_v4.2.2-stable_linux.x86_64.zip'
         
     - name: 'Godot doesnt works without X server'
       run: export DISPLAY=:99
@@ -33,10 +38,9 @@ jobs:
 
     - name: 'Get godot & dump api'
       run: |
-        curl -O https://downloads.tuxfamily.org/godotengine/4.2/beta3/Godot_v4.2-beta3_linux.x86_64.zip
         sudo apt-get install -y unzip
-        unzip Godot_v4.2-beta3_linux.x86_64.zip
-        export GDEXE=./Godot_v4.2-beta3_linux.x86_64
+        unzip Godot_v4.2.2-stable_linux.x86_64.zip
+        export GDEXE=./Godot_v4.2.2-stable_linux.x86_64
         echo "GDEXE=$GDEXE" >> $GITHUB_ENV
         $GDEXE --headless --dump-extension-api
       

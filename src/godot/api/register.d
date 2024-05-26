@@ -440,9 +440,20 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
     static foreach (sName; godotSignals!T) {
         {
             alias s = Alias!(mixin("T." ~ sName));
-            static assert(hasStaticMember!(T, sName), "Signal declaration " ~ fullyQualifiedName!s
-                    ~ " must be static. Otherwise it would take up memory in every instance of " ~ T
-                    .stringof);
+
+            // Signals can be a regular D methods, but having both godot method and signal with same name is not allowed
+            // plain D method can be useful to provide uniform API, 
+            //   e.g. emit signal in D code by calling function with same name
+            static assert(!hasUDA!(s, Method), "Signal with @Method attribute is not allowed: " ~ fullyQualifiedName!s ~ " at "
+                ~ format!"%s(%d,%d)"(__traits(getLocation, s))
+            );
+
+            // When signal defined as a delegate make sure it is made static for efficiency reasons
+            static if (isFunctionPointer!s || isDelegate!s) {
+                static assert(hasStaticMember!(T, sName), "Signal declaration " ~ fullyQualifiedName!s
+                        ~ " must be static. Otherwise it would take up memory in every instance of " ~ T
+                        .stringof);
+            }
 
             enum string externalName = godotName!s;
 
