@@ -138,8 +138,7 @@ package(godot) void initialize(T)(T t) if (extendsGodotBaseClass!T) {
 }
 
 package(godot) void finalize(T)(T t) if (extendsGodotBaseClass!T) {
-    version (USE_CLASSES)
-      destroy(t);
+    destroy(t);
 }
 
 /++

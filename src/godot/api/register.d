@@ -509,9 +509,9 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
     static foreach (pName; godotPropertyNames!T) {
         {
             alias getterMatches = Filter!(ApplyLeft!(matchName, pName), godotPropertyGetters!T);
-            static assert(getterMatches.length <= 1); /// TODO: error message
+            static assert(getterMatches.length <= 1, format!"multiple functions matches getter type for property '%s.%s'"(__traits(identifier, T), pName));
             alias setterMatches = Filter!(ApplyLeft!(matchName, pName), godotPropertySetters!T);
-            static assert(setterMatches.length <= 1);
+            static assert(setterMatches.length <= 1, format!"multiple functions matches setter type for property '%s.%s'"(__traits(identifier, T), pName));
 
             static if (getterMatches.length)
                 alias P = NonRef!(ReturnType!(getterMatches[0]));
