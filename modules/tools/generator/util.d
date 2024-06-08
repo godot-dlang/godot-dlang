@@ -691,6 +691,7 @@ string escapeDType(string s, string godotType = "") {
         "body",
         "debug",
         "toString", // Object.toString overload
+        "synchronized",
     );
     switch (s) {
     case "Object":
