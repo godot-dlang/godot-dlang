@@ -183,6 +183,7 @@ version(USE_CLASSES) {
         // anotherSignal can be invoked as above, 
         // or as in this case by just calling D function that emits signal
         anotherSignal(42);
+        emit!anotherSignal(cast(int) 42.0);
 
         // internal inheritance test, _godot_base is a struct serving as a base interface.
         // this is an implementation detail, users don't need to use it at all.

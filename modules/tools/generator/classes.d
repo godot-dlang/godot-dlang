@@ -94,6 +94,15 @@ class Constructor : GodotMethod {
 //alias BuiltinMembers = CtorArguments;
 alias BuiltinMembers = GodotArgument;
 
+
+alias SignalArgument = GodotArgument;
+
+class GodotSignal {
+    string name;
+    @serdeOptional
+    SignalArgument[] arguments;
+}
+
 final class GodotClass {
     Type name;
     @serdeOptional @serdeKeys("inherits", "base_class") Type base_class;
@@ -106,6 +115,7 @@ final class GodotClass {
     @serdeOptional GodotMethod[] methods;
     @serdeOptional GodotProperty[] properties;
     @serdeOptional GodotEnum[] enums;
+    @serdeOptional GodotSignal[] signals;
 
     // built-in types only
     @serdeIgnore bool isBuiltinClass;
@@ -256,6 +266,29 @@ final class GodotClass {
                     addUsedClass(c);
             } else if (pType !is name) {
                 addUsedClass(pType);
+            }
+        }
+        foreach (sig; signals) {
+            foreach (arg; sig.arguments) {
+                auto ty = arg.type;
+                if (ty.isMetaType) {
+                    auto c = cast() ty.stripMeta;
+                    // often a meta type is a nested type like enum or bitfield
+                    if (c && c.getParentType()) {
+                        c = c.getParentType();
+                    }
+
+                    // superbelko: i really don't like this one...
+                    // deals with global enums, just skip it as it is already imported by default
+                    if ((ty.isEnum || ty.isBitfield) && c && !ty.godotType.canFind('.'))
+                        continue;
+
+                    if (c && c !is name)
+                        if (ty !is c) // ugh...
+                            addUsedClass(c);
+                } else if (ty !is name) {
+                    addUsedClass(ty);
+                }
             }
         }
         //assert(!used_classes.canFind(name));
@@ -438,7 +471,7 @@ public import godot.classdb;`;
             ret ~= "\t/// Warning: The enum " ~ e.dType ~ " is missing from Godot's script API; using a non-typesafe int instead.\n";
             ret ~= "\tdeprecated(\"The enum " ~ e.dType ~ " is missing from Godot's script API; using a non-typesafe int instead.\")\n";
             string shortName = e.dType[e.dType.countUntil(".") + 1 .. $];
-            ret ~= "\talias " ~ shortName ~ " = int;\n";
+            ret ~= "\talias " ~ shortName ~ " = long;\n";
         }
 
         if (!isBuiltinClass && constants.length) {
@@ -456,6 +489,24 @@ public import godot.classdb;`;
                     constant.value) ~ ",\n";
             }
             ret ~= "\t}\n";
+        }
+
+        foreach(sig; signals) {
+            ret ~= "\t/// \n";
+            ret ~= "\t@Signal ";
+            // well, that's not needed because emit will take care of it
+            // and user signals should match naming conventions too
+            //
+            //if (sig.name.snakeToCamel.escapeDType != sig.name)
+            //    ret ~= "@Rename(\"" ~ sig.name ~ "\") ";
+            ret ~= "static void delegate(";
+            foreach (i, arg; sig.arguments) {
+                if (i)
+                    ret ~= ", ";
+                ret ~= arg.type.dType ~ " " ~ arg.name.snakeToCamel.escapeDType;
+            }
+            ret ~= ") " ~ sig.name.snakeToCamel.escapeDType;
+            ret ~= ";\n";
         }
 
         // signal emit() helper, structs version have emit() defined in GodotScript wrapper

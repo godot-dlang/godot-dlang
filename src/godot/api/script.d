@@ -27,12 +27,31 @@ class GodotScript(Base) if (isGodotBaseClass!Base) {
 
     /// Helper function that provides typesafe way of emitting signals using 'emit!signal()' syntax
     GodotError emit(alias Sig, Args...)(Args args) if (hasUDA!(Sig, Signal)) {
-        static assert(
-            // methods with String parameters has helpers that takes regular D strings
-            __traits(isSame, Parameters!Sig, ReplaceAll!(string, String, Args)), 
-            "Can't call signal `" ~ __traits(identifier, Sig) ~ Parameters!Sig.stringof ~ "` with parameters " ~ Args.stringof
-        ); 
-
+        void ohno()() {
+            static assert(
+                false, "Can't call signal `" ~ __traits(identifier, Sig) ~ Parameters!Sig.stringof ~ "` with parameters " ~ Args.stringof
+            );
+        }
+        alias pointerOf(alias T) = T*;
+        // careful there, param is a signal argument, Args[i] is a passed value
+        static foreach(i, param; Parameters!Sig) {
+            // happy path, parameter matches argument type, yay
+            static if (is(Args[i] == param)) {
+                // do nothing
+            }
+            // check if parameter is string
+            else static if (is(param == String) 
+                            && !(is(Args[i] : string) || is(Args[i] == String))) {
+                ohno!();
+            }
+            // parameter is base struct script and should take a pointer as well
+            else static if (isGodotBaseClass!param
+                            && (is(isPointer!(Args[i])) || is(Args[i] == typeof(null)))
+                            && !is(Args[i] : pointerOf!param)) {
+                            //&& !is(Args[i] == typeof(null))) {
+                ohno!();
+            }
+        }
         return emitSignal(godotName!Sig, args);
     }
 
