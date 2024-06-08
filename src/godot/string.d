@@ -44,8 +44,8 @@ struct String {
         void* s;
     }
 
-    // TODO: deal with union problem
-    ref String_Bind _bind() const { return *cast(String_Bind*) &this;}
+    // TODO: deal with union problem so this can be removed
+    ref String_Bind _bind() const { return *cast(String_Bind*) &s; }
 
     package(godot) _String _string;
     alias _string this;
@@ -76,22 +76,6 @@ struct String {
     }
 
     /++
-	wchar_t constructor. S can be a slice or a null-terminated pointer.
-	+/
-    this(S)(in S str) if (isImplicitlyConvertible!(S, const(wchar_t)[]) ||
-                          isImplicitlyConvertible!(S, const(wchar_t)*)) {
-        static if (isImplicitlyConvertible!(S, const(wchar_t)[])) {
-            const(wchar_t)[] contents = str;
-            gdextension_interface_string_new_with_wide_chars_and_len(&_godot_string, contents.ptr, cast(int) contents.length);
-        } else {
-            import core.stdc.wchar_ : wcslen;
-
-            const(wchar_t)* contents = str;
-            gdextension_interface_string_new_with_wide_chars_and_len(&_godot_string, contents, cast(int) wcslen(contents));
-        }
-    }
-
-    /++
 	UTF-8 constructor. S can be a slice (like `string`) or a null-terminated pointer.
 	+/
     this(S)(in S str) if (isImplicitlyConvertible!(S, const(char)[]) ||
@@ -105,6 +89,56 @@ struct String {
             const(char)* contents = str;
             gdextension_interface_string_new_with_utf8_chars(&_godot_string, contents);
         }
+    }
+
+    /++
+	UTF-16 constructor. S can be a slice or a null-terminated pointer.
+	+/
+    // NOTE: it SHOULD be compatible with windows wide strings, 
+    //    but there is also explicit static factory method see String.fromWideChars() for them
+    this(S)(in S str) if (isImplicitlyConvertible!(S, const(wchar)[]) ||
+                          isImplicitlyConvertible!(S, const(wchar)*)) {
+        static if (isImplicitlyConvertible!(S, const(wchar)[])) {
+            const(wchar_t)[] contents = str;
+            gdextension_interface_string_new_with_utf16_chars_and_len(&_godot_string, contents.ptr, cast(int) contents.length);
+        } else {
+            const(wchar)* contents = str;
+            gdextension_interface_string_new_with_utf16_chars(&_godot_string, contents);
+        }
+    }
+
+    /++
+	UTF-32 constructor. S can be a slice (like `dstring`) or a null-terminated pointer.
+	+/
+    this(S)(in S str) if (isImplicitlyConvertible!(S, const(dchar)[]) ||
+                          isImplicitlyConvertible!(S, const(dchar)*)) {
+        // FIXME: check Variant where constructed String immediately freed (for example in Array.make due to variant releasing reference)
+        // this prevents enabling string destructor!!!
+        static if (isImplicitlyConvertible!(S, const(dchar)[])) {
+            const(dchar)[] contents = str;
+            gdextension_interface_string_new_with_utf32_chars_and_len(&_godot_string, cast(char32_t*) contents.ptr, cast(int) contents.length);
+        } else {
+            const(dchar)* contents = str;
+            gdextension_interface_string_new_with_utf32_chars(&_godot_string, cast(char32_t*) contents);
+        }
+    }
+
+    /++
+	Compatibility method that takes C/C++ wide strings. S can be a slice or a null-terminated pointer.
+	+/
+    String fromWideChars(S)(in S str) if (isImplicitlyConvertible!(S, const(wchar_t)[]) ||
+                                          isImplicitlyConvertible!(S, const(wchar_t)*)) {
+        godot_string _string;
+        static if (isImplicitlyConvertible!(S, const(wchar_t)[])) {
+            const(wchar_t)[] contents = str;
+            gdextension_interface_string_new_with_wide_chars_and_len(&_string, contents.ptr, cast(int) contents.length);
+        } else {
+            import core.stdc.wchar_ : wcslen;
+
+            const(wchar_t)* contents = str;
+            gdextension_interface_string_new_with_wide_chars_and_len(&_string, contents, cast(int) wcslen(contents));
+        }
+        return String(_string);
     }
 
     void _defaultCtor() {
@@ -162,10 +196,11 @@ struct String {
         return *gdextension_interface_string_operator_index(cast(godot_string*)&_godot_string, cast(int) idx);
     }
 
-    /// Returns the length of the wchar_t array, minus the zero terminator.
+    /// Returns the length of the internal string array length, minus the zero terminator.
     size_t length() const {
-        //return _bind.length(); // bug: infinite recursion
-        return cast(size_t) gdextension_interface_string_to_utf8_chars(&_godot_string, null, 0);
+        // for curious:
+        //     string.length() and gdextension_interface_string_to_utf32_chars(this, null, 0) is basically same thing
+        return _bind.length();
     }
 
     /// Returns: $(D true) if length is 0
@@ -227,19 +262,15 @@ struct String {
         _godot_string = tmp;
     }
 
-    /// Returns a pointer to the wchar_t data. Always zero-terminated.
+    /// Returns a pointer to the string data.
     immutable(char32_t)* ptr() const {
         return cast(immutable(char32_t)*) gdextension_interface_string_operator_index_const(
             &_godot_string, 0);
     }
 
-    /// Returns a slice of the wchar_t data without the zero terminator.
-    immutable(wchar_t)[] data() const {
-        import std.conv : to;
-        version(Windows)
-            return cast(typeof(return)) to!wstring(cast(dchar[])(ptr[0 .. length]));
-        else
-            return cast(typeof(return)) cast(dchar[])(ptr[0 .. length]);
+    /// Returns a slice of the string data without the zero terminator.
+    immutable(dchar)[] data() const {
+        return cast(typeof(return)) cast(dchar[])(ptr[0 .. length]);
     }
 
     alias toString = data;

@@ -101,12 +101,12 @@ struct NodePath {
     /// Splits a NodePath into a main node path and a property subpath (starting
     /// with a ':'). The second element is left empty if there is no property.
     NodePath[2] split() const {
-        static immutable wchar_t colon = ':';
+        static immutable dchar colon = ':';
         NodePath[2] ret;
         if (_node_path == godot_node_path.init)
             return ret;
         String path = str();
-        immutable(wchar_t)[] data = path.data();
+        immutable(dchar)[] data = path.data();
         if (data.length == 0)
             return ret;
         if (data[0] == colon) {
@@ -115,8 +115,12 @@ struct NodePath {
         }
 
         ptrdiff_t colonIndex = 0;
+        
+        // Superbelko: since godot string internally stores char32_t and due to recent issues 
+        //     with wchar_t it seems we can remove this completely
         // Windows requires UTF-16 decoding to find the ':'
-        static if (is(wchar_t == wchar)) {
+        //static if (is(dchar == wchar)) {
+        version(none) {
             import utf_bc;
 
             enum TextFormat gdFormat = TextFormat.UTF_16;
