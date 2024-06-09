@@ -247,6 +247,7 @@ enum godot_variant_type {
     GODOT_VARIANT_TYPE_PACKED_VECTOR2_ARRAY,
     GODOT_VARIANT_TYPE_PACKED_VECTOR3_ARRAY,
     GODOT_VARIANT_TYPE_PACKED_COLOR_ARRAY,
+    GODOT_VARIANT_TYPE_PACKED_VECTOR4_ARRAY,
 }
 
 enum godot_variant_call_error_error {
@@ -381,6 +382,10 @@ struct godot_packed_vector3_array {
 }
 
 struct godot_packed_vector3i_array {
+    size_t[2] _opaque;
+}
+
+struct godot_packed_vector4_array {
     size_t[2] _opaque;
 }
 
