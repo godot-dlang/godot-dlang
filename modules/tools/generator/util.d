@@ -102,6 +102,8 @@ class Type {
             return "godot_packed_vector2_array";
         case "PackedVector3Array":
             return "godot_packed_vector3_array";
+        case "PackedVector4Array":
+            return "godot_packed_vector4_array";
         case "PackedColorArray":
             return "godot_packed_color_array";
         default:
@@ -186,6 +188,7 @@ class Type {
             "PackedStringArray",
             "PackedVector2Array",
             "PackedVector3Array",
+            "PackedVector4Array",
             "PackedColorArray",
             "Quaternion",
             "Rect2",
@@ -508,6 +511,7 @@ string escapeDefaultType(in Type type, string arg) {
     case "PackedFloat64Array":
     case "PackedVector2Array":
     case "PackedVector3Array":
+    case "PackedVector4Array":
     case "PackedStringArray":
     case "PackedColorArray":
         return defaultTypeString(type);

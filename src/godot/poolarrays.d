@@ -20,10 +20,14 @@ import godot.string;
 import godot.color;
 import godot.vector2;
 import godot.vector3;
+import godot.vector4;
 import godot.builtins;
+import extVersion = godot.apiinfo;
 
 import std.range.primitives;
 import std.meta, std.traits;
+
+private enum isGodot43orNewer = extVersion.VERSION_MINOR > 2;
 
 private alias PackedArrayTypes = AliasSeq!(
     ubyte,
@@ -35,7 +39,8 @@ private alias PackedArrayTypes = AliasSeq!(
     string,
     Vector2,
     Vector3,
-    Color
+    Vector4,
+    Color,
 );
 
 // used in GDExtensionInterface.variant_get_ptr_destructor()
@@ -48,16 +53,17 @@ private alias PackedArrayVariantType = AliasSeq!(
     GDEXTENSION_VARIANT_TYPE_PACKED_STRING_ARRAY,
     GDEXTENSION_VARIANT_TYPE_PACKED_VECTOR2_ARRAY,
     GDEXTENSION_VARIANT_TYPE_PACKED_VECTOR3_ARRAY,
+    GDEXTENSION_VARIANT_TYPE_PACKED_VECTOR4_ARRAY,
     GDEXTENSION_VARIANT_TYPE_PACKED_COLOR_ARRAY,
 );
 
 private enum string nameOverride(T) = AliasSeq!(
         "byte", "int32", "int64", "float32", "float64", "string",
-        "vector2", "vector3", "color")[staticIndexOf!(T, PackedArrayTypes)];
+        "vector2", "vector3", "vector4", "color")[staticIndexOf!(T, PackedArrayTypes)];
 
 private enum string bindNameOverride(T) = AliasSeq!(
         "Byte", "Int32", "Int64", "Float32", "Float64", "String",
-        "Vector2", "Vector3", "Color")[staticIndexOf!(T, PackedArrayTypes)];
+        "Vector2", "Vector3", "Vector4", "Color")[staticIndexOf!(T, PackedArrayTypes)];
 
 private enum string opaqueName(T) = "godot_packed_" ~ (nameOverride!T) ~ "_array";
 private enum string typeName(T) = "packed_" ~ (nameOverride!T) ~ "_array";
@@ -76,6 +82,9 @@ alias PackedVector2Array = PackedArray!Vector2;
 alias PackedVector3Array = PackedArray!Vector3;
 //alias PackedVector3iArray = PackedArray!Vector3i;
 alias PackedColorArray = PackedArray!Color;
+
+static if (isGodot43orNewer)
+    alias PackedVector4Array = PackedArray!Vector4;
 
 /++
 Copy-on-write array for some Godot types, allocated with a memory pool.
@@ -132,6 +141,8 @@ struct PackedArray(T) {
         private alias InternalType = godot_vector2;
     else static if (is(T == Vector3))
         private alias InternalType = godot_vector3;
+    else static if (is(T == Vector4))
+        private alias InternalType = godot_vector4;
     else static if (is(T == Color))
         private alias InternalType = godot_color;
     else

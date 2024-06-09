@@ -166,9 +166,12 @@ struct ExtensionsApi {
     }
 }
 
+// TODO: this is basically only used for version information, should it be renamed to generateVersionInfo or something?
 string generateHeader(ref ExtensionsApi api) {
     Appender!string s;
 
+    s ~= "module godot.apiinfo;\n\n";
+    
     s ~= "enum VERSION_MAJOR = " ~ api.header.version_major.text ~ ";\n";
     s ~= "enum VERSION_MINOR = " ~ api.header.version_minor.text ~ ";\n";
     s ~= "enum VERSION_PATCH = " ~ api.header.version_patch.text ~ ";\n";
