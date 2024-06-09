@@ -27,7 +27,7 @@ import extVersion = godot.apiinfo;
 import std.range.primitives;
 import std.meta, std.traits;
 
-private enum isGodot43orNewer = extVersion.VERSION_MINOR > 2;
+enum isGodot43orNewer = extVersion.VERSION_MINOR > 2;
 
 private alias PackedArrayTypes = AliasSeq!(
     ubyte,
@@ -82,14 +82,12 @@ alias PackedVector2Array = PackedArray!Vector2;
 alias PackedVector3Array = PackedArray!Vector3;
 //alias PackedVector3iArray = PackedArray!Vector3i;
 alias PackedColorArray = PackedArray!Color;
-
-static if (isGodot43orNewer)
-    alias PackedVector4Array = PackedArray!Vector4;
+alias PackedVector4Array = PackedArray!Vector4;
 
 /++
 Copy-on-write array for some Godot types, allocated with a memory pool.
 +/
-struct PackedArray(T) {
+struct PackedArray(T) if (!is(T == Vector4) || isGodot43orNewer) {
     //@nogc nothrow:
 
     // godot type name, e.g. "PackedVector3Array"
@@ -286,4 +284,8 @@ struct PackedArray(T) {
         alias fn = mixin("gdextension_interface_", readName!T);
         return *cast(const(T)*) fn(&_godot_array, cast(int) idx);
     }
+}
+
+struct PackedArray(T) if (is(T == Vector4) && !isGodot43orNewer) {
+    // doesn't exist in Godot 4.2 but needed to make it compile
 }
