@@ -233,3 +233,36 @@ A UDA to mark a static field to be used by Godot as a global singleton object.
 struct Singleton {
 
 }
+
+/++ 
+Advanced attribute that tells godot-dlang memory allocation funtions to not register it to D garbage collector.
+
+This attribute is applied on classes directly, 
+there is no granular per object control, 
+every instance of class will be affected.
+
+Note that GodotScript objects are not allocated by GC and 
+uses GC.addRange mechanism to tell GC to scan memory for pointers inside that object.
+This attribute has effect that any pointer to a GC allocated memory will essentially be a weak reference,
+and will no longer prevent garbage collection despite that there might still be live references in it.
+Simply put, marked objects may have its GC managed data collected when you don't expect it.
+Examples of such pointers is a regular D strings, arrays, or other objects allocated using 'new' keyword.
+
+This is a D specific feature.
+Use sparingly if you are very memory limited and the object doesn't have pointers to GC memory.
+
+Example:
+---
+// Every instance of HealthComponent is now assumed to not contain GC allocated memory
+@GCSkipScan
+class HealthComponent : GodotScript!Node
+{
+	@Property int health = 10;
+    
+    // ... health component implementation ...
+}
+---
++/
+struct GCSkipScan {
+
+}

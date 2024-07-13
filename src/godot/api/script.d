@@ -12,6 +12,13 @@ import godot.api.udas;
 import godot.api.traits, godot.api.wrap;
 import godot.api.reference;
 
+
+// for now let's keep it simple, but later this will be a proper dub config
+version(Windows) version = GODOT_USE_GC_RANGE;
+version(Posix) version = GODOT_USE_GC_RANGE;
+version(Android) version = GODOT_USE_GC_RANGE;
+
+
 /++
 Base class for D native scripts. Native script instances will be attached to a
 Godot (C++) object of Base class.
@@ -273,8 +280,16 @@ extern (C) package(godot) void* createFunc(T)(void* data) //nothrow @nogc
 
     // isAbstractClass check above will not prevent codegen for this part,
     // so do this in order to allow compilation to work and to avoid putting whole function under static if
-    static if (!__traits(isAbstractClass, T))
+    static if (!__traits(isAbstractClass, T)) {
+        version(GODOT_USE_GC_RANGE) {
+            static if (!hasUDA!(T, GCSkipScan)) {
+                import core.memory;
+                // the default conservative GC doesn't uses this type info, but other GC's probably might use it
+                GC.addRange(cast(void*)t, allocSize, typeid(T));
+            }
+        }
         emplace(t);
+    }
 
 
     //static if(extendsGodotBaseClass!T)
@@ -332,6 +347,13 @@ extern (C) package(godot) void destroyFunc(T)(void* userData, void* instance) //
 {
     static import godot;
 
+    version(GODOT_USE_GC_RANGE) {
+        static if (!hasUDA!(T, GCSkipScan)) {
+            import core.memory;
+            GC.removeRange(instance);
+        }
+    }
+
     T t = cast(T) instance;
     godot.finalize(t);
     gdextension_interface_mem_free(cast(void*) t);
@@ -357,8 +379,16 @@ extern(C) package(godot) GDExtensionClassInstancePtr recreateFunc(T)(void* p_cla
         enum allocSize = __traits(classInstanceSize, T);
         T o = cast(T) gdextension_interface_mem_alloc(allocSize);
         if (o) {
-            static if (!__traits(isAbstractClass, T)) // allows it to build, abstract classes can't be instantiated anyway
+            static if (!__traits(isAbstractClass, T)) { // allows it to build, abstract classes can't be instantiated anyway
+                version(GODOT_USE_GC_RANGE) {
+                    static if (!hasUDA!(T, GCSkipScan)) {
+                        import core.memory;
+                        // the default conservative GC doesn't uses this type info, but other GC's probably might use it
+                        GC.addRange(cast(void*)o, allocSize, typeid(T));
+                    }
+                }
                 emplace(o);
+            }
 
             // set owning godot object and instance bindings for new D instance to the same Godot object
             o._gdextension_handle = godot_object(p_object);
