@@ -9,12 +9,21 @@ import godot.api.traits;
 
 import std.meta, std.traits;
 
-// FIXME: something's not working with it
+
 /++
 A UDA to enable a script class to run in the Godot editor even without the game
 running. Required for $(D EditorPlugin)s and other tools used in the editor.
 +/
+deprecated("Tool scripts is default behavior in Godot 4 extensions, if you want to opt-out use RuntimeOnly attribute instead.") 
 enum Tool;
+
+/++
+A UDA to opt-out script class from being run in the Godot editor, the script will only run code while the game is
+running. This is the opposite of Tool attribute.
+
+Requires Godot 4.3 or newer.
++/
+enum RuntimeOnly;
 
 /// 
 enum RPCMode {
