@@ -475,14 +475,13 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
                     // static if checks if there is a parameter name, otherwise it will use generic arg# name
                     //pragma(msg, PARAMS[i..i+1].stringof.split()[1][0..$-1]);
                     static if (PARAMS[i..i+1].stringof.split().length > 1)
-                        enum string ArgName = PARAMS[i..i+1].stringof.split()[1][0..$-1];
+                        propData[i] = makePropertyInfo!(p, PARAMS[i..i+1].stringof.split()[1][0..$-1])();
                     else
-                        enum string ArgName = "arg" ~ i.stringof;
+                        propData[i] = makePropertyInfo!(p, "arg" ~ i.stringof)();
                 }
                 else {
-                    enum string ArgName = "arg" ~ i.stringof;
+                    propData[i] = makePropertyInfo!(p, "arg" ~ i.stringof)();
                 }
-                propData = makePropertyInfo!(p, ArgName)();
 
                 pinfo[i].name = cast(GDExtensionStringNamePtr) propData[i].snName;
                 pinfo[i].class_name = cast(GDExtensionStringNamePtr) propData[i].snClassName;
