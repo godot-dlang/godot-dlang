@@ -452,6 +452,25 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
         }
     }
 
+    // helper template that builds argument name, it handles unnamed parameters as well by giving them generic name
+    template SignalArgumentName(alias s, int i) {
+        // get name or argN fallback placeholder in case of function pointers
+        static if (is(FunctionTypeOf!s FT == __parameters)){
+            //pragma(msg, typeof(s), " : ", FT);
+            alias PARAMS = FT;
+        }
+        static if (PARAMS.length > 0 && PARAMS[i..i+1].stringof.split().length > 1) {
+            // "(String message)" gets split in half, and then chop out closing parenthesis
+            // "(String message, String test)" handled as well
+            // static if checks if there is a parameter name, otherwise it will use generic arg# name
+            //pragma(msg, PARAMS[i..i+1].stringof.split()[1][0..$-1]);
+            enum SignalArgumentName = PARAMS[i..i+1].stringof.split()[1][0..$-1];
+        }
+        else {
+            enum SignalArgumentName = "arg" ~ i.stringof;
+        }
+    }
+
     static foreach (sName; godotSignals!T) {
         {
             alias s = Alias!(mixin("T." ~ sName));
@@ -475,28 +494,11 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
             PropertyInfo[Parameters!s.length] propData;
             GDExtensionPropertyInfo[Parameters!s.length] pinfo;
 
-            static if (is(FunctionTypeOf!s FT == __parameters)){
-                //pragma(msg, typeof(s), " : ", FT);
-                alias PARAMS = FT;
-            }
             static foreach (int i, p; Parameters!s) {
                 static assert(Variant.compatible!p, fullyQualifiedName!s ~ " parameter " ~ i.text ~ " \""
                         ~ ParameterIdentifierTuple!s[i] ~ "\": type " ~ p.stringof ~ " is incompatible with Godot");
 
-                // get name or argN fallback placeholder in case of function pointers
-                static if (PARAMS.length > 0) {
-                    // "(String message)" gets split in half, and then chop out closing parenthesis
-                    // "(String message, String test)" handled as well
-                    // static if checks if there is a parameter name, otherwise it will use generic arg# name
-                    //pragma(msg, PARAMS[i..i+1].stringof.split()[1][0..$-1]);
-                    static if (PARAMS[i..i+1].stringof.split().length > 1)
-                        propData[i] = makePropertyInfo!(p, PARAMS[i..i+1].stringof.split()[1][0..$-1])();
-                    else
-                        propData[i] = makePropertyInfo!(p, "arg" ~ i.stringof)();
-                }
-                else {
-                    propData[i] = makePropertyInfo!(p, "arg" ~ i.stringof)();
-                }
+                propData[i] = makePropertyInfo!(p, SignalArgumentName!(s, i));
 
                 pinfo[i].name = cast(GDExtensionStringNamePtr) propData[i].snName;
                 pinfo[i].class_name = cast(GDExtensionStringNamePtr) propData[i].snClassName;

@@ -150,6 +150,13 @@ class Test : GodotScript!Label {
         emitSignal("another_signal", v);
     }
 
+    // PR 203, can not register signal with multiple arguments
+    @Signal
+    static void function(int a, float b) signalWithTwoParams;
+
+    @Signal
+    static void function(int) signalWithUnnamedParameter;
+
 version(USE_CLASSES) {
 
     @Method
