@@ -298,8 +298,11 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
     // Choose registration format, v2 required for hot reload
     import extVersion = godot.apiinfo;
     enum isGodot42orNewer = extVersion.VERSION_MAJOR == 4 && extVersion.VERSION_MINOR >= 2;
+    enum isGodot43orNewer = extVersion.VERSION_MAJOR == 4 && extVersion.VERSION_MINOR >= 3;
 
-    static if (isGodot42orNewer)
+    static if (isGodot43orNewer)
+    __gshared static GDExtensionClassCreationInfo3 class_info;
+    else static if (isGodot42orNewer)
     __gshared static GDExtensionClassCreationInfo2 class_info;
     else
     __gshared static GDExtensionClassCreationInfo class_info;
@@ -317,6 +320,16 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
         static assert(!__traits(isAbstractClass, T), "abstract class support requires godot version 4.2 or higher");
     }
 
+    // Since Godot 4.3 extensions can now specify if they want to opt out of being a "tool" script.
+    // Extension developers now has the option to register the new scripts as being runtime-only,
+    // such scripts will not run their methods in editor, which saves from adding Engine.is_editor_hint() checks everywhere.
+    // 
+    // Because runtime-only classes has some limitations when interacting with them in editor, 
+    // we choose to make them explicitly marked as such, primarily for compatibility reasons with existing godot-dlang projects.
+    //
+    static if (isGodot43orNewer) {
+        class_info.is_runtime = hasUDA!(T, RuntimeOnly);
+    }
     
 
     // This function will be called for any virtual script method, the returned pointer is then cached internally by godot
@@ -340,7 +353,9 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
 
     StringName snClass = StringName(name);
     StringName snBase = StringName(baseName);
-    static if (isGodot42orNewer)
+    static if (isGodot43orNewer)
+    gdextension_interface_classdb_register_extension_class3(lib, cast(GDExtensionStringNamePtr) snClass, cast(GDExtensionStringNamePtr) snBase, &class_info);
+    else static if (isGodot42orNewer)
     gdextension_interface_classdb_register_extension_class2(lib, cast(GDExtensionStringNamePtr) snClass, cast(GDExtensionStringNamePtr) snBase, &class_info);
     else
     gdextension_interface_classdb_register_extension_class(lib, cast(GDExtensionStringNamePtr) snClass, cast(GDExtensionStringNamePtr) snBase, &class_info);
