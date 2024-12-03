@@ -595,6 +595,41 @@ class SomeConcreteClass : SomeBaseClass {
     }
 }
 
+
+class TestVirtualMethod : GodotScript!GodotObject {
+
+    import godot.apiinfo;
+
+    static if (VERSION_MINOR >= 3) {
+        @Method @Virtual
+        String doStuff() {
+            return String("This method should be overriden");
+        }
+
+        @Method void test() {
+            String ret;
+            if (vcall!doStuff(_gdextension_handle(), ret))
+                print(ret);
+
+            assert(ret == String("I am overriden")); // TODO: comparison operator overload between `string` and `String`
+        } 
+
+        void _dummy_() {
+            String ret;
+            if (vcall!doStuff(this, ret)) {
+                // use ret
+            }
+            static assert( __traits(compiles, vcall!doStuff(_gdextension_handle(), ret)));
+            static assert( __traits(compiles, vcall!doStuff(this, ret)));
+            static assert(!__traits(compiles, vcall!doStuff(_gdextension_handle(), 0)));
+
+            if (vcallRaw!String(_gdextension_handle(), "do_stuff", ret)) {
+                // use ret
+            }
+        }
+    }
+}
+
 // register classes, initialize and terminate D runtime
 mixin GodotNativeLibrary!(
     "test",
@@ -602,5 +637,6 @@ mixin GodotNativeLibrary!(
     RefTest,
 
     SomeBaseClass,
-    SomeConcreteClass
+    SomeConcreteClass,
+    TestVirtualMethod
 );

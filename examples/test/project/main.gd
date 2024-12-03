@@ -25,6 +25,12 @@ func _ready():
 	# since this is an Object it is up to you to release it when you've done with it
 	# don't forget to free it when it is no longer in use
 	base.free()
+	
+	# Virtual functions test for Godot 4.3+
+	if Engine.get_version_info().hex >= 0x040300:
+		var virt = TestVirtualScript.new()
+		virt.test()
+		virt.free()
 
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.

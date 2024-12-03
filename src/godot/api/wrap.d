@@ -796,6 +796,19 @@ struct VirtualMethodsHelper(T) {
             if (__traits(identifier, __traits(getMember, T, name)) == fname)
                 return &MethodWrapper!(T, __traits(getMember, T, name)).virtualCall;
         }
+        // attempt to implement virtual call dispatch, 
+        // when using @Virtual methods it is internally done by Godot
+        version (none) { 
+        print("looking up virtual method ", v, " for class ", T.stringof);
+        static foreach (sym; getSymbolsByUDA!(T, Virtual)) {
+            static if (isFunction!sym) {
+                if (__traits(identifier, sym) == fname) {
+                    print(v);
+                    return null;
+                    //return &MethodWrapper!(T, __traits(getMember, T, name)).virtualCall;
+                }
+            }
+        }}
         return null;
     }
 }
