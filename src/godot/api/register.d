@@ -360,6 +360,47 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
     else
     gdextension_interface_classdb_register_extension_class(lib, cast(GDExtensionStringNamePtr) snClass, cast(GDExtensionStringNamePtr) snBase, &class_info);
 
+    void registerVirtualMethod(alias mf, string nameOverride = null)() {
+        static assert(isGodot43orNewer, "Virtual methods requires Godot 4.3 or newer.");
+
+        static if (nameOverride.length) {
+            string mfn = nameOverride;
+        } else {
+            string mfn = godotName!mf;
+        }
+
+        uint flags = GDEXTENSION_METHOD_FLAGS_DEFAULT | GDEXTENSION_METHOD_FLAG_VIRTUAL;
+
+        // virtual methods like '_ready'
+        //if (__traits(identifier, mf)[0] == '_')
+        //    flags |= GDEXTENSION_METHOD_FLAG_VIRTUAL;
+
+        MethodWrapperMeta!mf methodInfo;
+        methodInfo.initialize();
+
+        StringName snFunName = StringName(mfn);
+        GDExtensionClassVirtualMethodInfo mi = {
+            cast(GDExtensionStringNamePtr) snFunName , //const char *name;
+            flags, //uint32_t method_flags; /* GDExtensionClassMethodFlags */
+
+            methodInfo.returnInfo[0], //GDExtensionPropertyInfo* return_value_info;
+            methodInfo.returnMetadata, //GDExtensionClassMethodArgumentMetadata return_value_metadata;
+
+            cast(uint32_t) arity!mf, //uint32_t argument_count;
+            methodInfo.argumentsInfo.ptr, //GDExtensionPropertyInfo* arguments_info;
+            methodInfo.argumentsMetadata, //GDExtensionClassMethodArgumentMetadata* arguments_metadata;        
+        };
+
+        // when loaded in older versions try handle this gracefully and let the user know they have unsupported version.
+        if (gdextension_interface_classdb_register_extension_class_virtual_method !is null)
+            gdextension_interface_classdb_register_extension_class_virtual_method(lib, cast(GDExtensionStringNamePtr) snClass, &mi);
+        else {
+            printerr("Trying to register virtual method which requires Godot v4.3 or newer. Reason: classdb_register_extension_class_virtual_method is null");
+        }
+        // cache StringName for comparison later on
+        MethodWrapper!(T, mf).funName = cast(GDExtensionStringNamePtr) snFunName;
+    }
+
     void registerMethod(alias mf, string nameOverride = null)() {
         static if (nameOverride.length) {
             string mfn = nameOverride;
@@ -448,7 +489,10 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
                 enum string externalName = godotName!mf;
             else
                 enum string externalName = (fullyQualifiedName!mf).replace(".", "_");
-            registerMethod!mf();
+            static if (!hasUDA!(mf, Virtual))
+                registerMethod!mf();
+            else
+                registerVirtualMethod!mf();
         }
     }
 

@@ -50,6 +50,14 @@ struct Method {
 }
 
 /++
+A UDA to mark a method that should be virtual. 
+Works in conjunction with @Method attribute.
+Virtual methods allows subclasses to override it to implement custom logic, either via GodotScript or other extensions.
+It is required to disambiguate if this is a desired behavior because in D every method is virtual unless marked with 'final' keyword.
++/
+enum Virtual;
+
+/++
 A UDA to mark a signal. The signal should be a static function/delegate
 variable that defines the signal's arguments.
 +/

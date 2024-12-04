@@ -163,7 +163,10 @@ struct String {
 
     this(this) {
         auto other = _godot_string;
-        _godot_string = _bind.new1(other);
+        if (_string.s !is null)
+            _godot_string = _bind.new1(other);
+        else
+            _defaultCtor();
     }
 
     void opAssign(in String other) {

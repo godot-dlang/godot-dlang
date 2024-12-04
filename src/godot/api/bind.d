@@ -312,6 +312,190 @@ do {
     return r.as!Return;
 }
 
+/++
+Virtual method call
++/
+bool vcall(alias fn, T, Args...)(in T self, out ReturnType!fn ret,  Args args) {
+    import std.typecons;
+    import std.range : iota;
+
+    alias Return = ReturnType!fn;
+    //static assert(hasUDA!(fn, Virtual), "This call is only for virtual godot methods.");
+
+    static if (Args.length != 0) {
+        alias _iota = aliasSeqOf!(iota(Args.length));
+        alias _tempType(size_t i) = tempType!(Args[i], MBArgs[i]);
+        const(void)*[Args.length] aarr = void;
+
+        Tuple!(staticMap!(_tempType, _iota)) temp = void;
+    }
+    foreach (ai, A; Args) {
+        static if (isGodotClass!A) {
+            static assert(is(Unqual!A : Args[ai]) || staticIndexOf!(
+                    Args[ai], GodotClass!A.GodotClass) != -1, "method" ~
+                    " argument " ~ ai.text ~ " of type " ~ A.stringof ~
+                    " does not inherit parameter type " ~ Args[ai].stringof);
+            aarr[ai] = &(args[ai]);
+        } else static if (!needsConversion!(Args[ai], Args[ai])) {
+            aarr[ai] = cast(const(void)*)(&args[ai]);
+        } else // needs conversion
+        {
+            static assert(is(typeof(Args[ai](args[ai]))), "method" ~
+                    " argument " ~ ai.text ~ " of type " ~ A.stringof ~
+                    " cannot be converted to parameter type " ~ Args[ai].stringof);
+
+            import std.conv : emplace;
+
+            emplace(&temp[ai], args[ai]);
+            aarr[ai] = cast(const(void)*)(&temp[ai]);
+        }
+    }
+
+    // because class is a just a pointer to an actual memory
+    // we have to do extra work later compared to structs version
+    version(USE_CLASSES) {
+      static if (isGodotClass!Return) {
+        godot_object r;
+      }
+      else static if (!is(Return : void))
+        RefOrT!Return r = godotDefaultInit!(RefOrT!Return);
+    }
+    else static if (!is(Return : void))
+        RefOrT!Return r = godotDefaultInit!(RefOrT!Return);
+
+    static if (is(Return : void))
+        alias rptr = Alias!null;
+    else
+        Variant vret;
+
+    static if (Args.length == 0)
+        alias aptr = Alias!null;
+    else
+        const(void)** aptr = aarr.ptr;
+
+    StringName sn = StringName(godotName!fn);
+    GDExtensionCallError ce;
+    godot_object _this; // this can be const but it is not possible to assign later on
+    static if (is(T == godot_object)) {
+        _this = cast() self;
+    }
+    else {
+        _this = cast() self._gdextension_handle();
+    }
+    if (gdextension_interface_object_has_script_method(cast(void*) _this.ptr, cast(void*) sn)) {
+        gdextension_interface_object_call_script_method(cast(void*) _this.ptr, cast(void*) sn, aptr, Args.length, &vret, &ce);
+        if (ce == cast(GDExtensionCallError) GDEXTENSION_CALL_OK) {
+            version(USE_CLASSES) {
+              static if (isGodotClass!Return)
+                ret = getObjectInstance!Return(r.ptr);
+              else static if (!is(Return : void))
+                ret = vret.as!Return;
+            }
+            else {
+              static if (!is(Return : void))
+                ret = vret.as!Return;
+            }
+            return true;
+        }
+    }
+
+    return false;
+
+}
+
+/++
+Virtual method call
+This one uses godot_object directly and does not do any validation except type-to-variant availability check.
+Primarily useful for dynamic scripting or with script types not known at compile time.
+method name to call is expected to be in godot style, e.g. 'do_something_with_foo'
++/
+bool vcallRaw(Return = GodotObject, T, Args...)(in T self, string fn, out Return ret, Args args) { // UNTESTED
+    import std.typecons;
+    import std.range : iota;
+
+    //static assert(hasUDA!(fn, Virtual), "This call is only for virtual godot methods.");
+
+    static if (Args.length != 0) {
+        alias _iota = aliasSeqOf!(iota(Args.length));
+        alias _tempType(size_t i) = Variant.conversionToGodotType!(Args[i]);
+        const(void)*[Args.length] aarr = void;
+
+        Tuple!(staticMap!(_tempType, _iota)) temp = void;
+    }
+    foreach (ai, A; Args) {
+        static if (isGodotClass!A) {
+            static assert(is(Unqual!A : Args[ai]) || staticIndexOf!(
+                    Args[ai], GodotClass!A.GodotClass) != -1, "method" ~
+                    " argument " ~ ai.text ~ " of type " ~ A.stringof ~
+                    " does not inherit parameter type " ~ Args[ai].stringof);
+            aarr[ai] = &(args[ai]);
+        } else static if (!needsConversion!(Args[ai], Args[ai])) {
+            aarr[ai] = cast(const(void)*)(&args[ai]);
+        } else // needs conversion
+        {
+            static assert(is(typeof(Args[ai](args[ai]))), "method" ~
+                    " argument " ~ ai.text ~ " of type " ~ A.stringof ~
+                    " cannot be converted to parameter type " ~ Args[ai].stringof);
+
+            import std.conv : emplace;
+
+            emplace(&temp[ai], args[ai]);
+            aarr[ai] = cast(const(void)*)(&temp[ai]);
+        }
+    }
+
+    // because class is a just a pointer to an actual memory
+    // we have to do extra work later compared to structs version
+    version(USE_CLASSES) {
+      static if (isGodotClass!Return) {
+        godot_object r;
+      }
+      else static if (!is(Return : void))
+        RefOrT!Return r = godotDefaultInit!(RefOrT!Return);
+    }
+    else static if (!is(Return : void))
+        RefOrT!Return r = godotDefaultInit!(RefOrT!Return);
+
+    static if (is(Return : void))
+        alias rptr = Alias!null;
+    else
+        Variant vret;
+
+    static if (Args.length == 0)
+        alias aptr = Alias!null;
+    else
+        const(void)** aptr = aarr.ptr;
+
+    StringName sn = StringName(fn);
+    GDExtensionCallError ce;
+    godot_object _this;
+    static if (is(T == godot_object)) {
+        _this = cast() self;
+    }
+    else {
+        _this = cast() self._gdextension_handle();
+    }
+    if (gdextension_interface_object_has_script_method(cast(void*) _this.ptr, cast(void*) sn)) {
+        gdextension_interface_object_call_script_method(cast(void*) _this.ptr, cast(void*) sn, aptr, Args.length, &vret, &ce);
+        if (ce == cast(GDExtensionCallError) GDEXTENSION_CALL_OK) {
+            version(USE_CLASSES) {
+              static if (isGodotClass!Return)
+                ret = getObjectInstance!Return(r.ptr);
+              else static if (!is(Return : void))
+                ret = vret.as!Return;
+            }
+            else {
+              static if (!is(Return : void))
+                ret = vret.as!Return;
+            }
+            return true;
+        }
+    }
+
+    return false;
+
+}
+
 package(godot)
 mixin template baseCasts() {
     private import godot.api.reference, godot.api.traits : RefOrT, NonRef;
