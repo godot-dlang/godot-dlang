@@ -19,6 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        engine_version: [ '4.2.2', '4.3' ]
         flavor: ['structs', 'classes']
 
     steps:
@@ -29,8 +30,8 @@ jobs:
     - uses: dsaltares/fetch-gh-release-asset@master
       with:
         repo: 'godotengine/godot'
-        version: 'tags/4.2.2-stable'
-        file: 'Godot_v4.2.2-stable_linux.x86_64.zip'
+        version: 'tags/${{matrix.engine_version}}-stable'
+        file: 'Godot_v${{matrix.engine_version}}-stable_linux.x86_64.zip'
         
     - name: 'Godot doesnt works without X server'
       run: export DISPLAY=:99
@@ -39,8 +40,8 @@ jobs:
     - name: 'Get godot & dump api'
       run: |
         sudo apt-get install -y unzip
-        unzip Godot_v4.2.2-stable_linux.x86_64.zip
-        export GDEXE=./Godot_v4.2.2-stable_linux.x86_64
+        unzip Godot_v${{matrix.engine_version}}-stable_linux.x86_64.zip
+        export GDEXE=./Godot_v${{matrix.engine_version}}-stable_linux.x86_64
         echo "GDEXE=$GDEXE" >> $GITHUB_ENV
         $GDEXE --headless --dump-extension-api
       
