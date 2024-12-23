@@ -788,12 +788,17 @@ struct VirtualMethodsHelper(T) {
     alias onlyFuncs = Filter!(isFunc, derivedMfs);
 
     static GDExtensionClassCallVirtual findVCall(const GDExtensionStringNamePtr func) {
-        // FIXME: StringName issues
+        import godot.util.string; // camelToSnake
         auto v = Variant(*cast(StringName*) func);
-        auto fname = v.as!String.data();
+        auto fnameStr = v.as!String.utf8();
+        auto fname = cast(string) fnameStr.data[0..fnameStr.length];
         static foreach (name; onlyFuncs) {
+            //pragma(msg, name, " - ", camelToSnake(name));
+            // try to lookup godot style function name first, but also try D name as fallback
+            // FIXME: Shouldn't it be done by this commented out MethodWrapper call?
             //if (MethodWrapper!(T, __traits(getMember, T, name)).funName == func)
-            if (__traits(identifier, __traits(getMember, T, name)) == fname)
+            if (godotName!(__traits(getMember, T, name)) == fname
+                || __traits(identifier, __traits(getMember, T, name)) == fname)
                 return &MethodWrapper!(T, __traits(getMember, T, name)).virtualCall;
         }
         // attempt to implement virtual call dispatch, 
