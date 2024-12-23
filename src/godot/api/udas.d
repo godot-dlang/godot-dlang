@@ -283,3 +283,11 @@ class HealthComponent : GodotScript!Node
 struct GCSkipScan {
 
 }
+
+
+/++
+Marked class should be treated as abstract, usually emitted by bindings generator because structs can't be abstract.
++/
+struct GodotAbstract {
+
+}

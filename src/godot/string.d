@@ -224,8 +224,27 @@ struct String {
     bool opEquals(in String other) const {
         if (_godot_string == other._godot_string)
             return true;
-        //return gdextension_interface_string_operator_equal(&_godot_string, &other._godot_string);
-        return _bind == other._bind;
+
+        if (_bind == other._bind)
+            return true;
+
+        // Godot 4.4 and up
+
+        // Starting with Godot 4.4 the internal variant pointer is obtained with variant_get_ptr_internal_getter(),
+        // which also adds another function call and I have not yet tested if its provides better the performance 
+        // difference of versus using variant comparison operator
+        bool ret;
+        __gshared GDExtensionPtrOperatorEvaluator mb;
+        if (!mb) {
+            mb = gdextension_interface_variant_get_ptr_operator_evaluator(
+                GDEXTENSION_VARIANT_OP_EQUAL, 
+                GDEXTENSION_VARIANT_TYPE_STRING, 
+                GDEXTENSION_VARIANT_TYPE_STRING
+                );
+        }
+        mb(&_godot_string, &other._godot_string, &ret);
+
+        return ret;
     }
 
     String opBinary(string op)(in String other) const if (op == "~" || op == "+") {
