@@ -151,10 +151,8 @@ class Type {
             return true;
         return only("int", "bool", "real", "float", "void", "double", "real_t",
             "uint8_t", "int8_t", "uint16_t", "int16_t", "uint32_t", "int32_t", "uint64_t", "int64_t", // well...
-            "uint8", "int8", "uint16", "int16", "uint32", "int32", "uint64", "int64" // hope they will merge it or smth
-
-            
-
+            "uint8", "int8", "uint16", "int16", "uint32", "int32", "uint64", "int64", // hope they will merge it or smth
+            "char16", "char32", // godot 4.4
         ).canFind(stripConstPointer.godotType);
     }
 

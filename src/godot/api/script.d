@@ -343,6 +343,100 @@ extern (C) package(godot) void* createFunc(T)(void* data) //nothrow @nogc
     return cast(void*) t._gdextension_handle.ptr;
 }
 
+// godot 4.4 version of createFunc
+extern (C) package(godot) void* createFunc2(T)(void* data, GDExtensionBool p_notify_postinitialize) //nothrow @nogc
+{
+    import std.conv;
+
+    static assert(is(T == class));
+
+    // abstract classes can't be instantiated
+    static if (__traits(isAbstractClass, T)) {
+        printerr("Attempted to instantiate abstract class ", godotName!T);
+        return null;
+    }
+    else {
+        static assert(__traits(compiles, new T()), "script class " ~ T.stringof ~ " must have default constructor");
+    }
+    static import godot;
+
+    import std.exception;
+    import godot.api.register : _GODOT_library;
+
+    // NOTE: Keep in sync with register.d register(T) template
+    static if (hasUDA!(T, Rename))
+        enum string name = godotName!T;
+    else 
+        enum string name = __traits(identifier, T);
+
+    enum allocSize = __traits(classInstanceSize, T);
+    T t = cast(T) gdextension_interface_mem_alloc(allocSize);
+
+    // isAbstractClass check above will not prevent codegen for this part,
+    // so do this in order to allow compilation to work and to avoid putting whole function under static if
+    static if (!__traits(isAbstractClass, T)) {
+        version(GODOT_USE_GC_RANGE) {
+            static if (!hasUDA!(T, GCSkipScan)) {
+                import core.memory;
+                // the default conservative GC doesn't uses this type info, but other GC's probably might use it
+                GC.addRange(cast(void*)t, allocSize, typeid(T));
+            }
+        }
+        emplace(t);
+    }
+
+
+    //static if(extendsGodotBaseClass!T)
+    {
+        StringName classname = name;
+        version (USE_CLASSES) {
+          static if(extendsGodotBaseClass!T) {
+            // check if base class extends godot base class, because when extending D classes there is no internal name
+            // TODO: refactor before the number of these checks runs out of control
+            static if (isGodotBaseClass!(BaseClassesTuple!T[0])){
+                StringName snInternalName = (BaseClassesTuple!T)[0]._GODOT_internal_name; // parent class name
+            }
+            else {
+                // skip abstract base classes
+                enum IsNotAbstract(T) = !__traits(isAbstractClass, T) && !hasUDA(T, GodotAbstract);
+                // don't do godotName in this case as this can result in wrong name
+                // anyway it will fail when extending GodotObject...
+                import godot.object;
+                static if (Filter!(IsNotAbstract, BaseClassesTuple!T).length == 0 
+                            || is(Filter!(IsNotAbstract, BaseClassesTuple!T)[0] == GodotObject))
+                    StringName snInternalName = StringName("Object"); 
+                else
+                    StringName snInternalName = __traits(identifier, Filter!(IsNotAbstract, BaseClassesTuple!T)[0]); 
+            }
+          } else static if (isGodotBaseClass!T)
+            StringName snInternalName = T._GODOT_internal_name;
+          else
+            static assert(0, "Unknown class name");
+        } else {
+            StringName snInternalName = (GodotClass!T)._GODOT_internal_name;
+        }
+
+        const bool hasValidHandle = t._gdextension_handle.ptr !is null;
+        if (!hasValidHandle) {
+            // allocate backing godot object for D one
+            void* obj = gdextension_interface_classdb_construct_object(cast(GDExtensionStringNamePtr) snInternalName);
+            t._gdextension_handle = godot_object(obj);
+        }
+
+        gdextension_interface_object_set_instance(cast(void*) t._gdextension_handle.ptr, cast(GDExtensionStringNamePtr) classname, cast(void*) t);
+    }
+    //else
+    //	t.owner._godot_object.ptr = cast(void*) t;
+    godot.initialize(t);
+
+    // instance bindings allows to get associated object for Godot object
+    gdextension_interface_object_set_instance_binding(cast(void*) t._gdextension_handle.ptr, _GODOT_library, cast(void*) t, &_instanceCallbacks);
+    
+
+    // return back the godot object
+    return cast(void*) t._gdextension_handle.ptr;
+}
+
 extern (C) package(godot) void destroyFunc(T)(void* userData, void* instance) //nothrow @nogc
 {
     static import godot;
@@ -414,6 +508,12 @@ RefOrT!T getObjectInstance(T)(void* godotObj)
         return refOrT(cast(T) obj);
 
     // 3. give up and allocate new D object for it...
-    T o = memnew!T(godot_object(godotObj));
-    return refOrT(o);
+    // unless it is abstract
+    static if (__traits(isAbstractClass, T)) {
+        return refOrT(T.init);
+    }
+    else {
+        T o = memnew!T(godot_object(godotObj));
+        return refOrT(o);
+    }
 }

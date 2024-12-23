@@ -113,6 +113,8 @@ struct ObjectID {
 
 alias char16_t = ushort;
 alias char32_t = uint;
+alias char16 = char16_t;
+alias char32 = char32_t;
 
 /////// Object reference (type-safe void pointer)
 struct godot_object {
