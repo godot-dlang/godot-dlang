@@ -293,7 +293,7 @@ package(godot) struct MethodWrapper(T, alias mf) {
             va[0 .. cast(size_t) numArgs] = (cast(Variant**) args)[0 .. cast(size_t) numArgs];
         if (args && numArgs < Parameters!mf.length) // <-- optional parameters that godot decided not to pass
         {
-            foreach (i; numArgs .. ParameterDefaults!mf.length) {
+            foreach (size_t i; cast(size_t)numArgs .. cast(size_t)ParameterDefaults!mf.length) {
                 va[i] = &defaults[i];
             }
         }

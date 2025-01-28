@@ -203,7 +203,7 @@ struct String {
     size_t length() const {
         // for curious:
         //     string.length() and gdextension_interface_string_to_utf32_chars(this, null, 0) is basically same thing
-        return _bind.length();
+        return cast(size_t)_bind.length();
     }
 
     /// Returns: $(D true) if length is 0
