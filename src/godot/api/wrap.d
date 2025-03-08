@@ -632,6 +632,8 @@ package(godot) PropertyInfo makePropertyInfo(alias T, string Name)() {
         String snHint = String(makeTypeHint!T);
     else static if (extends!(T, Node) || extends!(T, Resource))
         String snHint = T.stringof;
+    else static if (is(T == TypedDictionary!(K,V), K, V))
+        String snHint = String(makeTypeHint!T);
     else
         String snHint = String();
 
@@ -656,6 +658,8 @@ package(godot) PropertyInfo makePropertyInfo(alias T, string Name)() {
     }
     else {
         static if (is(T == TypedArray!U, U)) // typed array has no class name but a hint
+            StringName snClassName = stringName();
+        else static if (is(T == TypedDictionary!(K,V), K, V)) // typed dictionary has no class name but a hint
             StringName snClassName = stringName();
         else static if (is(T == PackedArray!U, U))
             StringName snClassName = StringName(T.InternalName);
@@ -698,7 +702,7 @@ package(godot) template makeTypeHint(alias T) {
     }
     else static if (Variant.variantTypeOf!T != VariantType.nil) {
         string makeTypeHint = (cast(int) Variant.variantTypeOf!T).stringof 
-            ~ "/" ~ U.stringof;
+            ~ "/" ~ T.stringof;
     }
     else 
         string makeTypeHint = null;

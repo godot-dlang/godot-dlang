@@ -133,6 +133,13 @@ final class GodotClass {
             return;
         if (u.isTypedArray)
             u = u.arrayType;
+        if (u.isTypedDictionary) {
+            // well, this is a special case...
+            auto p = u.dictTypePair;
+            u = p.left;
+            if (!used_classes.canFind(p.right))
+                used_classes ~= p.right;
+        }
         if (!used_classes.canFind(u))
             used_classes ~= u;
     }
@@ -331,6 +338,13 @@ public import godot.classdb;`;
             className ~= "_Bind";
         ret ~= "/**\n" ~ ddoc ~ "\n*/\n";
         ret ~= "@GodotBaseClass ";
+        if (!instanciable) {
+            // FIXME: it turns out this currently simply doesn't works, need fixing allocations like in displayserver.d:2807 (_new factory method?)
+            //if (settings.useClasses && !(isBuiltinClass || name.isCoreType))
+            //    ret ~= "abstract ";
+            //else
+                ret ~= "@GodotAbstract ";
+        }
         if (settings.useClasses)
             ret ~= (isBuiltinClass ? "struct" : "class");
         else

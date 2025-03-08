@@ -13,6 +13,13 @@ import asdf;
 
 //import asdf.source.asdf.asdf;
 
+// this is basically a TypedDictionary Key/Value types, but let it be more generic just in case
+// despite storing values it is only intented to be treated as a meta type only
+struct TypePair {
+    Type left;
+    Type right;
+}
+
 struct TypeStruct {
     @serdeKeys("name", "type") string name;
     @serdeOptional string meta;
@@ -128,6 +135,10 @@ class Type {
         return godotType.startsWith("typedarray::");
     }
 
+    bool isTypedDictionary() const {
+        return godotType.startsWith("typeddictionary::");
+    }
+
     bool isMetaType() const {
         return isEnum || isBitfield || isTypedArray;
     }
@@ -197,6 +208,7 @@ class Type {
             "Transform3D",
             "Transform2D",
             "TypedArray",
+            "TypedDictionary",
             "Projection",
             "Variant",
             "Vector2",
@@ -225,7 +237,22 @@ class Type {
     Type arrayType() const {
         if (!isTypedArray)
             return null;
-        return Type.get(godotType["typedarray::".length .. $]);
+        // type string can be in editor hint format like this "typedarray::24/17:Node"
+        const subtypeBeginPos = godotType.lastIndexOf(':') + 1;
+        return Type.get(godotType[subtypeBeginPos .. $]);
+    }
+
+    /// returns TypedDictionary Key/Value types
+    TypePair dictTypePair() const {
+        if (!isTypedDictionary)
+            return typeof(return).init;
+        // type hint form is "typeddictionary::int;Vector2"
+        // as of Godot 4.4 it does not support nested typed containers
+        const typestring = godotType["typeddictionary::".length .. $];
+        const splitPos = typestring.indexOf(';');
+        auto keyType = Type.get(typestring[0..splitPos]);
+        auto valType = Type.get(typestring[splitPos+1..$]);
+        return TypePair(keyType, valType);
     }
 
     bool isRef() const {
@@ -342,6 +369,9 @@ class Type {
         }
         if (isTypedArray) {
             return Type.get(godotType["typedarray::".length .. $]);
+        }
+        if (isTypedDictionary) {
+            return Type.get(godotType["typeddictionary::".length .. $]);
         }
         return cast() this;
     }
@@ -634,6 +664,8 @@ string escapeGodotType(string t) {
         return t["bitfield::".length .. $];
     if (t.startsWith("typedarray::"))
         return t.asTypedArray;
+    if (t.startsWith("typeddictionary::"))
+        return t.asTypedDictionary;
     return t;
 }
 
@@ -711,8 +743,20 @@ string escapeDType(string s, string godotType = "") {
     }
 }
 
+// this is leaf function used by Type and other helper functions, can't use them here
+//   p.s. this is just stupid, Type should be self sufficient...
 string asTypedArray(string type) {
-    return "TypedArray!(" ~ type["typedarray::".length .. $] ~ ")";
+    auto t = type["typedarray::".length .. $];
+    return "TypedArray!(" ~ t ~ ")";
+}
+
+// same here, leaf function that is being relying on by other functions, causes cyclic issues
+string asTypedDictionary(string type) {
+    const typestring = type["typeddictionary::".length .. $];
+    const splitPos = typestring.indexOf(';');
+    const keyType = typestring[0..splitPos];
+    const valType = typestring[splitPos+1..$];
+    return "TypedDictionary!(" ~ keyType ~ ", " ~ valType ~ ")";
 }
 
 string tab(string s, int tabs) {

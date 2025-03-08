@@ -309,6 +309,11 @@ struct Variant {
         return T(as!Array);
     }
 
+    /// 
+    T as(T)() const if (is(T : TypedDictionary!(K,V), K,V)) {
+        return T(as!Dictionary);
+    }
+
     T as(T : void*)() {
         return cast(T)&_godot_variant;
     }
@@ -415,6 +420,9 @@ struct Variant {
         } else static if (is(T == TypedArray!U, U)) {
             // FIXME: it is supposed to be already compatible because of TypedArray's alias this
             alias conversionToGodot = (ref T t) => t._array; 
+        } else static if (is(T == TypedDictionary!(K,V), K, V)) {
+            // FIXME: it is supposed to be already compatible because of TypedDictionary alias this
+            alias conversionToGodot = (ref T t) => t._dictionary; 
         } else static if (hasInternalFrom!T)
             alias conversionToGodot = internalFrom!T;
         else
@@ -484,6 +492,9 @@ struct Variant {
                 // FIXME: this should already work because TypedArray has alias to Array which is compatible
                 static if (is(T == TypedArray!U, U))
                   enum Type variantTypeOf = Type.array; 
+                // FIXME: this should already work because TypedDictionary has alias to Array which is compatible
+                else static if (is(T == TypedDictionary!(K,V), K, V))
+                  enum Type variantTypeOf = Type.dictionary; 
                 else
                   enum Type variantTypeOf = Type.nil;
             }
@@ -494,6 +505,7 @@ struct Variant {
             enum Type variantTypeOf = Type.nil; // so the template always returns a Type
     }
     static assert (variantTypeOf!(TypedArray!int) == VariantType.array);
+    static assert (variantTypeOf!(TypedDictionary!(int, int)) == VariantType.dictionary);
 
     /// 
     R as(R)() const 

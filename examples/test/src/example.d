@@ -157,6 +157,20 @@ class Test : GodotScript!Label {
     @Signal
     static void function(int) signalWithUnnamedParameter;
 
+    // method returning TypedArray (introduced in Godot 4.2)
+    static if (godotversion.VERSION_MINOR > 1) {
+        @Method TypedArray!(int) getTypedArray() {
+            return TypedArray!int.make(42, 7, 1);
+        }
+    }
+
+    // method returning TypedDictionary (introduced in Godot 4.3)
+    static if (godotversion.VERSION_MINOR > 2) {
+        @Method TypedDictionary!(int, String) getTypedDict() {
+            return TypedDictionary!(int, String).make(42, "Hello");
+        }
+    }
+
 version(USE_CLASSES) {
 
     @Method

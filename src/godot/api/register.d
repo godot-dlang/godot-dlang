@@ -357,6 +357,13 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
         return VirtualMethodsHelper!T.findVCall(p_name);
     }
 
+    extern (C) static GDExtensionClassCallVirtual getVirtualFn2(void* p_userdata, const GDExtensionStringNamePtr p_name, uint p_hash) {
+        return getVirtualFn(p_userdata, p_name);
+    }
+
+    static if (isGodot44orNewer)
+    class_info.get_virtual_func = &getVirtualFn2;
+    else
     class_info.get_virtual_func = &getVirtualFn;
 
     StringName snClass = StringName(name);
