@@ -16,8 +16,10 @@ module godot.dictionary;
 import godot.abi;
 import godot;
 import godot.builtins;
+static import godotversion = godot.apiinfo;
 
 import std.meta;
+import std.bitmanip;
 
 /**
 Associative container which contains values referenced by unique keys. Dictionaries are always passed by reference.
@@ -68,13 +70,36 @@ struct Dictionary {
         _godot_dictionary = opaque;
     }
 
+    /// TypedDictionary constructor
+    this(in Dictionary base, int64_t keyType, in StringName keyClassName, in Variant keyScript,
+                             int64_t valType, in StringName valClassName, in Variant valScript) {
+        static if (godotversion.VERSION_MINOR > 3) {
+            _godot_dictionary = _bind.new2(base, 
+                                       keyType, keyClassName, keyScript,
+                                       valType, valClassName, valScript);
+        }
+        else {
+            // fallback for godot < 4.4, it won't provide any safety but at least on D side it will be typed
+            _godot_dictionary = _bind.new0();
+        }
+    }
+
     this(this) {
-        _godot_dictionary = _bind.new1(_godot_dictionary);
+        if (_godot_dictionary._opaque) // it doesn't really likes null
+            _godot_dictionary = _bind.new1(_godot_dictionary);
     }
 
     Dictionary opAssign(in Dictionary other) {
-        gdextension_interface_variant_destroy(&_godot_dictionary);
-        gdextension_interface_variant_new_copy(&_godot_dictionary, &other._godot_dictionary);
+        _bind._destructor();
+        //_godot_dictionary = godot_dictionary.init;
+        //gdextension_interface_variant_new_copy(&_godot_dictionary, &other._godot_dictionary);
+        _godot_dictionary = _bind.new1(other._godot_dictionary);
+        return this;
+    }
+
+    Dictionary opAssign(typeof(null)) {
+        _bind._destructor();
+        _godot_dictionary = godot_dictionary.init;
         return this;
     }
 
@@ -193,6 +218,70 @@ struct Dictionary {
 
     ~this() {
         //gdextension_interface_variant_destroy(&_godot_dictionary);
-        _bind._destructor();
+        // when using raw bindings dictionary destructor expects non null handle
+        if (_godot_dictionary._opaque)
+            _bind._destructor();
+    }
+}
+
+
+struct TypedDictionary(K,V) {
+    Dictionary _dictionary;
+    alias _dictionary this;
+
+    package(godot) this(godot_dictionary dict) {
+        // here we assume dict is already typed
+        // because this is private API it is mainly used by marshalling code
+        // TODO: assert check that dict is indeed typed?
+        _dictionary = Dictionary(dict); 
+    }
+
+    this(this) {
+        _dictionary._bind.new1(_dictionary._godot_dictionary);
+    }
+
+    this(in Dictionary other) {
+        alias keyType = Variant.variantTypeOf!K;
+        static if (keyType == Variant.Type.object) 
+            StringName keyTypeName = __traits(identifier, K);
+        else
+            StringName keyTypeName = StringName.makeEmpty();
+
+        alias valType = Variant.variantTypeOf!V;
+        static if (valType == Variant.Type.object) 
+            StringName valTypeName = __traits(identifier, V);
+        else
+            StringName valTypeName = StringName.makeEmpty();
+
+        // NOTE: while we can get object script intead of empty variant as it can be a gdscript type
+        // we can't really make it work at compile time as it does not exists
+        _dictionary = Dictionary(other, keyType, keyTypeName, Variant(), valType, valTypeName, Variant());
+    }
+
+    // TODO: implement this
+    //this(V[K] dict) {
+    //    _dictionary = TypedDictionary.make(dict);
+    //}
+    
+    // constructs an empty typed dictionary
+    this(typeof(null)) {
+        _dictionary = Dictionary.make();
+    }
+
+    ~this() {
+        _dictionary = null;
+    }
+
+    /++
+	Create an array and add all $(PARAM args) to it.
+	+/
+    static TypedDictionary!(K,V) make(Args...)(Args args)
+            if (allSatisfy!(Variant.compatibleToGodot, Args) && (Args.length % 2 == 0 || Args.length == 0)) {
+        TypedDictionary!(K,V) dict = TypedDictionary!(K,V)(null);
+        static foreach (i, Arg; Args) {
+            static if (i % 2 == 0)
+                dict[args[i]] = args[i+1];
+        }
+        return dict;
     }
 }

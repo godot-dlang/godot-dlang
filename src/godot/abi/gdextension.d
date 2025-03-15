@@ -5,6 +5,7 @@ import std.traits : isSomeFunction, isType;
 import std.algorithm : startsWith, canFind;
 import godot.util.string;
 import godot.abi.core : _godot_get_proc_address;
+import godotversion = godot.apiinfo;
 
 version(importc) {
     public import godot.abi.gdextension_header;
@@ -56,7 +57,13 @@ void loadGDExtensionInterface() {
     static foreach(symname; Filter!(isFunctionPtr, __traits(derivedMembers, gdextension_interface))) {
         // makes up the following loader code:
         //   gdextension_interface_get_godot_version = cast(GDExtensionInterfaceGetGodotVersion) _godot_get_proc_address("get_godot_version");
-        mixin(fixNamesTranslation(symname).camelToSnake, " = cast(", symname, ") _godot_get_proc_address(\"", fixNamesTranslation(symname).camelToSnake["gdextension_interface_".length..$], "\");");
+        
+        // this one is weird... better have another mechanism for such cases but for now is ok
+        // maybe add rename table later
+        static if (godotversion.VERSION_MINOR>=4 && symname == "GDExtensionInterfaceGetVariantGetInternalPtrFunc")
+            mixin(fixNamesTranslation(symname).camelToSnake, " = cast(", symname, ") _godot_get_proc_address(\"variant_get_ptr_internal_getter\");"); 
+        else
+            mixin(fixNamesTranslation(symname).camelToSnake, " = cast(", symname, ") _godot_get_proc_address(\"", fixNamesTranslation(symname).camelToSnake["gdextension_interface_".length..$], "\");");
         //pragma(msg, mixin(symname.camelToSnake, " = cast(", symname, ") _godot_get_proc_address(\"", symname.camelToSnake["gdextension_interface_".length..$], "\");"));
     }
 }

@@ -264,7 +264,9 @@ alias GDExtensionClassCreateInstance2 = GDExtensionObjectPtr function(void* p_cl
 alias GDExtensionClassFreeInstance = void function(void* p_class_userdata, GDExtensionClassInstancePtr p_instance);
 alias GDExtensionClassRecreateInstance = GDExtensionClassInstancePtr function(void* p_class_userdata, GDExtensionObjectPtr p_object);
 alias GDExtensionClassGetVirtual = GDExtensionClassCallVirtual function(void* p_class_userdata, GDExtensionConstStringNamePtr p_name);
+alias GDExtensionClassGetVirtual2 = GDExtensionClassCallVirtual function(void* p_class_userdata, GDExtensionConstStringNamePtr p_name, uint32_t p_hash);
 alias GDExtensionClassGetVirtualCallData = void * function(void* p_class_userdata, GDExtensionConstStringNamePtr p_name);
+alias GDExtensionClassGetVirtualCallData2 = void * function(void* p_class_userdata, GDExtensionConstStringNamePtr p_name, uint32_t p_hash);
 alias GDExtensionClassCallVirtualWithData = void function(GDExtensionClassInstancePtr p_instance, GDExtensionConstStringNamePtr p_name, void* p_virtual_call_userdata, const(GDExtensionConstTypePtr)* p_args, GDExtensionTypePtr r_ret);
 
 // Deprecated. Use GDExtensionClassCreationInfo3 instead.
@@ -351,6 +353,7 @@ struct GDExtensionClassCreationInfo4
     GDExtensionBool is_abstract;
     GDExtensionBool is_exposed;
     GDExtensionBool is_runtime;
+    GDExtensionConstStringPtr icon_path;
     GDExtensionClassSet set_func;
     GDExtensionClassGet get_func;
     GDExtensionClassGetPropertyList get_property_list_func;
@@ -365,8 +368,8 @@ struct GDExtensionClassCreationInfo4
     GDExtensionClassCreateInstance2 create_instance_func;
     GDExtensionClassFreeInstance free_instance_func;
     GDExtensionClassRecreateInstance recreate_instance_func;
-    GDExtensionClassGetVirtual get_virtual_func;
-    GDExtensionClassGetVirtualCallData get_virtual_call_data_func;
+    GDExtensionClassGetVirtual2 get_virtual_func;
+    GDExtensionClassGetVirtualCallData2 get_virtual_call_data_func;
     GDExtensionClassCallVirtualWithData call_virtual_with_data_func;
     void* class_userdata;
 }

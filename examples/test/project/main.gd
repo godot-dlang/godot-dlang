@@ -25,6 +25,20 @@ func _ready():
 	# since this is an Object it is up to you to release it when you've done with it
 	# don't forget to free it when it is no longer in use
 	base.free()
+
+	# TestD class extends Label which is attached to panel, weird but ok
+	var test_class = $Panel/Label as TestD
+	assert(test_class, "TestD object is null: something wrong with node layout or bindings")
+	
+	# Test typed array (added in 4.2)
+	if Engine.get_version_info().hex >= 0x040200:
+		var arr = test_class.get_typed_array()
+		assert(arr[1] == 7)
+	
+	# Test typed dictionary (added in 4.4)
+	if Engine.get_version_info().hex >= 0x040400:
+		var dict = test_class.get_typed_dict()
+		assert(dict[42] == "Hello", "TypedDictionary[42] == Hello: failed")
 	
 	# Virtual functions test for Godot 4.3+
 	if Engine.get_version_info().hex >= 0x040300:
