@@ -16,6 +16,14 @@ import std.string;
 
 import std.typecons;
 
+
+// list of math functions that have overloads with suffix for types,
+// this is because GDscript does not have function overloading based on type.
+// but here we would like to have these uniformly available
+// $ is used as placeholder, it can be omitted or have 'i' or 'f' in its place
+immutable mathOverloadSets = ["$posmod", "floor$", "ceil$", "round$", "abs$", "sign$", "snapped$", "lerp$", "wrap$", "max$", "min$", "clamp$", "rand$", "rand$Range" ];
+
+
 class GodotMethod {
     @serdeOptional
     string name; // constructors doesn't have name
@@ -617,4 +625,69 @@ class StringHelperGodotMethod : GodotMethod {
         ret ~= ");\n";
         return ret;
     }
+}
+
+class GodotUtilityFunction : GodotMethod {
+
+    override string callType() const { 
+        return "callBuiltinFunction";
+    }
+
+    /// formats function pointer loader, e.g.
+    /// 	_handle = gdextension_interface_variant_get_ptr_utility_function("method", hash);
+    override string loader() const {
+        char[] buf;
+        buf ~= "StringName methodname = StringName(\"" ~ name ~ "\");\n";
+
+        return cast(string) buf ~ format(`_handle = gdextension_interface_variant_get_ptr_utility_function(cast(GDExtensionStringNamePtr) methodname, %d);`,
+            hash,
+        );
+    }
+
+    override string signature() const {
+        auto ret = "static " ~ return_type.dType ~ " " ~ name.snakeToCamel.escapeDType ~ "(";
+
+        foreach (i, const arg; arguments) {
+            if (i) ret ~= ", ";
+            ret ~= "in " ~ arg.type.dType ~ " " ~ arg.name.escapeDType;
+        }
+
+        if (has_varargs) {
+            if (arguments.length) ret ~= ", ";
+            ret ~= "in Variant vargs ...";
+        }
+
+        ret ~= ")";
+
+        return ret;
+    }
+
+    override string body_() const {
+        string ret;
+        // static method bind handle
+        ret ~= "\t\t__gshared GDExtensionPtrUtilityFunction _handle;\n";
+
+        // load function pointer
+        ret ~= "\t\tif (!_handle) {\n";
+        // tab() will indent it correctly starting from first element
+        ret ~= loader().split('\n').map!(s => s.tab(3)).join('\n') ~ "\n";
+        ret ~= "\t\t}\n";
+
+        ret ~= "\t\t";
+        if (return_type.dType != "void")
+            ret ~= "return ";
+        ret ~= callType ~ "!(" ~ return_type.dType  ~ ")(_handle";
+        
+        foreach (ai, const arg; arguments) {
+            // even though most of the function uses primitive types there is still cases where it can take other types
+            ret ~= ", cast() " ~ arg.name.escapeDType(arg.type.godotType); 
+        }
+
+        if (has_varargs) {
+            ret ~= ", vargs";
+        }
+        ret ~= ");\n";
+        return ret;
+    }
+
 }

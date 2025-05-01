@@ -25,7 +25,6 @@ import godot.transform;
 import godot.abi.core;
 import godot.math;
 
-import std.math;
 import std.algorithm.comparison;
 import std.algorithm.mutation : swap;
 
@@ -126,7 +125,7 @@ struct Projection {
             matrix[0][1] * matrix[1][0] * matrix[2][2] * matrix[3][3] + matrix[0][0] * matrix[1][1] * matrix[2][2] * matrix[3][3];
     }
 
-    void setIdentity() @nogc {
+    void setIdentity() /*@nogc*/ {
         matrix = [
             Vector4(1, 0, 0, 0), 
             Vector4(0, 1, 0, 0), 

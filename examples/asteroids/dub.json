@@ -9,6 +9,13 @@
     
     "dflags-windows-ldc": ["-dllimport=defaultLibsOnly"],
 	
+	"dflags-wasm": ["-v", "--relocation-model=pic", "-Xcc=-pthread", "-mattr=atomics,bulk-memory"],
+	"lflags-wasm": ["--no-entry", "-allow-undefined", "--export=asteroids_gdextension_entry", "--unresolved-symbols=import-dynamic", "--shared-memory", "--import-memory"],
+	"sourcePaths-wasm": ["../../extras/webassembly/source", "../../extras/webassembly/arsd-webassembly"],
+	"importPaths-wasm": ["../../extras/webassembly/source", "../../extras/webassembly/arsd-webassembly"],
+	"sourceFiles-wasm": ["../../extras/webassembly/source/object.d"],
+	"versions-wasm": ["inline_concat"],
+	
 	"targetType": "dynamicLibrary",
 	"targetPath": "project",
     "targetName": "godot-dlang_asteroids",

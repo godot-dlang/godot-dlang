@@ -8,7 +8,7 @@ buildType "doc-json" {
 	buildRequirements "allowWarnings"
 	buildOptions "syntaxOnly"
 }
-dependency "utf_bc" version="~>0.2.1"
+// dependency "utf_bc" version="~>0.2.1"
 dependency "godot-dlang:util" version="*"
 targetType "library"
 dflags "-fPIC" platform="linux-dmd"
@@ -16,6 +16,11 @@ dflags "-relocation-model=pic" platform="linux-ldc2"
 dflags "-dllimport=defaultLibsOnly" platform="windows-ldc2"
 sourcePaths "src" "classes"
 importPaths "src" "classes"
+importPaths "extras/webassembly/source" "extras/webassembly/arsd-webassembly" platform="wasm32"
+sourcePaths "extras/webassembly/source" "extras/webassembly/arsd-webassembly" platform="wasm32"
+sourceFiles "extras/webassembly/source/object.d" platform="wasm32"
+dflags "-L-allow-undefined" "-mattr=atomics,bulk-memory" platform="wasm32"
+versions "inline_concat" platform="wasm32"
 /* sourceFiles "src/godot/abi/gdnative_interface.i" */
 
 configuration "default" {
@@ -43,6 +48,11 @@ subPackage {
 	sourcePaths "modules/util/"
 	importPaths "modules/util/"
     targetPath "lib"
+	importPaths "extras/webassembly/source" "extras/webassembly/arsd-webassembly" platform="wasm32"
+	sourcePaths "extras/webassembly/source" "extras/webassembly/arsd-webassembly" platform="wasm32"
+	sourceFiles "extras/webassembly/source/object.d" platform="wasm32"
+	dflags "-L-allow-undefined" platform="wasm32"
+	versions "inline_concat" platform="wasm32"
 }
 subPackage {
 	name "generator"

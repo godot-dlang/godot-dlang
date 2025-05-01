@@ -7,8 +7,6 @@ import godot.util.classes;
 
 import std.format;
 import std.meta, std.traits;
-import std.experimental.allocator, std.experimental.allocator.mallocator;
-import core.stdc.stdlib : malloc, free;
 
 import godot.api.traits;
 import godot.api.script;
@@ -135,8 +133,13 @@ mixin template GodotNativeLibrary(string symbolPrefix, Args...) {
         // Load the "print_error_with_message" function first (needed by the printerr).
         gdextension_interface_print_error_with_message = cast(GDExtensionInterfacePrintErrorWithMessage)p_get_proc_address("print_error_with_message");
         if (!gdextension_interface_print_error_with_message) {
+            version(WebAssembly) {
+                // TODO: log error
+            }
+            else { 
             import core.stdc.stdio : printf;
             printf("ERROR: Unable to load GDExtension interface function print_error_with_message().\n");
+            }
             return false;
         }
         // -------------------------------------------------------------
@@ -342,8 +345,8 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
 
     // This function will be called for any virtual script method, the returned pointer is then cached internally by godot
     extern (C) static GDExtensionClassCallVirtual getVirtualFn(void* p_userdata, const GDExtensionStringNamePtr p_name) {
-        import core.stdc.stdio;
-        import core.stdc.string;
+        //import core.stdc.stdio;
+        //import core.stdc.string;
         import std.conv : to;
 
         //print("requested method ", *cast(StringName*) p_name);

@@ -3,6 +3,9 @@ module godot.abi.net;
 // import godot.abi.core;
 import godot.abi.types;
 
+version(WebAssembly) {}
+else:
+
 import core.stdc.stdint;
 
 @nogc nothrow:

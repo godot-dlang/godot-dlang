@@ -25,7 +25,7 @@ import godot.poolarrays;
 Represents one or many transformations in 3D space such as translation, rotation, or scaling. It is similar to a 3x4 matrix.
 */
 struct Transform3D {
-@nogc nothrow:
+/*@nogc nothrow:*/
 
     Basis basis; /// 
     Vector3 origin; /// 

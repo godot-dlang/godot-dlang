@@ -17,8 +17,8 @@ import godot.api.types;
 import godot.vector2;
 import godot.rect2;
 import godot.poolarrays;
+import godot.math;
 
-import std.math;
 import std.algorithm.comparison;
 import std.algorithm.mutation : swap;
 
@@ -47,11 +47,11 @@ struct Transform2D {
         }
     }
 
-    real_t tdotx(in Vector2 v) const @nogc nothrow {
+    real_t tdotx(in Vector2 v) const /*@nogc nothrow*/ {
         return columns[0][0] * v.x + columns[1][0] * v.y;
     }
 
-    real_t tdoty(in Vector2 v) const @nogc nothrow {
+    real_t tdoty(in Vector2 v) const /*@nogc nothrow*/ {
         return columns[0][1] * v.x + columns[1][1] * v.y;
     }
 
@@ -110,7 +110,7 @@ struct Transform2D {
         );
     }
 
-    Vector2 xform(in Vector2 v) const @nogc nothrow {
+    Vector2 xform(in Vector2 v) const /*@nogc nothrow*/ {
         return Vector2(
             tdotx(v),
             tdoty(v)

@@ -1,6 +1,9 @@
 /// Contains mixing for easy swizzling
 module godot.util.swizzle;
 
+version(WebAssembly) {}
+else {
+
 import std.array;
 import std.string;
 import std.algorithm;
@@ -180,5 +183,7 @@ pure
             default: return false;
         }
     }
+
+}
 
 }

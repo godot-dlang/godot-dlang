@@ -7,8 +7,6 @@ module godot.api.wrap;
 import std.algorithm : max;
 import std.range;
 import std.meta, std.traits;
-import std.experimental.allocator, std.experimental.allocator.mallocator;
-import core.stdc.stdlib : malloc, free;
 
 import godot.api.udas;
 import godot.api.traits, godot.api.script;
