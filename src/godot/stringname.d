@@ -144,10 +144,13 @@ struct StringName {
     @trusted
     hash_t toHash() const nothrow {
         try {
+            // this supposedly never throws
             return cast(hash_t) _bind.hash();
         }
         catch (Exception e) {
-            printerr(Variant(String(e.msg)));
+            //printerr(Variant(String(e.msg)));
+            // TODO: print error in a way that not causes compiler to fail
+            assert(0, "oh no, an unexpected exception");
         }
         //static if(hash_t.sizeof == uint.sizeof) return gdextension_interface_string_hash(&_godot_string);
         //else return gdextension_interface_string_hash64(&_godot_string);
