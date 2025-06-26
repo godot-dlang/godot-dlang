@@ -36,7 +36,8 @@ class Asteroids : GodotScript!Node3D {
     }
 
     @Method _process(double delta) {
-        cameraTarget.position = player.position;
+        if (player && cameraTarget)
+            cameraTarget.position = player.position;
 
         foreach (ch; getChildren(false)) {
             if (RigidBody3D rock = ch.as!RigidBody3D) {
@@ -54,7 +55,7 @@ class Asteroids : GodotScript!Node3D {
         if (!rock) {
             Ref!PackedScene scene = ResourceLoader.load("res://Rock.tscn", "", ResourceLoader
                     .CacheMode.cacheModeReplace).as!PackedScene;
-            rock = scene.instantiate(PackedScene.GenEditState.genEditStateInstance).as!RigidBody3D;
+            rock = scene.instantiate(PackedScene.GenEditState.genEditStateDisabled).as!RigidBody3D;
             addChild(rock, false, Node.InternalMode.internalModeDisabled);
         }
 

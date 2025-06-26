@@ -19,7 +19,7 @@ importPaths "src" "classes"
 importPaths "extras/webassembly/source" "extras/webassembly/arsd-webassembly" platform="wasm32"
 sourcePaths "extras/webassembly/source" "extras/webassembly/arsd-webassembly" platform="wasm32"
 sourceFiles "extras/webassembly/source/object.d" platform="wasm32"
-dflags "-L-allow-undefined" "-mattr=atomics,bulk-memory" platform="wasm32"
+dflags "-L-allow-undefined" "-mattr=atomics,bulk-memory" "-i=std" "-i=classes" "-fvisibility=hidden" platform="wasm32"
 versions "inline_concat" platform="wasm32"
 /* sourceFiles "src/godot/abi/gdnative_interface.i" */
 

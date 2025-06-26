@@ -5,7 +5,6 @@ import std.traits : isSomeFunction, isType;
 import std.algorithm : startsWith, canFind;
 import godot.util.string;
 import godot.abi.core : _godot_get_proc_address;
-import godotversion = godot.apiinfo;
 
 version(importc) {
     public import godot.abi.gdextension_header;
@@ -54,6 +53,7 @@ static foreach(symname; Filter!(isFunctionPtr, __traits(derivedMembers, gdextens
 
 // load function pointers for GDExtensionInterface
 void loadGDExtensionInterface() {
+    import godotversion = godot.apiinfo;
     static foreach(symname; Filter!(isFunctionPtr, __traits(derivedMembers, gdextension_interface))) {
         // makes up the following loader code:
         //   gdextension_interface_get_godot_version = cast(GDExtensionInterfaceGetGodotVersion) _godot_get_proc_address("get_godot_version");

@@ -353,8 +353,7 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
         auto name = *cast(StringName*) p_name;
         static if (__traits(compiles, __traits(getMember, T, "_ready"))) {
             if (name == StringName("_ready")) {
-                return cast(GDExtensionClassCallVirtual) 
-                    &OnReadyWrapper!(T, __traits(getMember, T, "_ready")).callOnReady;
+                return &OnReadyWrapper!(T, __traits(getMember, T, "_ready")).virtualWrapper;
             }
         }
         return VirtualMethodsHelper!T.findVCall(p_name);

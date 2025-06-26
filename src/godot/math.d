@@ -414,7 +414,7 @@ long randiRange(long from, long to) {
 }
 
 double randfRange(double from, double to) {
-    return randfRange(from, to);
+    return bt.randfRange(from, to);
 }
 
 double randfn(in double mean, in double deviation) {

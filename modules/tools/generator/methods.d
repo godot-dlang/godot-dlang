@@ -432,8 +432,12 @@ class GodotMethod {
             if (return_type.isSingleton)
                 ret ~= "Singleton";
             ret ~= ")(";
-            if (parent.isBuiltinClass)
-                ret ~= "cast(GDExtensionPtrBuiltInMethod) ";
+            if (parent.isBuiltinClass) { // TODO: refactor - make it a property maybe?
+                if (isConstructor)
+                    ret ~= "cast(GDExtensionPtrConstructor) ";
+                else
+                    ret ~= "cast(GDExtensionPtrBuiltInMethod) ";
+            }
             ret ~= "GDExtensionClassBinding." ~ wrapperIdentifier;
             if (parent.isBuiltinClass) // Adds method pointer accessor instead of template itself
                 ret ~= ".mb";
