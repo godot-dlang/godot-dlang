@@ -27,7 +27,8 @@ confusing or undocumented features on the GitHub page.
   - [Creating dub project](#creating-dub-project)
   - [Creating your first D script](#creating-your-first-d-script)
   - [Register GDExtension](#register-gdextension)
-  - [Use D scripts in godot](#use-d-scripts-in-godot )
+  - [Use D scripts in godot](#use-d-scripts-in-godot)
+  - [Exporting for Web] (#exporting-for-web)
 - [Creating project by using init script](#creating-project-by-using-init-script)
 - [Extend as you wish!](#extend-as-you-wish)
 <!-- - [Automatic reloading of native extension](#automatic-reloading-of-native-extension) -->
@@ -165,6 +166,7 @@ compatibility_minimum = "4.1"
 
 linux.64 = "libmydplugin.so"
 windows.64 = "mydplugin.dll"
+web = "libmydplugin.wasm"
 ```
 
 > Note that entry_symbol should match class registration in D inside of `GodotNativeLibrary` declaration
@@ -176,6 +178,11 @@ windows.64 = "mydplugin.dll"
 - As soon as it gets added to the scene you should see Hello message in log in the panel below.
 
 ![hellod](hellogd4.jpg)
+
+
+#### Exporting for Web
+
+**EXPERIMENTAL** See this [document](WEBEXPORT.md) for more information.
 
 ### Creating project by using init script
 Run command `dub run godot-dlang:init` to initialize new project in current folder. This script will walk you through standard dub project set up and will create dub config, library entrypoint and gdextension plugin.
