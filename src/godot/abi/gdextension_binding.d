@@ -2,7 +2,13 @@ module godot.abi.gdextension_binding;
 
 import godot.abi.types;
 import core.stdc.config;
-public import core.stdc.stddef : wchar_t;
+
+version(WebAssembly) {
+    alias wchar_t = dchar;
+} 
+else {
+    public import core.stdc.stddef : wchar_t;
+}
 
 extern (C):
 

@@ -13,7 +13,6 @@ License: $(LINK2 https://opensource.org/licenses/MIT, MIT License)
 */
 module godot.string;
 
-// import core.stdc.stddef : wchar_t;
 import std.traits;
 import std.exception : assumeWontThrow;
 import godot.builtins;

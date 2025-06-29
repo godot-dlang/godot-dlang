@@ -98,10 +98,8 @@ struct StringName {
             gdextension_interface_string_new_with_latin1_chars_and_len(&_godot_string_name, contents.ptr, cast(
                     int) contents.length);
         } else {
-            import core.stdc.string : strlen;
-
             const(char)* contents = str;
-            gdextension_interface_string_new_with_latin1_chars_and_len(&_godot_string_name, contents, cast(int) strlen(
+            gdextension_interface_string_new_with_latin1_chars_and_len(&_godot_string_name, contents, cast(int) strlen_(
                     contents));
         }
     }
@@ -145,7 +143,15 @@ struct StringName {
 
     @trusted
     hash_t toHash() const nothrow {
-        return cast(hash_t) assumeWontThrow(_bind.hash());
+        try {
+            // this supposedly never throws
+            return cast(hash_t) _bind.hash();
+        }
+        catch (Exception e) {
+            //printerr(Variant(String(e.msg)));
+            // TODO: print error in a way that not causes compiler to fail
+            assert(0, "oh no, an unexpected exception");
+        }
         //static if(hash_t.sizeof == uint.sizeof) return gdextension_interface_string_hash(&_godot_string);
         //else return gdextension_interface_string_hash64(&_godot_string);
     }
@@ -214,3 +220,20 @@ needed, then caches the StringName, allowing it to implicitly convert to StringN
 no run time cost.
 +/
 enum gn(string str) = GodotStringNameLiteral!str.init;
+
+
+size_t strlen_(T)(scope const T* str) pure
+        if (is(T : char) || is(T : wchar) || is(T : dchar)) {
+    // low quality strlen replacement for wasm
+    version(WebAssembly) {
+        size_t p = 0;
+        while (str[p]) {
+            p++;
+        }
+        return p;
+    }
+    else {
+        import core.stdc.string : strlen;
+        return strlen(str);
+    }
+}

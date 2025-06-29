@@ -23,7 +23,6 @@ import godot.vector2;
 
 
 import std.algorithm.comparison; // min, max
-import std.math;
 
 private bool isValidSwizzle(dstring s) {
     import std.algorithm : canFind;
@@ -41,7 +40,7 @@ private bool isValidSwizzle(dstring s) {
 Vector3 is one of the core classes of the engine, and includes several built-in helper functions to perform basic vector math operations.
 */
 struct Vector3 {
-@nogc nothrow:
+/*@nogc nothrow:*/
 
     enum Axis {
         x = 0,
@@ -510,18 +509,16 @@ struct Vector3 {
     }
 
     bool isEqualApprox(in Vector3 other) const {
-        import std.math : isClose;
         return isClose(x, other.x) && isClose(y, other.y) && isClose(z, other.z);
     }
 
     bool isZeroApprox() const {
-        import std.math : isClose;
         return isClose(x, 0) && isClose(y, 0) && isClose(z, 0);
     }
 }
 
 struct Vector3i {
-@nogc nothrow:
+/*@nogc nothrow:*/
 
     enum Axis {
         x,
@@ -546,6 +543,12 @@ struct Vector3i {
         this.x = x;
         this.y = y;
         this.z = z;
+    }
+
+    this(long x, long y, long z) {
+        this.x = cast(int) x;
+        this.y = cast(int) y;
+        this.z = cast(int) z;
     }
 
     this(int[3] coord) {

@@ -23,7 +23,6 @@ alias Point2 = Vector2;
 alias Size2i = Vector2i;
 alias Point2i = Vector2i;
 
-import std.math;
 import std.algorithm.comparison;
 
 private bool isValidSwizzle(dstring s) {
@@ -42,7 +41,7 @@ private bool isValidSwizzle(dstring s) {
 2-element structure that can be used to represent positions in 2d-space, or any other pair of numeric values.
 */
 struct Vector2 {
-@nogc nothrow:
+/*@nogc nothrow:*/
 
     enum Axis {
         x,
@@ -466,7 +465,7 @@ struct Vector2 {
 
 
 struct Vector2i {
-@nogc nothrow:
+/*@nogc nothrow:*/
 
     enum Axis {
 		x,
@@ -492,6 +491,11 @@ struct Vector2i {
     this(godot_int x, godot_int y) {
         this.x = x;
         this.y = y;
+    }
+
+    this(long x, long y) {
+        this.x = cast(typeof(this.x)) x;
+        this.y = cast(typeof(this.y)) y;
     }
 
     this(int[2] coord) {

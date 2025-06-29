@@ -20,7 +20,6 @@ import godot.string;
 import godot.math;
 import godot.api.types; // CMP_EPSILON
 
-import std.math;
 import std.algorithm; // min, max, minIndex, maxIndex
 
 private bool isValidSwizzle(dstring s) {
@@ -39,7 +38,7 @@ private bool isValidSwizzle(dstring s) {
 Vector4 is one of the core classes of the engine, and includes several built-in helper functions to perform basic vector math operations.
 */
 struct Vector4 {
-@nogc nothrow:
+/*@nogc nothrow:*/
 
     // used for indexing
     enum Axis {
@@ -381,7 +380,7 @@ struct Vector4 {
 // ################ Vector4i ##################################################
 
 struct Vector4i {
-@nogc nothrow:
+/*@nogc nothrow:*/
 
     enum Axis {
         x,
@@ -410,6 +409,13 @@ struct Vector4i {
         this.y = y;
         this.z = z;
         this.w = w;
+    }
+
+    this(long x, long y, long z, long w) {
+        this.x = cast(int) x;
+        this.y = cast(int) y;
+        this.z = cast(int) z;
+        this.w = cast(int) w;
     }
 
     this(int[4] coord) {

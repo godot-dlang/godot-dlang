@@ -19,7 +19,6 @@ import godot.quat;
 import godot.globalenums : EulerOrder;
 import godot.math;
 
-import std.math;
 import std.algorithm.comparison : clamp;
 import std.algorithm.mutation : swap;
 
@@ -29,7 +28,7 @@ import std.algorithm.mutation : swap;
 For such use, it is composed of a scaling and a rotation matrix, in that order (M = R.S).
 */
 struct Basis {
-@nogc nothrow:
+/*@nogc nothrow:*/
 
     Vector3[3] elements =
         [
@@ -125,7 +124,7 @@ struct Basis {
     }
 
 
-    void rotateSh(ref real_t[] values) @nogc {
+    void rotateSh(ref real_t[] values) {
         // code by John Hable
         // http://filmicworlds.com/blog/simple-and-fast-spherical-harmonic-rotation/
         // this code is Public Domain

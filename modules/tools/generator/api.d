@@ -132,7 +132,7 @@ struct ExtensionsApi {
     ConfigurationTypeMemberOffsets[] builtin_class_member_offsets;
     Constant[] global_constants;
     GodotEnum[] global_enums;
-    GodotMethod[] utility_functions;
+    GodotUtilityFunction[] utility_functions;
     GodotClass[] builtin_classes; // only basic types such as Vector3, Color, Dictionary, etc...
     GodotClass[] classes;
     Singleton[] singletons;
@@ -206,6 +206,36 @@ import godot.classdb;`;
             continue;
 
         s ~= cls.source();
+    }
+
+    s ~= "\n\n\n// ============ UTILITY FUNCTIONS ============\n\n\n";
+
+    // returns null or the base name set to overload
+    static string matchOverloadPattern(string p, string name) {
+        // slow...
+        //if (levenshteinDistance(p, name) > 1)
+        //    return null;
+        auto ppos = p.indexOf('$');
+        if (ppos == -1) {
+            return null;
+        }
+        auto tmp = p.dup;
+        foreach (i; ['f', 'i']) {
+            tmp[ppos] = i;
+            if (tmp == name) return tmp.remove(ppos);
+        }
+        return null;
+    }
+
+    // additionally emit builtin_functions section here
+    foreach (f; ap.utility_functions) {
+        foreach(p; mathOverloadSets) {
+            if (auto alias_ = matchOverloadPattern(p, f.name)) {
+                s ~= "\talias " ~ alias_ ~ " = " ~ f.name.snakeToCamel ~ ";";
+            }
+        }
+        s ~= f.source();
+        s ~= "\n\n";
     }
     return s;
 }

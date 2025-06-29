@@ -7,8 +7,6 @@ module godot.api.wrap;
 import std.algorithm : max;
 import std.range;
 import std.meta, std.traits;
-import std.experimental.allocator, std.experimental.allocator.mallocator;
-import core.stdc.stdlib : malloc, free;
 
 import godot.api.udas;
 import godot.api.traits, godot.api.script;
@@ -502,6 +500,12 @@ package(godot) struct MethodWrapperMeta(alias mf) {
 // Special wrapper that fetches OnReady members and then calls real _ready 
 // NOTE: test this and use version to choose T/GodotClass!T depending on USE_CLASSES version
 package(godot) struct OnReadyWrapper(T, alias mf) if (is(GodotClass!T : Node)) {
+    // TODO: callOnReady is supposed to return GDExtensionClassCallVirtual
+    //      maybe it is already possible to drop this hackish function interface and remove virtual wrapper
+    extern (C)
+    static void virtualWrapper(GDExtensionClassInstancePtr inst, const(GDExtensionTypePtr)* args, GDExtensionTypePtr ret) {
+        callOnReady(null, inst, args, Parameters!mf.length, ret, null);
+    }
     extern (C) // for calling convention
     static void callOnReady(void* methodData, void* instance,
         const(void*)* args, long numArgs, void* r_return, GDExtensionCallError* r_error) {

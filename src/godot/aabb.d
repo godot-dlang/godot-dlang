@@ -24,7 +24,7 @@ import std.algorithm.mutation : swap;
 AABB consists of a position, a size, and several utility functions. It is typically used for fast overlap tests.
 */
 struct AABB {
-@nogc nothrow:
+/*@nogc nothrow:*/
 
     Vector3 position;
     Vector3 size;

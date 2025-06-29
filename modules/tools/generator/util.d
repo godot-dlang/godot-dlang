@@ -726,6 +726,8 @@ string escapeDType(string s, string godotType = "") {
         "debug",
         "toString", // Object.toString overload
         "synchronized",
+        "typeof", // Godot built-in function
+        "string",
     );
     switch (s) {
     case "Object":
@@ -763,3 +765,4 @@ string tab(string s, int tabs) {
     import std.conv : to;
     return repeat('\t', tabs).to!string ~ s;
 }
+

@@ -6,8 +6,7 @@ import godot.area3d;
 import godot.rigidbody3d;
 import godot.engine;
 
-import std.random;
-import std.math;
+import godot.math;
 
 import player;
 
@@ -37,7 +36,8 @@ class Asteroids : GodotScript!Node3D {
     }
 
     @Method _process(double delta) {
-        cameraTarget.position = player.position;
+        if (player && cameraTarget)
+            cameraTarget.position = player.position;
 
         foreach (ch; getChildren(false)) {
             if (RigidBody3D rock = ch.as!RigidBody3D) {
@@ -55,15 +55,15 @@ class Asteroids : GodotScript!Node3D {
         if (!rock) {
             Ref!PackedScene scene = ResourceLoader.load("res://Rock.tscn", "", ResourceLoader
                     .CacheMode.cacheModeReplace).as!PackedScene;
-            rock = scene.instantiate(PackedScene.GenEditState.genEditStateInstance).as!RigidBody3D;
+            rock = scene.instantiate(PackedScene.GenEditState.genEditStateDisabled).as!RigidBody3D;
             addChild(rock, false, Node.InternalMode.internalModeDisabled);
         }
 
-        Vector3 randomDir = Vector3(0, 0, 1).rotated(Vector3(0, 1, 0), uniform(0f, 2f * PI));
+        Vector3 randomDir = Vector3(0, 0, 1).rotated(Vector3(0, 1, 0), randfRange(0f, 2f * PI));
         rock.position = 55f * randomDir;
 
-        Vector3 velocity = (-randomDir).rotated(Vector3(0, 1, 0), uniform!"[]"(-spread, spread));
-        velocity *= speed + uniform!"[]"(-speedVariance, speedVariance);
+        Vector3 velocity = (-randomDir).rotated(Vector3(0, 1, 0), randfRange(-spread, spread));
+        velocity *= speed + randfRange(-speedVariance, speedVariance);
         rock.linearVelocity = velocity;
     }
 

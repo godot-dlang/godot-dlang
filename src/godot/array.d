@@ -525,7 +525,8 @@ struct TypedArray(T) {
             StringName typeName = __traits(identifier, T);
         else
             StringName typeName = StringName.makeEmpty();
-        _array = Array(other, varType, typeName, Variant());
+        auto v = Variant();
+        _array = Array(other, varType, typeName, v);
     }
 
     this(T[] other) {
@@ -581,3 +582,4 @@ static assert(__traits(compiles, typeof(TypedArray!RID())));
 static assert(__traits(compiles, typeof(TypedArray!Vector3i())));
 static assert(__traits(compiles, typeof(TypedArray!String())));
 static assert(__traits(compiles, typeof(TypedArray!StringName())));
+static assert(__traits(compiles, typeof(TypedArray!PackedByteArray())));

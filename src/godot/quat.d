@@ -19,7 +19,6 @@ import godot.basis;
 import godot.math;
 import godot.globalenums : EulerOrder;
 
-import std.math;
 import std.algorithm.comparison : clamp;
 
 /**
@@ -32,7 +31,7 @@ Multiplying quaternions reproduces rotation sequences. However quaternions need 
 It can be used to perform SLERP (spherical-linear interpolation) between two rotations.
 */
 struct Quaternion {
-@nogc nothrow:
+/*@nogc nothrow:*/
 
     union { 
         struct {
@@ -72,7 +71,7 @@ struct Quaternion {
     }
 
     bool isNormalized() const {
-        return isClose(lengthSquared(), 1, UNIT_EPSILON); //use less epsilon
+        return isClose(lengthSquared(), 1.0f, UNIT_EPSILON); //use less epsilon
     }
 
     Quaternion inverse() const {

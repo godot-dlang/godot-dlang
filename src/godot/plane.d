@@ -17,15 +17,13 @@ import godot.api.types;
 import godot.vector3;
 import godot.math;
 
-import std.math;
-
 public import godot.globalenums : ClockDirection;
 
 /**
 Plane represents a normalized plane equation. Basically, “normal” is the normal of the plane (a,b,c normalized), and “d” is the distance from the origin to the plane (in the direction of “normal”). “Over” or “Above” the plane is considered the side of the plane towards where the normal is pointing.
 */
 struct Plane {
-@nogc nothrow:
+/*@nogc nothrow:*/
 
     Vector3 normal = Vector3(0, 0, 0);
     real_t d = 0;

@@ -75,13 +75,15 @@ struct GodotConstructor(Return, Args...) {
 Raw Method call helper
 +/
 Return callBuiltinMethod(Return, Args...)(in GDExtensionPtrBuiltInMethod method, GDExtensionTypePtr obj, Args args) {
-    static if (!is(Return == void))
+    static if (!is(Return == void)) {
         Return ret = void;
+        (cast(ubyte*)(&ret))[0..Return.sizeof] = 0;
+    }
     else
         typeof(null) ret = null;
 
-    import core.stdc.string;
-    memset(&ret, 0, Return.sizeof);
+    //import core.stdc.string;
+    //memset(&ret, 0, Return.sizeof);
 
     GDExtensionTypePtr[Args.length + 1] _args;
     foreach (i, ref a; args) {
@@ -99,11 +101,72 @@ Return callBuiltinMethod(Return, Args...)(in GDExtensionPtrBuiltInMethod method,
         return ret;
 }
 
+/++
+Utility function call helper, the ones not belonging to any class
++/
+Return callBuiltinFunction(Return, Args...)(in GDExtensionPtrUtilityFunction func, Args args) {
+    static if (!is(Return == void))
+        Return ret = void;
+    else
+        typeof(null) ret = null;
+
+    import core.stdc.string;
+    memset(&ret, 0, Return.sizeof);
+
+    GDExtensionTypePtr[Args.length + 1] _args;
+    foreach (i, ref a; args) {
+        // TODO: remove this static_if hack thing once the object casts mess will be resolved
+        static if (is(typeof(a) == GodotObject))
+          _args[i] = cast(void*) a;
+        else static if (is(typeof(a) == void*))
+          _args[i] = a;
+        else
+        _args[i] = cast(void*) cast() &a;
+    }
+
+    func(&ret, _args.ptr, _args.length);
+    static if (!is(Return == void))
+        return ret;
+}
+
 //@nogc nothrow 
 pragma(inline, true)
 package(godot) void checkClassBinding(C)() {
     if (!C._classBindingInitialized) {
         initializeClassBinding!C();
+    }
+}
+
+/++
+Raw Method call helper
++/
+Return callBuiltinCtor(Return, Args...)(in GDExtensionPtrConstructor method, GDExtensionTypePtr obj, Args args) {
+    static if (!is(Return == void)) {
+        Return ret = void;
+        (cast(ubyte*)(&ret))[0..Return.sizeof] = 0;
+    }
+    else
+        typeof(null) ret = null;
+
+    //import core.stdc.string;
+    //memset(&ret, 0, Return.sizeof);
+
+    GDExtensionTypePtr[Args.length + 1] _args;
+    foreach (i, ref a; args) {
+        // TODO: remove this static_if hack thing once the object casts mess will be resolved
+        static if (is(typeof(a) == GodotObject))
+          _args[i] = cast(void*) a;
+        else static if (is(typeof(a) == void*))
+          _args[i] = a;
+        else
+        _args[i] = &a;
+    }
+
+    method(obj, _args.ptr);
+
+    // TODO: there is actually no return as this call is ctor call on an already allocated object
+    static if (!is(Return == void)) {
+        return ret;
     }
 }
 

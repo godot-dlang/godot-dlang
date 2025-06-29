@@ -4,8 +4,6 @@ Implementation templates for new Godot-D native scripts
 module godot.api.script;
 
 import std.meta, std.traits;
-import std.experimental.allocator, std.experimental.allocator.mallocator;
-import core.stdc.stdlib : malloc, free;
 
 import godot.abi, godot;
 import godot.api.udas;
@@ -451,7 +449,6 @@ extern (C) package(godot) void destroyFunc(T)(void* userData, void* instance) //
     T t = cast(T) instance;
     godot.finalize(t);
     gdextension_interface_mem_free(cast(void*) t);
-    //Mallocator.instance.dispose(t);
 }
 
 extern(C) package(godot) GDExtensionClassInstancePtr recreateFunc(T)(void* p_class_userdata, GDExtensionObjectPtr p_object) { 

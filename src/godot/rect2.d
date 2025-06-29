@@ -26,7 +26,7 @@ import std.algorithm.mutation : swap;
 Rect2 consists of a position, a size, and several utility functions. It is typically used for fast overlap tests.
 */
 struct Rect2 {
-@nogc nothrow:
+/*@nogc nothrow:*/
 
     Vector2 position;
     Vector2 size;
@@ -547,7 +547,7 @@ struct Rect2 {
 // ###### Rect2i ##############################################################
 
 struct Rect2i {
-@nogc nothrow:
+/*@nogc nothrow:*/
 
     Vector2i position;
     Vector2i size;

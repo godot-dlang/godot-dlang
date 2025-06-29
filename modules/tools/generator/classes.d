@@ -75,6 +75,10 @@ class Constructor : GodotMethod {
         return "ctor";
     }
 
+    override string callType() const {
+        return "callBuiltinCtor";
+    }
+
     override string loader() const {
         return format(`GDExtensionClassBinding.%s.mb = gdextension_interface_variant_get_ptr_constructor(%s, %d);`,
             wrapperIdentifier,

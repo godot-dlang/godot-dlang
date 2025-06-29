@@ -7,3 +7,4 @@ compatibility_minimum = 4.1
 
 linux.64 = "libgodot-dlang_asteroids.so"
 windows.64 = "godot-dlang_asteroids.dll"
+web = "libgodot-dlang_asteroids.wasm"

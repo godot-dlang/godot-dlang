@@ -15,16 +15,21 @@ module godot.color;
 
 import godot.api.types;
 import godot.string;
+import godot.math;
 
-import std.math;
 import std.algorithm.comparison;
-import core.stdc.stddef : wchar_t;
+
+version (WebAssembly) {
+    alias wchar_t = dchar;
+} else {
+    import core.stdc.stddef : wchar_t;
+}
 
 /**
 A color is represented as red, green and blue (r,g,b) components. Additionally, “a” represents the alpha component, often used for transparency. Values are in floating point and usually range from 0 to 1. Some methods (such as set_modulate(color)) may accept values > 1.
 */
 struct Color {
-@nogc nothrow:
+/*@nogc nothrow:*/
 
     union {
         struct {

@@ -234,8 +234,7 @@ auto getDefaultValueFromAlias(T, string fieldName)() {
         else
             return defExprSeq[0];
     } else static if (is(typeof({ P p; }))) {
-        import std.math : isNaN;
-
+        import godot.math : isNaN;
         static if (isFloatingPoint!P && a.init.isNaN) {
             // Godot doesn't support NaNs. Initialize properties to 0.0 instead.
             return P(0.0);

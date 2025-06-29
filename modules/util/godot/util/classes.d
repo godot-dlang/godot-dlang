@@ -8,6 +8,9 @@ TODO: replace temporary CSV serialization with proper JSON.
 +/
 module godot.util.classes;
 
+version(WebAssembly) {}
+else {
+
 import std.string;
 
 import std.algorithm : map;
@@ -15,6 +18,8 @@ import std.array : join;
 import std.range;
 import std.conv : text;
 import std.meta;
+
+}
 
 /// Information about what classes were found in a D source file.
 struct FileInfo {
@@ -25,6 +30,8 @@ struct FileInfo {
     bool hasEntryPoint = false; /// the GodotNativeLibrary mixin is in this file
     string[] classes; /// all classes in the file
 
+version(WebAssembly) {}
+else {
     string toCsv() const {
         string ret = only(name, hash, moduleName, mainClass).join(",");
         ret ~= ",";
@@ -52,11 +59,14 @@ struct FileInfo {
         return ret;
     }
 }
+}
 
 /// 
 struct ProjectInfo {
     FileInfo[] files;
-
+    
+version(WebAssembly) {}
+else {
     /// the project has a GodotNativeLibrary mixin in one of its files
     bool hasEntryPoint() const {
         import std.algorithm.searching : any;
@@ -79,4 +89,5 @@ struct ProjectInfo {
         }
         return ret;
     }
+}
 }
