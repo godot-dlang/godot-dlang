@@ -517,7 +517,7 @@ package(godot) struct OnReadyWrapper(T, alias mf) if (is(GodotClass!T : Node)) {
         //
         //auto id = gdextension_interface_object_get_instance_id(instance);
         //auto obj = gdextension_interface_object_get_instance_from_id(id);
-        T t = cast(T) methodData; // method data is an actual D object backing godot instance
+        T t = cast(T) instance; // method data is an actual D object backing godot instance
 
         if (!t)
             return;
@@ -601,7 +601,7 @@ package(godot) struct OnReadyWrapper(T, alias mf) if (is(GodotClass!T : Node)) {
             //   but because we already have too much template heavy code 
             //   adding yet another special case was too cumbersome.
             //   But... it was quite some time ago and I forgot the details so I maybe wrong.
-            MethodWrapper!(T, mf).callMethod(null, methodData, args, numArgs, r_return, r_error); 
+            MethodWrapper!(T, mf).callMethod(null, instance, args, numArgs, r_return, r_error); 
         }
     }
 }
