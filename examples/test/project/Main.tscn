@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://d4dd1a5m6rqvv"]
 
-[ext_resource type="Script" path="res://main.gd" id="1_nbra5"]
+[ext_resource type="Script" uid="uid://ycuqd1vgcmau" path="res://main.gd" id="1_nbra5"]
 
 [node name="Node" type="Node"]
 script = ExtResource("1_nbra5")
@@ -8,8 +8,8 @@ script = ExtResource("1_nbra5")
 [node name="Panel" type="Panel" parent="."]
 
 [node name="Label" type="TestD" parent="Panel"]
-property = " ~ hello from the getter! ~ hello from the setter! ~ hello from the getter! ~ hello from the setter! ~ hello from the getter! ~ hello from the setter! ~ hello from the getter! ~ hello from the setter! ~ hello from the getter!"
-number = 14
+property = " ~ hello from the getter! ~ hello from the setter! ~ hello from the getter! ~ hello from the setter! ~ hello from the getter! ~ hello from the setter! ~ hello from the getter! ~ hello from the setter! ~ hello from the getter! ~ hello from the setter! ~ hello from the getter!"
+number = 16
 long_node_path = NodePath("One/Looooong/Incredibly/Unbroken/Node/Path/Label")
 layout_mode = 1
 offset_right = 211.0
@@ -57,4 +57,5 @@ offset_right = 1.0
 offset_bottom = 123.0
 text = "label2"
 
+[connection signal="another_signal" from="Panel/Label" to="." method="_on_label_another_signal"]
 [connection signal="send_message" from="Panel/Label" to="." method="_on_label_send_message"]

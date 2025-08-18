@@ -46,12 +46,31 @@ This step assumes your already has working godot-dlang setup, at this point you 
 
 It is important to know that LDC currently generates lots of unused symbols that will end up in produced binary dramatically increasing its size, it is currently necessary to build sources all to once (requiring over 8GB of RAM) in order to produce a binary with a minimal set of unneded symbols for emscripten to be able to load your `.wasm` file.
 
+Additional step is to set up environment variable that points to location with emscripten libc.
+
+unix shell
+```sh
+export emsdk_libs="/path/to/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten"
+```
+
+windows cmd/batch
+```bat
+set emsdk_libs="C:/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten"
+```
+
+windows powershell
+```ps1
+$env:emsdk_libs="C:/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten"
+```
+
+And then build
+
 ```sh
 cd godot-dlang
 dub build :asteroids --compiler=ldc2 --arch=wasm32-unknown-emscripten -v --force --build-mode=allAtOnce --combined
 ```
 
-you don't need `-v` and `--force`, but it verbose output can be helpful in diagnose issues in build process.
+you don't need `-v` and `--force`, but a verbose output can be helpful in diagnosing issues in build process, while force make sure this is a clean build without previous artifacts being used.
 
 The produced binary will contain debug information. If something went wrong at least you will see your D call stack, debugging wasm currently is next to impossible, so having a detailed call stack already is of great help. 
 Remember to strip debug symbols later on when you ready to ship, for both securing your source code and reducing download size.
@@ -85,9 +104,10 @@ Open up your browser (default address is http://127.0.0.1:8060/) and navigate to
 
 At this point the guide is done and there is nothing more to tell.
 
-It is worth saying though that basically only Chrome and to some extent Firefox supports WASM at this moment, with firefox debugging is close to non-existing.
+It is worth saying though that basically only Chrome and to some extent Firefox supports WASM at this moment, with Firefox debugging is close to non-existing.
 
-Even with chrome based browsers best you will have to diagnosing logic errors is printf based debugging and call stack, AFAIK LDC does not generate source maps for browsers so you won't be able to see and step through your D code in browser.
+Chrome has a C++ debugger extension that supports DWARF debug information, it works very well with D --gc flag (generate c++ compatible debug info). This way you can have almost full debug info about D extension including types, callstack, local variables, etc... unfortunatelly the godot itself still have pretty much no debug information due to optimization steps.
+https://chromewebstore.google.com/detail/pdcpmagijalfljmkmjngeonclgbbannb
 
 Extra information:
 these HTTP headers may or may not be necessary for your own server, not sure about last one.

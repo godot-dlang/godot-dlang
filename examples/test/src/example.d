@@ -23,6 +23,29 @@ import godot.resource;
 import godot.node;
 import godot.refcounted;
 
+// hacky hack due to lack of phobos
+version(Emscripten) {
+    import core.stdc.stdio;
+
+    void writefln(Args...)(string s, Args args) {
+        //printf(s.ptr, args);
+    }
+
+    void writefln(Args...)(wstring s, Args args) {
+        //printf(s.ptr, args);
+    }
+
+    void writef(Args...)(Args args) {
+        // noop
+    }
+
+    void write(string s) {
+        // better not do this, it is unsafe and all
+        //puts(s.ptr);
+    }
+}
+
+
 @Rename("TestD")
 class Test : GodotScript!Label {
     /++
@@ -71,7 +94,7 @@ class Test : GodotScript!Label {
         double dreal = 0.25;
     }
 
-    @Property onlySetter(int value) {
+    @Property void onlySetter(int value) {
         print("onlySetter: ", value);
     }
 
@@ -219,9 +242,14 @@ version(USE_CLASSES) {
         print("Hello", " Godot", " o/");
         print();
 
-        writeln("This as Variant: ", Variant(this));
-        writeln("3 as Variant: ", Variant(3));
-        writeln("\"asdf\" as Variant: ", Variant(String("asdf")));
+        version(Emscripten) {
+            // writeln for emscripten is only partially implemented, skip for now
+        }
+        else {
+            writeln("This as Variant: ", Variant(this));
+            writeln("3 as Variant: ", Variant(3));
+            writeln("\"asdf\" as Variant: ", Variant(String("asdf")));
+        }
 
         {
             writefln("This (%s) is a normal D method of type %s.",
