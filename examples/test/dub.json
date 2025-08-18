@@ -27,6 +27,22 @@
 				"godot-dlang": "classes" 
 			}
 		}
-	]
+	],
+
+	"dflags-wasm": ["-i=std", "-i=classes", "-mattr=atomics,bulk-memory", "-fvisibility=hidden", "--gc" ],
+	"lflags-wasm": [
+		"--no-entry", "-allow-undefined", "--export=test_gdextension_entry", "--export=_emscripten_tls_init", "--shared-memory", 
+		"${emsdk_libs}/pic/libc-mt-debug.a", 
+		"${emsdk_libs}/libprintf_long_double.a", 
+		"${emsdk_libs}/pic/libbulkmemory.a", 
+		"${emsdk_libs}/pic/libcompiler_rt-wasm-sjlj-mt.a", 
+		"${emsdk_libs}/pic/libstubs-debug.a",
+		"${emsdk_libs}/pic/libdlmalloc-mt.a", 
+		"${emsdk_libs}/pic/crtbegin.o"
+	],
+	"sourcePaths-wasm": ["../../extras/webassembly/source", "../../extras/webassembly/arsd-webassembly"],
+	"importPaths-wasm": ["../../extras/webassembly/source", "../../extras/webassembly/arsd-webassembly"],
+	"sourceFiles-wasm": ["../../extras/webassembly/source/object.d"],
+	"versions-wasm": ["inline_concat"]
 
 }

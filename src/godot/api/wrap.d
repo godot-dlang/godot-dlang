@@ -14,6 +14,13 @@ import godot.api.traits, godot.api.script;
 import godot, godot.abi;
 import godot.node;
 
+enum TRACE_METHOD_CALLS = false;
+
+static if (TRACE_METHOD_CALLS) {
+    import core.stdc.stdio : printf;
+}
+
+
 private template staticCount(alias thing, seq...) {
     template staticCountNum(size_t soFar, seq...) {
         enum size_t nextPos = staticIndexOf!(thing, seq);
@@ -264,6 +271,11 @@ package(godot) struct MethodWrapper(T, alias mf) {
         // TODO: check types for Variant compatibility, give a better error here
         // TODO: check numArgs, accounting for D arg defaults
 
+        static if (TRACE_METHOD_CALLS) {
+            printf("> %s\n", fullyQualifiedName!mf.ptr);
+            scope(exit) printf("< %s\n", fullyQualifiedName!mf.ptr);
+        }
+
         if (!(__traits(isStaticFunction, mf) || instance)) {
             r_error.error = GDEXTENSION_CALL_ERROR_INSTANCE_IS_NULL;
             return;
@@ -343,6 +355,11 @@ package(godot) struct MethodWrapper(T, alias mf) {
     extern (C)
     static void callPtrMethod(void* methodData, void* instance,
         const(void*)* args, void* r_return) {
+
+        static if (TRACE_METHOD_CALLS) {
+            printf("> [callPtrMethod] %s\n", __traits(fullyQualifiedName, mf).ptr);
+            scope(exit) printf("< [callPtrMethod] %s\n", __traits(fullyQualifiedName, mf).ptr);
+        }
 
         T obj = cast(T) instance;
 
@@ -734,6 +751,10 @@ package(godot) struct VariableWrapper(T, alias var) {
     extern (C) // for calling convention
     static void callPropertyGet(void* methodData, void* instance,
         const(void*)* args, long numArgs, void* r_return, GDExtensionCallError* r_error) {
+        static if (TRACE_METHOD_CALLS) {
+            printf("> %s.%s [getter]\n", T.stringof.ptr, __traits(fullyQualifiedName, var).ptr);
+            scope(exit) printf("< %s.%s getter\n", T.stringof.ptr, __traits(fullyQualifiedName, var).ptr);
+        }
         auto obj = cast(T) instance;
         if (!obj) {
             r_error.error = GDEXTENSION_CALL_ERROR_INSTANCE_IS_NULL;
@@ -750,6 +771,10 @@ package(godot) struct VariableWrapper(T, alias var) {
     extern (C) // for calling convention
     static void callPropertySet(void* methodData, void* instance,
         const(void*)* args, long numArgs, void* r_return, GDExtensionCallError* r_error) {
+        static if (TRACE_METHOD_CALLS) {
+            printf("> %s.%s [setter]\n", T.stringof.ptr, __traits(fullyQualifiedName, var).ptr);
+            scope(exit) printf("< %s.%s setter\n", T.stringof.ptr, __traits(fullyQualifiedName, var).ptr);
+        }
         auto obj = cast(T) instance;
         if (!obj) {
             r_error.error = GDEXTENSION_CALL_ERROR_INSTANCE_IS_NULL;

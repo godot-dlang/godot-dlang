@@ -143,7 +143,7 @@ struct godot_dictionary {
 }
 
 struct godot_node_path {
-    ubyte[8] _opaque;
+    ubyte[size_t.sizeof] _opaque;
 }
 
 struct godot_plane {

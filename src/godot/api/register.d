@@ -18,6 +18,8 @@ import godot, godot.abi;
 
 import godot.abi.gdextension;
 
+enum TRACE_METHOD_CALLS = false;
+
 // global instance for current library
 __gshared GDExtensionClassLibraryPtr _GODOT_library;
 
@@ -799,6 +801,21 @@ void unregister(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
         StringName snClass = StringName(name);
         gdextension_interface_classdb_unregister_extension_class(lib, cast(GDExtensionStringNamePtr) snClass);
     }
+}
+
+extern(C) ReturnType!mf MethodPtr(T, alias mf, Args...)(T obj, Args args) {
+    enum char* fqn = cast(char*) (&mf).stringof;
+
+    static if (TRACE_METHOD_CALLS) {
+        import core.stdc.stdio;
+        printf("> %s\n", fqn);
+        scope(exit) printf("< %s\n", fqn);
+    }
+
+    static if (is(ReturnType!mf == void))
+        __traits(getMember, obj, mf.stringof)(args);
+    else
+        return __traits(getMember, obj, mf.stringof)(args);
 }
 
 
