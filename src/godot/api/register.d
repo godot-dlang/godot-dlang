@@ -305,8 +305,11 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
     enum isGodot42orNewer = extVersion.VERSION_MAJOR == 4 && extVersion.VERSION_MINOR >= 2;
     enum isGodot43orNewer = extVersion.VERSION_MAJOR == 4 && extVersion.VERSION_MINOR >= 3;
     enum isGodot44orNewer = extVersion.VERSION_MAJOR == 4 && extVersion.VERSION_MINOR >= 4;
+    enum isGodot45orNewer = extVersion.VERSION_MAJOR == 4 && extVersion.VERSION_MINOR >= 5;
 
-    static if (isGodot44orNewer)
+    static if (isGodot45orNewer)
+    __gshared static GDExtensionClassCreationInfo5 class_info;
+    else static if (isGodot44orNewer)
     __gshared static GDExtensionClassCreationInfo4 class_info;
     else static if (isGodot43orNewer)
     __gshared static GDExtensionClassCreationInfo3 class_info;
@@ -372,7 +375,9 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
 
     StringName snClass = StringName(name);
     StringName snBase = StringName(baseName);
-    static if (isGodot44orNewer)
+    static if (isGodot45orNewer)
+    gdextension_interface_classdb_register_extension_class5(lib, cast(GDExtensionStringNamePtr) snClass, cast(GDExtensionStringNamePtr) snBase, &class_info);
+    else static if (isGodot44orNewer)
     gdextension_interface_classdb_register_extension_class4(lib, cast(GDExtensionStringNamePtr) snClass, cast(GDExtensionStringNamePtr) snBase, &class_info);
     else static if (isGodot43orNewer)
     gdextension_interface_classdb_register_extension_class3(lib, cast(GDExtensionStringNamePtr) snClass, cast(GDExtensionStringNamePtr) snBase, &class_info);
