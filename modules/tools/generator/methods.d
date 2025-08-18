@@ -497,18 +497,18 @@ class GodotMethod {
     /// 	GDExtensionClassBinding.method_append.mb = gdextension_interface_clasdb_get_methodbind("class", "method", hash);
     string loader() const {
         char[] buf;
-        buf ~= "StringName classname = StringName(\"" ~ parent.name.godotType ~ "\");\n";
-        buf ~= "StringName methodname = StringName(\"" ~ name ~ "\");\n";
+        buf ~= "StringName _classname = StringName(\"" ~ parent.name.godotType ~ "\");\n";
+        buf ~= "StringName _methodname = StringName(\"" ~ name ~ "\");\n";
         // probably better to move in its own subclass
         if (parent.isBuiltinClass) {
-            return cast(string) buf ~ format(`GDExtensionClassBinding.%s.mb = gdextension_interface_variant_get_ptr_builtin_method(%s, cast(GDExtensionStringNamePtr) methodname, %d);`,
+            return cast(string) buf ~ format(`GDExtensionClassBinding.%s.mb = gdextension_interface_variant_get_ptr_builtin_method(%s, cast(GDExtensionStringNamePtr) _methodname, %d);`,
                 wrapperIdentifier,
                 parent.name.asNativeVariantType,
                 hash
             );
         }
 
-        return cast(string) buf ~ format(`GDExtensionClassBinding.%s.mb = gdextension_interface_classdb_get_method_bind(cast(GDExtensionStringNamePtr) classname, cast(GDExtensionStringNamePtr) methodname, %d);`,
+        return cast(string) buf ~ format(`GDExtensionClassBinding.%s.mb = gdextension_interface_classdb_get_method_bind(cast(GDExtensionStringNamePtr) _classname, cast(GDExtensionStringNamePtr) _methodname, %d);`,
             wrapperIdentifier,
             hash,
         );
