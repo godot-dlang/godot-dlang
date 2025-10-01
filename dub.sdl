@@ -31,8 +31,23 @@ configuration "classes" {
 	versions "USE_CLASSES"
 }
 
-preBuildCommands "if [ ! -d \"classes/\" ]; then echo \"ERROR: 'classes' dir not found, did you forgot to generate bindings?\" && exit 1; fi" platform="posix"
-preBuildCommands "if not exist \"classes\\\" ( echo ERROR: 'classes' dir not found, did you forgot to generate bindings? & exit 1 )" platform="windows"
+preBuildCommands "\
+	if [ ! -d \"classes/\" ]; then \
+		if [ ! -d \"extension_api.json\" ]; then \
+			echo \"             Downloading extension_api.json for bindings...\"; \
+			wget -O extension_api.json https://raw.githubusercontent.com/godotengine/godot-cpp/refs/heads/4.5/gdextension/extension_api.json; \
+		fi; \
+		dub run godot-dlang:generator -- -j extension_api.json -o; \
+	fi" platform="posix"
+
+preBuildCommands "\
+	if not exist \"classes\\\" ( \
+		if not exist \"extension_api.json\" ( \
+			echo              Downloading extension_api.json for bindings... && \
+			curl https://raw.githubusercontent.com/godotengine/godot-cpp/refs/heads/4.5/gdextension/extension_api.json -o extension_api.json \
+		) && \
+		dub run godot-dlang:generator -- -j extension_api.json -o \
+	)" platform="windows"
 // preBuildCommands "If (-not (Test-Path classes) ) { Write-Host \"No generated 'classes' dir found, did you forgot to generate bindings?\" -f Red ; exit 1 }" platform="windows"
 
 subPackage {
