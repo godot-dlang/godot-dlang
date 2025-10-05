@@ -396,7 +396,7 @@ extern (C) package(godot) void* createFunc2(T)(void* data, GDExtensionBool p_not
             }
             else {
                 // skip abstract base classes
-                enum IsNotAbstract(T) = !__traits(isAbstractClass, T) && !hasUDA(T, GodotAbstract);
+                enum IsNotAbstract(T) = !__traits(isAbstractClass, T) && !hasUDA!(T, GodotAbstract);
                 // don't do godotName in this case as this can result in wrong name
                 // anyway it will fail when extending GodotObject...
                 import godot.object;
