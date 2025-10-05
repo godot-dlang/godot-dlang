@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine_version: [ '4.2.2', '4.3' ]
+        engine_version: [ '4.2.2', '4.3', '4.4.1' ]
         flavor: ['structs', 'classes']
 
     steps:
@@ -62,18 +62,21 @@ jobs:
     - name: 'Run demo project'
       # currently both godot and godot-dlang doesn't exits cleanly
       # yet it is useful to see if there is any potential logic errors
-      continue-on-error: true
+      continue-on-error: false
       # a fancy workaround of an issue with being unable to generate assets required to run
         # https://github.com/godotengine/godot-proposals/issues/1362#issuecomment-1379140108
       run: |
-        timeout 60 xvfb-run "${{ env.GDEXE }}" --audio-driver Dummy --editor --quit --headless --path ./examples/test/project
-        timeout 10 "${{ env.GDEXE }}" --verbose --headless --path ./examples/test/project
+        timeout 60 xvfb-run "${{ env.GDEXE }}" --audio-driver Dummy --editor --quit --headless --path ./examples/test/project || true
+        timeout 10 "${{ env.GDEXE }}" --verbose --headless --path ./examples/test/project 2>&1 | tee sanitizers_log.txt || true
+        python3 misc/scripts/check_ci_log.py sanitizers_log.txt
+        
 
     - name: 'Run Asteroids project'
       # not updated yet so can't test for classes
       if: matrix.flavor == 'structs'
       # currently both godot and godot-dlang doesn't exits cleanly
-      continue-on-error: true
+      continue-on-error: false
       run: | 
-        timeout 60 xvfb-run "${{ env.GDEXE }}" --audio-driver Dummy --editor --quit --headless --path ./examples/asteroids/project
-        timeout 10 "${{ env.GDEXE }}" --verbose --headless --path ./examples/asteroids/project
+        timeout 60 xvfb-run "${{ env.GDEXE }}" --audio-driver Dummy --editor --quit --headless --path ./examples/asteroids/project || true
+        timeout 10 "${{ env.GDEXE }}" --verbose --headless --path ./examples/asteroids/project 2>&1 | tee sanitizers_log.txt || true
+        python3 misc/scripts/check_ci_log.py sanitizers_log.txt
