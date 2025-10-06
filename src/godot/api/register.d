@@ -307,31 +307,6 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
     enum isGodot44orNewer = extVersion.VERSION_MAJOR == 4 && extVersion.VERSION_MINOR >= 4;
     enum isGodot45orNewer = extVersion.VERSION_MAJOR == 4 && extVersion.VERSION_MINOR >= 5;
 
-    static if (isGodot45orNewer)
-    __gshared static GDExtensionClassCreationInfo5 class_info;
-    else static if (isGodot44orNewer)
-    __gshared static GDExtensionClassCreationInfo4 class_info;
-    else static if (isGodot43orNewer)
-    __gshared static GDExtensionClassCreationInfo3 class_info;
-    else static if (isGodot42orNewer)
-    __gshared static GDExtensionClassCreationInfo2 class_info;
-    else
-    __gshared static GDExtensionClassCreationInfo class_info;
-
-
-    static if (isGodot44orNewer)
-    class_info.create_instance_func = &createFunc2!T;
-    else 
-    class_info.create_instance_func = &createFunc!T;
-    class_info.free_instance_func = &destroyFunc!T;
-    class_info.class_userdata = cast(void*) name.ptr;
-
-    static if (isGodot42orNewer) {
-        class_info.recreate_instance_func = &recreateFunc!T;
-        class_info.is_exposed = true; // TODO: add some control over what class should be exposed
-        class_info.is_abstract = __traits(isAbstractClass, T);
-    }
-
     static if (!isGodot42orNewer) {
         static assert(!__traits(isAbstractClass, T), "abstract class support requires godot version 4.2 or higher");
     }
@@ -343,10 +318,7 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
     // Because runtime-only classes has some limitations when interacting with them in editor, 
     // we choose to make them explicitly marked as such, primarily for compatibility reasons with existing godot-dlang projects.
     //
-    static if (isGodot43orNewer) {
-        class_info.is_runtime = hasUDA!(T, RuntimeOnly);
-    }
-    
+    enum IS_RUNTIME_ONLY = hasUDA!(T, RuntimeOnly);
 
     // This function will be called for any virtual script method, the returned pointer is then cached internally by godot
     extern (C) static GDExtensionClassCallVirtual getVirtualFn(void* p_userdata, const GDExtensionStringNamePtr p_name) {
@@ -368,23 +340,82 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
         return getVirtualFn(p_userdata, p_name);
     }
 
-    static if (isGodot44orNewer)
-    class_info.get_virtual_func = &getVirtualFn2;
-    else
-    class_info.get_virtual_func = &getVirtualFn;
-
     StringName snClass = StringName(name);
     StringName snBase = StringName(baseName);
-    static if (isGodot45orNewer)
-    gdextension_interface_classdb_register_extension_class5(lib, cast(GDExtensionStringNamePtr) snClass, cast(GDExtensionStringNamePtr) snBase, &class_info);
-    else static if (isGodot44orNewer)
-    gdextension_interface_classdb_register_extension_class4(lib, cast(GDExtensionStringNamePtr) snClass, cast(GDExtensionStringNamePtr) snBase, &class_info);
-    else static if (isGodot43orNewer)
-    gdextension_interface_classdb_register_extension_class3(lib, cast(GDExtensionStringNamePtr) snClass, cast(GDExtensionStringNamePtr) snBase, &class_info);
-    else static if (isGodot42orNewer)
-    gdextension_interface_classdb_register_extension_class2(lib, cast(GDExtensionStringNamePtr) snClass, cast(GDExtensionStringNamePtr) snBase, &class_info);
-    else
-    gdextension_interface_classdb_register_extension_class(lib, cast(GDExtensionStringNamePtr) snClass, cast(GDExtensionStringNamePtr) snBase, &class_info);
+
+    if (gdextension_interface_classdb_register_extension_class5 !is null) {
+        GDExtensionClassCreationInfo5 class_info;
+        // v4.4+
+        class_info.create_instance_func = &createFunc2!T;
+        class_info.get_virtual_func = &getVirtualFn2;
+        // v4.3+
+        class_info.is_runtime = IS_RUNTIME_ONLY;
+        // v4.2+
+        class_info.recreate_instance_func = &recreateFunc!T;
+        class_info.is_exposed = true; // TODO: add some control over what class should be exposed
+        class_info.is_abstract = __traits(isAbstractClass, T);
+        // common
+        class_info.free_instance_func = &destroyFunc!T;
+        class_info.class_userdata = cast(void*) name.ptr;
+        gdextension_interface_classdb_register_extension_class5(lib, cast(GDExtensionStringNamePtr) snClass, cast(GDExtensionStringNamePtr) snBase, &class_info);
+    }
+    else if (gdextension_interface_classdb_register_extension_class4 !is null) {
+        GDExtensionClassCreationInfo4 class_info;
+        // v4.4+
+        class_info.create_instance_func = &createFunc2!T;
+        class_info.get_virtual_func = &getVirtualFn2;
+        // v4.3+
+        class_info.is_runtime = IS_RUNTIME_ONLY;
+        // v4.2+
+        class_info.recreate_instance_func = &recreateFunc!T;
+        class_info.is_exposed = true; // TODO: add some control over what class should be exposed
+        class_info.is_abstract = __traits(isAbstractClass, T);
+        // common
+        class_info.free_instance_func = &destroyFunc!T;
+        class_info.class_userdata = cast(void*) name.ptr;
+        gdextension_interface_classdb_register_extension_class4(lib, cast(GDExtensionStringNamePtr) snClass, cast(GDExtensionStringNamePtr) snBase, &class_info);
+
+    }
+    else if (gdextension_interface_classdb_register_extension_class3) {
+        GDExtensionClassCreationInfo3 class_info;
+        // v4.3+
+        class_info.is_runtime = IS_RUNTIME_ONLY;
+        // v4.2+
+        class_info.recreate_instance_func = &recreateFunc!T;
+        class_info.is_exposed = true; // TODO: add some control over what class should be exposed
+        class_info.is_abstract = __traits(isAbstractClass, T);
+        // common
+        class_info.free_instance_func = &destroyFunc!T;
+        class_info.class_userdata = cast(void*) name.ptr;
+        class_info.create_instance_func = &createFunc!T;
+        class_info.get_virtual_func = &getVirtualFn;
+        gdextension_interface_classdb_register_extension_class3(lib, cast(GDExtensionStringNamePtr) snClass, cast(GDExtensionStringNamePtr) snBase, &class_info);
+    }
+    else if (gdextension_interface_classdb_register_extension_class2) {
+        GDExtensionClassCreationInfo2 class_info;
+        // v4.2+
+        class_info.recreate_instance_func = &recreateFunc!T;
+        class_info.is_exposed = true; // TODO: add some control over what class should be exposed
+        class_info.is_abstract = __traits(isAbstractClass, T);
+        // common
+        class_info.free_instance_func = &destroyFunc!T;
+        class_info.class_userdata = cast(void*) name.ptr;
+        class_info.create_instance_func = &createFunc!T;
+        class_info.get_virtual_func = &getVirtualFn;
+        gdextension_interface_classdb_register_extension_class2(lib, cast(GDExtensionStringNamePtr) snClass, cast(GDExtensionStringNamePtr) snBase, &class_info);
+    }
+    else if (gdextension_interface_classdb_register_extension_class) {
+        GDExtensionClassCreationInfo class_info;
+        // common
+        class_info.free_instance_func = &destroyFunc!T;
+        class_info.class_userdata = cast(void*) name.ptr;
+        class_info.create_instance_func = &createFunc!T;
+        class_info.get_virtual_func = &getVirtualFn;
+        gdextension_interface_classdb_register_extension_class(lib, cast(GDExtensionStringNamePtr) snClass, cast(GDExtensionStringNamePtr) snBase, &class_info);
+    }
+    else {
+        printerr("No class registration function found");
+    }
 
     void registerVirtualMethod(alias mf, string nameOverride = null)() {
         static assert(isGodot43orNewer, "Virtual methods requires Godot 4.3 or newer.");
