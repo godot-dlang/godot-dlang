@@ -27,8 +27,10 @@ immutable mathOverloadSets = ["$posmod", "floor$", "ceil$", "round$", "abs$", "s
 class GodotMethod {
     @serdeOptional
     string name; // constructors doesn't have name
-    @serdeOptional @serdeKeys("return_type", "return_value")
-    Type return_type;
+    @serdeOptional
+    Type return_type; // use this as a return type, return value is for deserialization only
+    @serdeOptional
+    GodotArgument return_value;
     @serdeOptional
     bool is_editor;
     @serdeOptional
@@ -53,8 +55,11 @@ class GodotMethod {
     void finalizeDeserialization(Asdf data) {
         // FIXME: why data is here if it's not used?
         // Superbelko: Because this is post-serialize event and we only doing some adjustments here
-        if (!return_type)
+        if (return_value.type) // ugh... godot 4.6 made it aggregate value and split built-in function vs method
+            return_type = return_value.type;
+        if (!return_type) {
             return_type = Type.get("void");
+        }
         foreach (i, ref arg; arguments) {
             arg.index = i;
             arg.parent = this;
@@ -515,8 +520,10 @@ class GodotMethod {
     }
 }
 
+// Can be a function parameter or return type
 struct GodotArgument {
-    string name;
+    // return has no name
+    @serdeOptional string name;
     Type type;
     
     // HACK: when godot doesn't want to specifically
@@ -526,10 +533,11 @@ struct GodotArgument {
     @serdeOptional
     string default_value = "\0";
 
-@serdeIgnore:
+    @serdeIgnore size_t index;
+    @serdeIgnore GodotMethod parent;
 
-    size_t index;
-    GodotMethod parent;
+    @serdeOptional
+    string meta;
 }
 
 class GodotProperty {
