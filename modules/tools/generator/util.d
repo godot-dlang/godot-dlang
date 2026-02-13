@@ -218,6 +218,7 @@ class Type {
             "Vector4",
             "Vector4i",
             "Nil", // why godot, why?
+            "GDExtensionInitializationFunction", // godot 4.6, oof... might need a better way to check all GDExtension* types
             "ObjectID");
         return coreTypes.canFind(godotType);
     }
