@@ -70,7 +70,17 @@ class GodotScript(Base) if (isGodotBaseClass!Base) {
     inout(To) as(To, this From)() inout if (extendsGodotBaseClass!To) {
         static assert(extends!(From, To) || extends!(To, From), From.stringof ~
                 " is not polymorphic to " ~ To.stringof);
-        return opCast!To(); // use D dynamic cast
+        // Cannot use typical D dynamic cast due to override of opCast below (for void*)
+        // Manually verify runtime types and reinterpret
+
+        // If From extends To (casting to superclass), the compile-time assertion ensure this is proper
+        // However if To extends From (casting to subclass), we have to ensure the downcast is valid at runtime.
+        static if (extends!(To, From)) {
+            if (!typeid(To).isBaseOf(typeid(this))) return null;
+        }
+
+        auto result = this;
+        return *(cast(inout(To)*)&result);
     }
 
     ///

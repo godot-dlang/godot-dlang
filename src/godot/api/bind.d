@@ -603,7 +603,12 @@ mixin template baseCasts() {
 
     inout(To) as(To)() inout if (extendsGodotBaseClass!To) {
         godot_object go = cast() _godot_object;
-        return cast(inout(To)) gdextension_interface_object_get_instance_binding(go.ptr, _GODOT_library, &_instanceCallbacks);
+        auto tmp = cast(inout(To)) gdextension_interface_object_get_instance_binding(go.ptr, _GODOT_library, &_instanceCallbacks);
+        
+        // Check runtime type actually matches To
+        if (!typeid(To).isBaseOf(typeid(tmp))) return null;
+
+        return tmp;
     }
 
 
