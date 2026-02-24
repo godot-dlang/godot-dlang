@@ -16,6 +16,42 @@ version(Windows) version = GODOT_USE_GC_RANGE;
 version(Posix) version = GODOT_USE_GC_RANGE;
 version(Android) version = GODOT_USE_GC_RANGE;
 
+package(godot) struct RTTITag {
+    const(RTTITag)* parent = null;
+}
+
+package(godot) const(RTTITag)* rttiTag(T)() if (extendsGodotBaseClass!T) {
+    import std.traits : BaseClassesTuple;
+    import core.builtins : unlikely;
+    import core.atomic : atomicLoad, atomicStore, MemoryOrder;
+
+    // tag's value is pointer to parent tag
+    __gshared RTTITag tag;
+
+    // the last two D base classes are GodotScript!<Base> and Object.
+    static if (BaseClassesTuple!T.length > 2) {
+        // Initialize tag parent lazily and safely (atomic).
+        if (unlikely(tag.parent.atomicLoad!(MemoryOrder.acq) == null)) {
+            tag.parent.atomicStore!(MemoryOrder.rel)(rttiTag!(BaseClassesTuple!T[0]));
+        }
+    }
+
+    return &tag;
+}
+
+package(godot) bool rttiIsInstanceOf(T)(const GodotScript!(GodotClass!T) inst) if (extendsGodotBaseClass!T) {
+    import std.traits : BaseClassesTuple;
+
+    const(RTTITag)* tag = inst._typeTag;
+    while (tag) {
+        if (tag == rttiTag!T) {
+            return true;
+        }
+        tag = tag.parent;
+    }
+
+    return false;
+}
 
 /++
 Base class for D native scripts. Native script instances will be attached to a
@@ -29,6 +65,8 @@ class GodotScript(Base) if (isGodotBaseClass!Base) {
     Base _godot_base;
     alias _godot_base this;
     ref inout(godot_object) _gdextension_handle() inout @nogc nothrow { return _godot_base._godot_object; }
+
+    const(RTTITag)* _typeTag;
 
     /// Helper function that provides typesafe way of emitting signals using 'emit!signal()' syntax
     GodotError emit(alias Sig, Args...)(Args args) if (hasUDA!(Sig, Signal)) {
@@ -75,8 +113,9 @@ class GodotScript(Base) if (isGodotBaseClass!Base) {
 
         // If From extends To (casting to superclass), the compile-time assertion ensure this is proper
         // However if To extends From (casting to subclass), we have to ensure the downcast is valid at runtime.
+
         static if (extends!(To, From)) {
-            if (!typeid(To).isBaseOf(typeid(this))) return null;
+            if (!this.rttiIsInstanceOf!To) return null;
         }
 
         auto result = this;
@@ -341,6 +380,8 @@ extern (C) package(godot) void* createFunc(T)(void* data) //nothrow @nogc
     }
     //else
     //	t.owner._godot_object.ptr = cast(void*) t;
+
+    t._typeTag = rttiTag!T;
     godot.initialize(t);
 
     // instance bindings allows to get associated object for Godot object
@@ -435,6 +476,8 @@ extern (C) package(godot) void* createFunc2(T)(void* data, GDExtensionBool p_not
     }
     //else
     //	t.owner._godot_object.ptr = cast(void*) t;
+
+    t._typeTag = rttiTag!T;
     godot.initialize(t);
 
     // instance bindings allows to get associated object for Godot object
@@ -493,6 +536,8 @@ extern(C) package(godot) GDExtensionClassInstancePtr recreateFunc(T)(void* p_cla
 
             // set owning godot object and instance bindings for new D instance to the same Godot object
             o._gdextension_handle = godot_object(p_object);
+
+            o._typeTag = rttiTag!T;
             
             gdextension_interface_object_set_instance_binding(p_object, _GODOT_library, cast(void*) o, &_instanceCallbacks);
             
