@@ -343,28 +343,7 @@ extern (C) package(godot) void* createFunc(T)(void* data) //nothrow @nogc
     {
         StringName classname = name;
         version (USE_CLASSES) {
-          static if(extendsGodotBaseClass!T) {
-            // check if base class extends godot base class, because when extending D classes there is no internal name
-            // TODO: refactor before the number of these checks runs out of control
-            static if (isGodotBaseClass!(BaseClassesTuple!T[0])){
-                StringName snInternalName = (BaseClassesTuple!T)[0]._GODOT_internal_name; // parent class name
-            }
-            else {
-                // skip abstract base classes
-                enum IsNotAbstract(T) = !__traits(isAbstractClass, T);
-                // don't do godotName in this case as this can result in wrong name
-                // anyway it will fail when extending GodotObject...
-                import godot.object;
-                static if (Filter!(IsNotAbstract, BaseClassesTuple!T).length == 0 
-                            || is(Filter!(IsNotAbstract, BaseClassesTuple!T)[0] == GodotObject))
-                    StringName snInternalName = StringName("Object"); 
-                else
-                    StringName snInternalName = __traits(identifier, Filter!(IsNotAbstract, BaseClassesTuple!T)[0]); 
-            }
-          } else static if (isGodotBaseClass!T)
-            StringName snInternalName = T._GODOT_internal_name;
-          else
-            static assert(0, "Unknown class name");
+            StringName snInternalName = (GodotBaseOf!T)._GODOT_internal_name;
         } else {
             StringName snInternalName = (GodotClass!T)._GODOT_internal_name;
         }
@@ -439,28 +418,7 @@ extern (C) package(godot) void* createFunc2(T)(void* data, GDExtensionBool p_not
     {
         StringName classname = name;
         version (USE_CLASSES) {
-          static if(extendsGodotBaseClass!T) {
-            // check if base class extends godot base class, because when extending D classes there is no internal name
-            // TODO: refactor before the number of these checks runs out of control
-            static if (isGodotBaseClass!(BaseClassesTuple!T[0])){
-                StringName snInternalName = (BaseClassesTuple!T)[0]._GODOT_internal_name; // parent class name
-            }
-            else {
-                // skip abstract base classes
-                enum IsNotAbstract(T) = !__traits(isAbstractClass, T) && !hasUDA!(T, GodotAbstract);
-                // don't do godotName in this case as this can result in wrong name
-                // anyway it will fail when extending GodotObject...
-                import godot.object;
-                static if (Filter!(IsNotAbstract, BaseClassesTuple!T).length == 0 
-                            || is(Filter!(IsNotAbstract, BaseClassesTuple!T)[0] == GodotObject))
-                    StringName snInternalName = StringName("Object"); 
-                else
-                    StringName snInternalName = __traits(identifier, Filter!(IsNotAbstract, BaseClassesTuple!T)[0]); 
-            }
-          } else static if (isGodotBaseClass!T)
-            StringName snInternalName = T._GODOT_internal_name;
-          else
-            static assert(0, "Unknown class name");
+            StringName snInternalName = (GodotBaseOf!T)._GODOT_internal_name;
         } else {
             StringName snInternalName = (GodotClass!T)._GODOT_internal_name;
         }
