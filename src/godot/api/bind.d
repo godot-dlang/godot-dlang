@@ -562,6 +562,7 @@ bool vcallRaw(Return = GodotObject, T, Args...)(in T self, string fn, out Return
 package(godot)
 mixin template baseCasts() {
     private import godot.api.reference, godot.api.traits : RefOrT, NonRef;
+    private import godot.api.rtti : rttiIsInstanceOf;
 
     inout(To) as(To)() inout if (isGodotBaseClass!To) {
         static if (extends!(typeof(this), To)) {
@@ -605,8 +606,7 @@ mixin template baseCasts() {
         godot_object go = cast() _godot_object;
         auto tmp = cast(inout(To)) gdextension_interface_object_get_instance_binding(go.ptr, _GODOT_library, &_instanceCallbacks);
 
-        // Check runtime type actually matches To
-        if (!tmp.rttiIsInstanceOf!To) return null;
+        if (!rttiIsInstanceOf!To(tmp)) return null;
 
         return tmp;
     }

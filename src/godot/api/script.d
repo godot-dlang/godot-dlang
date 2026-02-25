@@ -9,49 +9,13 @@ import godot.abi, godot;
 import godot.api.udas;
 import godot.api.traits, godot.api.wrap;
 import godot.api.reference;
+import godot.api.rtti;
 
 
 // for now let's keep it simple, but later this will be a proper dub config
 version(Windows) version = GODOT_USE_GC_RANGE;
 version(Posix) version = GODOT_USE_GC_RANGE;
 version(Android) version = GODOT_USE_GC_RANGE;
-
-package(godot) struct RTTITag {
-    const(RTTITag)* parent = null;
-}
-
-package(godot) const(RTTITag)* rttiTag(T)() if (extendsGodotBaseClass!T) {
-    import std.traits : BaseClassesTuple;
-    import core.builtins : unlikely;
-    import core.atomic : atomicLoad, atomicStore, MemoryOrder;
-
-    // tag's value is pointer to parent tag
-    __gshared RTTITag tag;
-
-    // the last two D base classes are GodotScript!<Base> and Object.
-    static if (BaseClassesTuple!T.length > 2) {
-        // Initialize tag parent lazily and safely (atomic).
-        if (unlikely(tag.parent.atomicLoad!(MemoryOrder.acq) == null)) {
-            tag.parent.atomicStore!(MemoryOrder.rel)(rttiTag!(BaseClassesTuple!T[0]));
-        }
-    }
-
-    return &tag;
-}
-
-package(godot) bool rttiIsInstanceOf(T)(const GodotScript!(GodotClass!T) inst) if (extendsGodotBaseClass!T) {
-    import std.traits : BaseClassesTuple;
-
-    const(RTTITag)* tag = inst._typeTag;
-    while (tag) {
-        if (tag == rttiTag!T) {
-            return true;
-        }
-        tag = tag.parent;
-    }
-
-    return false;
-}
 
 /++
 Base class for D native scripts. Native script instances will be attached to a
@@ -115,7 +79,7 @@ class GodotScript(Base) if (isGodotBaseClass!Base) {
         // However if To extends From (casting to subclass), we have to ensure the downcast is valid at runtime.
 
         static if (extends!(To, From)) {
-            if (!this.rttiIsInstanceOf!To) return null;
+            if (!rttiIsInstanceOf!To(this)) return null;
         }
 
         auto result = this;
