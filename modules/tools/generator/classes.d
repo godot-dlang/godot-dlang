@@ -329,10 +329,13 @@ public import godot.classdb;`;
             ret ~= ";\n";
         }
 
-        // extra imports required by emit() helper, structs version have emit() in GodotScript wrapper
         if (settings.useClasses && name.godotType == "Object") {
+            // extra imports required by emit() helper, structs version have emit() in GodotScript wrapper
             ret ~= "import std.traits : Parameters, hasUDA;\n";
             ret ~= "import std.meta : ReplaceAll;\n";
+
+            // extra import required for _typeTag, structs version has _typeTag in GodotScript wrapper
+            ret ~= "import godot.api.rtti;\n";
         }
 
         string className = name.dType;
@@ -393,6 +396,10 @@ public import godot.classdb;`;
                 ret ~= "\t" ~ name.asOpaqueType ~ "  _godot_object;\n";
                 ret ~= "\talias BaseClasses = AliasSeq!();\n";
             }
+        }
+
+        if (settings.useClasses && name.godotType == "Object") {
+            ret ~= "\tconst(RTTITag)* _typeTag;\n";
         }
 
         ret ~= bindingStruct;

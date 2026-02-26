@@ -153,6 +153,19 @@ template GodotClass(R) {
     }
 }
 
+
+/++
+Get the first ancestor of the type that is a Godot base class
++/
+template GodotBaseOf(R) {
+    alias T = NonRef!R;
+    static if (isGodotBaseClass!T)
+        alias GodotBaseOf = T;
+    else static if (extendsGodotBaseClass!T) {
+        alias GodotBaseOf = Filter!(isGodotBaseClass, GodotBaseClasses!T)[0];
+    }
+}
+
 /++
 Determine if T is any Godot class (base C++ class or D native script, but NOT
 a godot struct)

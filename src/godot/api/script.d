@@ -9,13 +9,13 @@ import godot.abi, godot;
 import godot.api.udas;
 import godot.api.traits, godot.api.wrap;
 import godot.api.reference;
+import godot.api.rtti;
 
 
 // for now let's keep it simple, but later this will be a proper dub config
 version(Windows) version = GODOT_USE_GC_RANGE;
 version(Posix) version = GODOT_USE_GC_RANGE;
 version(Android) version = GODOT_USE_GC_RANGE;
-
 
 /++
 Base class for D native scripts. Native script instances will be attached to a
@@ -29,6 +29,8 @@ class GodotScript(Base) if (isGodotBaseClass!Base) {
     Base _godot_base;
     alias _godot_base this;
     ref inout(godot_object) _gdextension_handle() inout @nogc nothrow { return _godot_base._godot_object; }
+
+    const(RTTITag)* _typeTag;
 
     /// Helper function that provides typesafe way of emitting signals using 'emit!signal()' syntax
     GodotError emit(alias Sig, Args...)(Args args) if (hasUDA!(Sig, Signal)) {
@@ -70,7 +72,18 @@ class GodotScript(Base) if (isGodotBaseClass!Base) {
     inout(To) as(To, this From)() inout if (extendsGodotBaseClass!To) {
         static assert(extends!(From, To) || extends!(To, From), From.stringof ~
                 " is not polymorphic to " ~ To.stringof);
-        return opCast!To(); // use D dynamic cast
+        // Cannot use typical D dynamic cast due to override of opCast below (for void*)
+        // Manually verify runtime types and reinterpret
+
+        // If From extends To (casting to superclass), the compile-time assertion ensure this is proper
+        // However if To extends From (casting to subclass), we have to ensure the downcast is valid at runtime.
+
+        static if (extends!(To, From)) {
+            if (!rttiIsInstanceOf!To(this)) return null;
+        }
+
+        auto result = this;
+        return *(cast(inout(To)*)&result);
     }
 
     ///
@@ -294,28 +307,7 @@ extern (C) package(godot) void* createFunc(T)(void* data) //nothrow @nogc
     {
         StringName classname = name;
         version (USE_CLASSES) {
-          static if(extendsGodotBaseClass!T) {
-            // check if base class extends godot base class, because when extending D classes there is no internal name
-            // TODO: refactor before the number of these checks runs out of control
-            static if (isGodotBaseClass!(BaseClassesTuple!T[0])){
-                StringName snInternalName = (BaseClassesTuple!T)[0]._GODOT_internal_name; // parent class name
-            }
-            else {
-                // skip abstract base classes
-                enum IsNotAbstract(T) = !__traits(isAbstractClass, T);
-                // don't do godotName in this case as this can result in wrong name
-                // anyway it will fail when extending GodotObject...
-                import godot.object;
-                static if (Filter!(IsNotAbstract, BaseClassesTuple!T).length == 0 
-                            || is(Filter!(IsNotAbstract, BaseClassesTuple!T)[0] == GodotObject))
-                    StringName snInternalName = StringName("Object"); 
-                else
-                    StringName snInternalName = __traits(identifier, Filter!(IsNotAbstract, BaseClassesTuple!T)[0]); 
-            }
-          } else static if (isGodotBaseClass!T)
-            StringName snInternalName = T._GODOT_internal_name;
-          else
-            static assert(0, "Unknown class name");
+            StringName snInternalName = (GodotBaseOf!T)._GODOT_internal_name;
         } else {
             StringName snInternalName = (GodotClass!T)._GODOT_internal_name;
         }
@@ -331,6 +323,8 @@ extern (C) package(godot) void* createFunc(T)(void* data) //nothrow @nogc
     }
     //else
     //	t.owner._godot_object.ptr = cast(void*) t;
+
+    t._typeTag = rttiTag!T;
     godot.initialize(t);
 
     // instance bindings allows to get associated object for Godot object
@@ -388,28 +382,7 @@ extern (C) package(godot) void* createFunc2(T)(void* data, GDExtensionBool p_not
     {
         StringName classname = name;
         version (USE_CLASSES) {
-          static if(extendsGodotBaseClass!T) {
-            // check if base class extends godot base class, because when extending D classes there is no internal name
-            // TODO: refactor before the number of these checks runs out of control
-            static if (isGodotBaseClass!(BaseClassesTuple!T[0])){
-                StringName snInternalName = (BaseClassesTuple!T)[0]._GODOT_internal_name; // parent class name
-            }
-            else {
-                // skip abstract base classes
-                enum IsNotAbstract(T) = !__traits(isAbstractClass, T) && !hasUDA!(T, GodotAbstract);
-                // don't do godotName in this case as this can result in wrong name
-                // anyway it will fail when extending GodotObject...
-                import godot.object;
-                static if (Filter!(IsNotAbstract, BaseClassesTuple!T).length == 0 
-                            || is(Filter!(IsNotAbstract, BaseClassesTuple!T)[0] == GodotObject))
-                    StringName snInternalName = StringName("Object"); 
-                else
-                    StringName snInternalName = __traits(identifier, Filter!(IsNotAbstract, BaseClassesTuple!T)[0]); 
-            }
-          } else static if (isGodotBaseClass!T)
-            StringName snInternalName = T._GODOT_internal_name;
-          else
-            static assert(0, "Unknown class name");
+            StringName snInternalName = (GodotBaseOf!T)._GODOT_internal_name;
         } else {
             StringName snInternalName = (GodotClass!T)._GODOT_internal_name;
         }
@@ -425,6 +398,8 @@ extern (C) package(godot) void* createFunc2(T)(void* data, GDExtensionBool p_not
     }
     //else
     //	t.owner._godot_object.ptr = cast(void*) t;
+
+    t._typeTag = rttiTag!T;
     godot.initialize(t);
 
     // instance bindings allows to get associated object for Godot object
@@ -483,6 +458,8 @@ extern(C) package(godot) GDExtensionClassInstancePtr recreateFunc(T)(void* p_cla
 
             // set owning godot object and instance bindings for new D instance to the same Godot object
             o._gdextension_handle = godot_object(p_object);
+
+            o._typeTag = rttiTag!T;
             
             gdextension_interface_object_set_instance_binding(p_object, _GODOT_library, cast(void*) o, &_instanceCallbacks);
             
