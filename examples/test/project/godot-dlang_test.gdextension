@@ -6,5 +6,6 @@ compatibility_minimum = 4.1
 [libraries]
 
 linux.64 = "libgodot-dlang_test.so"
+macos = "libgodot-dlang_test.dylib"
 windows.64 = "godot-dlang_test.dll"
 web = "libgodot-dlang_test.so"

@@ -538,6 +538,22 @@ version(USE_CLASSES) {
                 assert(!(o > this));
         }
 
+        // test instantiation of D classes
+        {
+            SomeConcreteClass a = memnew!SomeConcreteClass;
+            scope(exit) memdelete(a);
+            SomeConcreteSubClass b = memnew!SomeConcreteSubClass;
+            scope(exit) memdelete(b);
+
+            print("Calling doSomething on SomeConcreteClass...");
+            a.doSomething();
+            assert(a.foo == 42);
+
+            print("Calling doSomething on SomeConcreteSubClass...");
+            b.doSomething();
+            assert(b.foo == 64);
+        }
+
         // test static method call
         {
             import godot.image;
@@ -638,6 +654,15 @@ class SomeConcreteClass : SomeBaseClass {
 }
 
 
+class SomeConcreteSubClass : SomeConcreteClass {
+    @Method
+    override void doSomething() {
+        foo = 64; // test expects it to be 64
+        print("i'm a subclass of concrete class");
+    }
+}
+
+
 class TestVirtualMethod : GodotScript!GodotObject {
 
     import godot.apiinfo;
@@ -680,5 +705,6 @@ mixin GodotNativeLibrary!(
 
     SomeBaseClass,
     SomeConcreteClass,
+    SomeConcreteSubClass,
     TestVirtualMethod
 );

@@ -14,6 +14,7 @@ lib/
 *.dll
 *.exe
 *.pdb
+*.dylib
 
 # Linux Binaries
 generator
