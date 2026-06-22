@@ -115,7 +115,7 @@ final class GodotClass {
     @serdeOptional string singleton_name;
     @serdeOptional @serdeKeys("is_instantiable", "instanciable") bool instanciable;
     @serdeOptional @serdeKeys("is_refcounted", "is_reference") bool is_reference;
-    @serdeOptional BuiltinConstant[] constants; // TODO: can constants be things other than ints?
+    @serdeOptional BuiltinConstant[] constants; // superbelko: since v4.7 global constants now has additional is_bitfield flag, not sure about this
     @serdeOptional GodotMethod[] methods;
     @serdeOptional GodotProperty[] properties;
     @serdeOptional GodotEnum[] enums;
