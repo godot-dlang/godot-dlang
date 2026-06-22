@@ -124,13 +124,44 @@ struct Singleton {
     Type type;
 }
 
-alias Constant = int[string];
+
+deprecated alias SimpleConstant = int[string];
+// new type since godot 4.7
+struct Constant {
+    string name;
+    long value;
+    bool is_bitfield;
+}
+// used instead of previous two to (hopefully) handle different versions transparently
+// note that it is a proxy on the value in ExtensionApi thus it has an array of constants as a type
+struct ConstantProxy {
+    Constant[] constants;
+    alias constants this;
+
+    SerdeException deserializeFromAsdf(Asdf data)
+    {
+        foreach(entry; data.byElement) {
+            Constant c;
+            c.name = entry["name"].get(null);
+            c.value = entry["value"].get(0);
+            c.is_bitfield = entry["is_bitfield"].get(false);
+            constants ~= c;
+        }
+        return null;
+    }
+
+    // not really needed but asdf might require both methods for duck typing
+    void serialize(S)(ref S serializer)
+    {
+        //serializer.putValue(text(c));
+    }
+}
 
 struct ExtensionsApi {
     Header header;
     ConfigurationTypeSizes[] builtin_class_sizes;
     ConfigurationTypeMemberOffsets[] builtin_class_member_offsets;
-    Constant[] global_constants;
+    @serdeProxy!ConstantProxy Constant[] global_constants;
     GodotEnum[] global_enums;
     GodotUtilityFunction[] utility_functions;
     GodotClass[] builtin_classes; // only basic types such as Vector3, Color, Dictionary, etc...
@@ -241,7 +272,17 @@ import godot.classdb;`;
 }
 
 string generateGlobals(ref ExtensionsApi api) {
-    return null;
+    string s;
+
+    s ~= "module godot.globals;\n\n";
+
+    // currently as of v4.7 there is type min/max values such as UINT8_MAX=255 but other extensions may or may not add values as well
+    foreach (con; api.global_constants) {
+        if (con.is_bitfield) s ~= "// bitfield\n";
+        s ~= "enum " ~ con.name ~ " = " ~ text(con.value) ~ ";\n";
+    }
+
+    return s;
 }
 
 string generateSingletons(ref ExtensionsApi api) {
