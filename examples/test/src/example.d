@@ -94,6 +94,9 @@ class Test : GodotScript!Label {
         double dreal = 0.25;
     }
 
+    // issue 229, 
+    @Property Ref!PackedScene instancePrototype;
+
     @Property void onlySetter(int value) {
         print("onlySetter: ", value);
     }
@@ -590,6 +593,16 @@ version(USE_CLASSES) {
             }
             assert(p1.size == 1);
             assert(p1[0] == 42);
+        }
+
+        version(none) // test issue 229, disabled due to uid stuff that might break compatibility with old versions since it was authored using v4.7
+        {
+            auto node = instancePrototype.instantiate(PackedScene.GenEditState.genEditStateDisabled).as!Node;
+            addChild(node, false, Node.InternalMode.internalModeDisabled);
+
+            // test some values
+            auto test = node.get("test").as!int;
+            assert(test == 42);
         }
 
     }

@@ -676,15 +676,18 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
     }
     static foreach (pName; godotPropertyVariableNames!T) {
         {
+            // this block registers plain D fields with @Property attribute, generating get/set methods automatically
             import std.string;
+            import godot.util.string; // camelToSnake
             import godot.globalenums : PropertyUsageFlags;
 
-            alias P = typeof(mixin("T." ~ pName));
+            alias Prop = __traits(getMember, T, pName); // property itself
+            alias P = typeof(Prop); // property type
             enum Variant.Type vt = Variant.variantTypeOf!P;
-            alias udas = getUDAs!(mixin("T." ~ pName), Property);
+            alias udas = getUDAs!(Prop, Property);
             enum Property uda = is(udas[0]) ? Property.init : udas[0];
 
-            PropertyInfo propData = makePropertyInfo!(P, pName)();
+            PropertyInfo propData = makePropertyInfo!(P, godotName!Prop)();
             GDExtensionPropertyInfo pinfo;
 
             pinfo.name = cast(GDExtensionStringNamePtr) propData.snName;
@@ -694,13 +697,15 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
             pinfo.hint_string = cast(GDExtensionStringPtr) &propData.snHint;
             pinfo.usage = propData.usageFlags;
 
+            //pragma(msg, pName , "(", godotName!Prop,")", " -> ", P);
+
             // register acessor methods for that property
-            enum get_prop = "get_" ~ pName ~ '\0';
-            alias fnWrapper = VariableWrapper!(T, __traits(getMember, T, pName));
+            enum get_prop = "get_" ~ godotName!Prop ~ '\0';
+            alias fnWrapper = VariableWrapper!(T, Prop);
             static fnWrapper.getterType getterTmp; // dummy func for now because current registration code requires actual function, and there isn't one
             registerMemberAccessor!(fnWrapper.callPropertyGet, getterTmp, cast(string) get_prop);
 
-            enum set_prop = "set_" ~ pName ~ '\0';
+            enum set_prop = "set_" ~ godotName!Prop ~ '\0';
             static fnWrapper.setterType setterTmp; // dummy func for now because current registration code requires actual function, and there isn't one
             registerMemberAccessor!(fnWrapper.callPropertySet, setterTmp, cast(string) set_prop);
 
