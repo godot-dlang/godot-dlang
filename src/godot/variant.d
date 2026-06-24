@@ -286,7 +286,7 @@ struct Variant {
     // but probably it should be propely put under version branching
     private static GodotObject objectToGodot(T)(T o) {
         version (USE_CLASSES)
-          return cast(GodotObject) cast() o._gdextension_handle.ptr ; 
+          return cast(GodotObject) cast() (o ? o._gdextension_handle.ptr : null) ; 
         else
           return o.getGodotObject;
     }
@@ -322,12 +322,12 @@ struct Variant {
     T as(T)() const 
             if ((isGodotClass!T && !is(T == GodotObject)) || is(T : Ref!U, U)) {
         GodotObject o = cast()(as!GodotObject);
-        version (USE_CLASSES)
-          return cast(T) o;
-        else {
-          if (o)
-            return o.as!T;
+        if (o) {
+          version (USE_CLASSES) 
+            return cast(T) o;
           else
+            return o.as!T;
+        } else {
             return T.init;
         }
     }
@@ -543,6 +543,30 @@ struct Variant {
             
             auto fn = gdextension_interface_get_variant_to_type_constructor(cast(GDExtensionVariantType) VarType);
             fn(cast(void*)&ret, cast(void*)&_godot_variant);
+
+            version(USE_CLASSES) {
+                // FIXME: related to issue 229, a class with godot property will need to hold object, but there is no way 
+                //   to tell when it is ready to free it... 
+                // additionally it still not clear how it will work when user start passing that object around,
+                // it could be it will just crash as it was before this except this specific use case.
+                //
+                // (the code copied from bind.d:baseCasts.as())
+                //
+                // ok, the problem with this function is that for classes when it used to 
+                // cast to a godot class (say for example Ref!PackerScene) the returned pointer is a godot_object, which is fine, almost...
+                // but we need to wrap godot_object into our D godot's base class - 'return new PackedScene(godot_object)', 
+                // however because a class has other fields and we can't return by value we are forced to allocate...
+                // ideally this should be resolved by returning some kind of sumtype that holds either a typed godot_object wrapper
+                // AND a normal object reference, will stick for now to a most horrible solution - allocate a tiny yet leaking object.
+                static if (is(NonRef!R : GodotObject)) {
+                    if (Ref!RefCounted rc = getObjectInstance!(RefCounted)(cast(void*) ret)) { // note: doesn't holds Ref, be careful
+                        rc.reference(); // FIXME: hack that makes it hold ref
+                        return cast(R) rc;
+                    }
+                    R obj = getObjectInstance!(R)(cast(void*) ret);
+                    return obj;
+                }
+            }
 
             static if (directlyCompatible!R)
                 return ret;
