@@ -595,7 +595,7 @@ version(USE_CLASSES) {
             assert(p1[0] == 42);
         }
 
-        version(none) // test issue 229, disabled due to uid stuff that might break compatibility with old versions since it was authored using v4.7
+        // test issue 229
         {
             auto node = instancePrototype.instantiate(PackedScene.GenEditState.genEditStateDisabled).as!Node;
             addChild(node, false, Node.InternalMode.internalModeDisabled);
