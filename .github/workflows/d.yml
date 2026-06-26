@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine_version: [ '4.2.2', '4.3', '4.4.1' ]
+        engine_version: [ '4.2.2', '4.3', '4.4.1', '4.7' ]
         flavor: ['structs', 'classes']
 
     steps:
