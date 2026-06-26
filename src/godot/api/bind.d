@@ -280,6 +280,16 @@ do {
                     MBArgs[ai], GodotClass!A.GodotClass) != -1, "method" ~
                     " argument " ~ ai.text ~ " of type " ~ A.stringof ~
                     " does not inherit parameter type " ~ MBArgs[ai].stringof);
+            version(USE_CLASSES) {
+                // stupid bug that makes it pass D instance instead of godot_object handle.
+                // there is problem with godot class types is that it expects a POINTER TO argument,
+                // args array instead points to D instance, since we don't really care about it later 
+                // just replace D instances with handles to safe on storage space, avoiding need of second array just for that...
+                // type A comes in handy just to please the type system
+                // ... let's hope it will not make GC happily free anything still used
+                // (even though all D objects here should be allocated without GC)
+                args[ai] = cast(A) args[ai]._gdextension_handle().ptr; 
+            }
             aarr[ai] = &(args[ai]);
         } else static if (!needsConversion!(Args[ai], MBArgs[ai])) {
             aarr[ai] = cast(const(void)*)(&args[ai]);

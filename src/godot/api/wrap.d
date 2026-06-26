@@ -652,7 +652,7 @@ package(godot) PropertyInfo makePropertyInfo(alias T, string Name)() {
     static if (is(T == TypedArray!U, U))
         String snHint = String(makeTypeHint!T);
     else static if (extends!(T, Node) || extends!(T, Resource))
-        String snHint = T.stringof;
+        String snHint = NonRef!T.stringof;
     else static if (is(T == TypedDictionary!(K,V), K, V))
         String snHint = String(makeTypeHint!T);
     else

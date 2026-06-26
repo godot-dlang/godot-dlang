@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://d4dd1a5m6rqvv"]
+[gd_scene load_steps=3 format=3 uid="uid://d4dd1a5m6rqvv"]
 
 [ext_resource type="Script" uid="uid://ycuqd1vgcmau" path="res://main.gd" id="1_nbra5"]
+[ext_resource type="PackedScene" uid="uid://cqgyqmo1jv40q" path="res://spawned.tscn" id="2_uu6xs"]
 
 [node name="Node" type="Node"]
 script = ExtResource("1_nbra5")
@@ -11,6 +12,7 @@ script = ExtResource("1_nbra5")
 property = " ~ hello from the getter! ~ hello from the setter! ~ hello from the getter! ~ hello from the setter! ~ hello from the getter! ~ hello from the setter! ~ hello from the getter! ~ hello from the setter! ~ hello from the getter! ~ hello from the setter! ~ hello from the getter!"
 number = 16
 long_node_path = NodePath("One/Looooong/Incredibly/Unbroken/Node/Path/Label")
+instance_prototype = ExtResource("2_uu6xs")
 layout_mode = 1
 offset_right = 211.0
 offset_bottom = 26.0
