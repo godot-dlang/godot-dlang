@@ -595,6 +595,28 @@ version(USE_CLASSES) {
             assert(p1[0] == 42);
         }
 
+        // basic packed array string/String compatibility
+        {
+            PackedStringArray ps;
+            ps.pushBack("hello");
+            ps.pushBack("godot");
+            assert(ps.size == 2);
+            assert(ps[0] == String("hello"));
+            assert(ps[0] == "hello");
+            assert(ps[1] == "godot");
+
+            // packed array owns the memory, only valid inside this scope. use toDString if you want to allocate owning string
+            //string s = ps[0].data(); // another problem is that it is a dstring (UTF-32), not string (UTF-8)
+            string s = toDString(ps[0]);
+            assert(s == "hello");
+            assert(ps.find("godot") == 1);
+            assert(ps.find("nope") == -1);
+            auto ps2 = ps.duplicate();
+            ps2.fill("ooo");
+            assert(ps[1] != "ooo");
+            assert(ps2[1] == "ooo");
+        }
+
         // test issue 229
         {
             auto node = instancePrototype.instantiate(PackedScene.GenEditState.genEditStateDisabled).as!Node;

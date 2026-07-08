@@ -28,6 +28,8 @@ import std.range.primitives;
 import std.meta, std.traits;
 
 enum isGodot43orNewer = extVersion.VERSION_MINOR > 2;
+enum isGodot44orNewer = extVersion.VERSION_MINOR > 3;
+enum isGodot45orNewer = extVersion.VERSION_MINOR > 4;
 
 private alias PackedArrayTypes = AliasSeq!(
     ubyte,
@@ -35,8 +37,7 @@ private alias PackedArrayTypes = AliasSeq!(
     long,
     float,
     double,
-    // String,
-    string,
+    String,
     Vector2,
     Vector3,
     Vector4,
@@ -75,8 +76,7 @@ alias PackedInt32Array = PackedArray!int;
 alias PackedInt64Array = PackedArray!long;
 alias PackedFloat32Array = PackedArray!float;
 alias PackedFloat64Array = PackedArray!double;
-// alias PackedStringArray = PackedArray!String;
-alias PackedStringArray = PackedArray!string;
+alias PackedStringArray = PackedArray!String;
 alias PackedVector2Array = PackedArray!Vector2;
 //alias PackedVector2iArray = PackedArray!Vector2i;
 alias PackedVector3Array = PackedArray!Vector3;
@@ -153,28 +153,47 @@ struct PackedArray(T) if (!is(T == Vector4) || isGodot43orNewer) {
     }
 
     ///
-    void pushBack(PackedArray arr) {
+    void appendArray(PackedArray arr) {
         _bind.appendArray(arr);
         //mixin("auto a = gdextension_interface_"~(typeName!T)~"_append_array;");
         //a(&_godot_array, &arr._godot_array);
     }
 
-    deprecated("Use the concatenation operator ~= instead of append_array.") alias append_array = pushBack;
+    ///
+    deprecated("Old name used in older Godot versions. Use reverse() instead.") alias inverse = reverse;
 
-    void invert() {
+    ///
+    void reverse() {
         _bind.reverse();
         //mixin("auto i = gdextension_interface_"~(typeName!T)~"_invert;");
         //i(&_godot_array);
     }
 
-    void remove(size_t idx) {
+    bool erase(in T value) {
+        // added in v4.5+
+        static if (isGodot45orNewer) {
+            return _bind.erase(value);
+        } else {
+            size_t idx = find(value);
+            if (idx != -1) {
+                removeAt(idx);
+                return true;
+            }
+		    return false;
+        }
+    }
+
+    /// 
+    deprecated("Use removeAt instead") alias remove = removeAt;
+
+    void removeAt(size_t idx) {
         _bind.removeAt(idx);
         //mixin("auto r = gdextension_interface_"~(typeName!T)~"_remove;");
         //r(&_godot_array, cast(int)idx);
     }
 
-    void resize(size_t size) {
-        _bind.resize(size);
+    size_t resize(size_t size) {
+        return _bind.resize(size);
         //mixin("auto r = gdextension_interface_"~(typeName!T)~"_resize;");
         //r(&_godot_array, cast(int)size);
     }
@@ -188,6 +207,9 @@ struct PackedArray(T) if (!is(T == Vector4) || isGodot43orNewer) {
     alias length = size; // D-style name for size
     alias opDollar = size;
 
+    ///
+    alias isEmpty = empty;
+
     /// Returns: true if length is 0.
     bool empty() const {
         return length == 0;
@@ -199,44 +221,61 @@ struct PackedArray(T) if (!is(T == Vector4) || isGodot43orNewer) {
         d(&_godot_array);
     }
 
-    // a few functions are different for Strings than for the others:
-    //static if(is(T == String))
-    //{
-    //	void pushBack(in String data)
-    //	{
-    //		gdextension_interface_packed_string_array_push_back(&_godot_array, &data._godot_string);
-    //	}
-    //	void insert(size_t idx, in String data)
-    //	{
-    //		gdextension_interface_packed_string_array_insert(&_godot_array, cast(int)idx, &data._godot_string);
-    //	}
-    //	void set(size_t idx, in String data)
-    //	{
-    //		gdextension_interface_packed_string_array_operator_index(&_godot_array, cast(int)idx) = &data._godot_string;
-    //	}
-    //	void opIndexAssign(in String data, size_t idx)
-    //	{
-    //		gdextension_interface_packed_string_array_operator_index(&_godot_array, cast(int)idx) = &data._godot_string;
-    //	}
-    //	String opIndex(size_t idx) const
-    //	{
-    //		String ret = void;
-    //		ret._godot_string = godot_string(cast(size_t)  gdextension_interface_packed_string_array_operator_index_const(&_godot_array, cast(int)idx));
-    //		return ret;
-    //	}
-    //}
-    //else
-    //{
-    void pushBack(in T data) {
-        _bind.pushBack(data);
+    // a few helper functions for string/String convenience:
+    static if(is(T == String))
+    {
+        bool append(in string str) {
+            return append(String(str));
+        }
+        size_t bsearch(in string str, bool before = true) const {
+            return bsearch(String(str), before);
+        }
+        size_t count(in string str) const {
+            return count(String(str));
+        }
+        bool erase(in string str) {
+            return erase(String(str));
+        }
+        void fill(in string str) {
+            fill(String(str));
+        }
+        size_t find(in string str, size_t from = 0) const {
+            return find(String(str), from);
+        }
+    	bool pushBack(in string str)
+    	{
+    		return pushBack(String(str));
+    	}
+    	size_t insert(size_t idx, in string value)
+    	{
+    		return insert(idx, String(value));
+    	}
+    	void set(size_t idx, in string value)
+    	{
+    		set(idx, String(value));
+    	}
+        size_t rfind(in string str, size_t from = -1) const {
+            return rfind(String(str), from);
+        }
+        bool has(in string value) const {
+            return _bind.has(value);
+        }
+    	void opIndexAssign(in string value, size_t idx)
+    	{
+    		set(idx, String(value));
+    	}
+    }
+
+    bool pushBack(in T data) {
+        return _bind.pushBack(data);
         //mixin("auto p = gdextension_interface_"~(typeName!T)~"_push_back;");
         //static if(is(T==Vector2) || is(T==Vector3) || is(T==Color))
         //	p(&_godot_array, cast(InternalType*)&data);
         //else p(&_godot_array, data);
     }
 
-    void insert(size_t idx, in T data) {
-        _bind.insert(idx, data);
+    size_t insert(size_t idx, in T data) {
+        return _bind.insert(idx, data);
         //mixin("auto i = gdextension_interface_"~(typeName!T)~"_insert;");
         //static if(is(T==Vector2) || is(T==Vector3) || is(T==Color))
         //	i(&_godot_array, cast(int)idx, cast(InternalType*)&data);
@@ -250,10 +289,91 @@ struct PackedArray(T) if (!is(T == Vector4) || isGodot43orNewer) {
         //	s(&_godot_array, cast(int)idx, cast(InternalType*)&data);
         //else s(&_godot_array, cast(int)idx, data);
     }
-    //}
+
+    T get(size_t idx) const {
+        // added in v4.4
+        static if (isGodot44orNewer) {
+            static if (is(T == ubyte) || is(T == int))
+                return cast(T) _bind.get(idx);
+            else
+                return _bind.get(idx);
+        } else {
+            mixin("auto s = gdextension_interface_"~(typeName!T)~"_operator_index_const;");
+            auto ptr = s(&_bind, idx);
+            if (ptr)
+                return *cast(T*) ptr; // cast is needed because String, Vector3 and others simply returns void*
+            else
+                return T.init;
+        }
+    }
+
+    bool has(in T value) const {
+        return _bind.has(value);
+    }
+
+    /// Creates a copy of the array, as the Packed Array internally is a reference type this makes it possible to mutate a copy without affecting other references.
+    typeof(this) duplicate() const {
+        static if (isGodot45orNewer) {
+            return _bind.duplicate();
+        } else {
+            // before v4.5 duplicate is not const!
+            return (cast() _bind).duplicate();
+        }
+    }
+
+    static if (!is(T == ubyte)) {
+        ///
+        PackedByteArray toByteArray() const {
+            return _bind.toByteArray();
+        }
+    }
 
     ///
-    alias append = pushBack;
+    bool append(in T value) {
+        return _bind.append(value);
+    }
+
+    ///
+    void clear() {
+        _bind.clear();
+    }
+
+    void fill(in T value) {
+        _bind.fill(value);
+    }
+
+    size_t find(in T value, size_t from = 0) const {
+        return _bind.find(value, from);
+    }
+
+    size_t rfind(in T value, size_t from = -1) const {
+        return _bind.rfind(value, from);
+    }
+
+    /// Performs binary search looking for the value, expected array to be sorted
+    size_t bsearch(in T value, bool before = true) const {
+        static if (isGodot45orNewer) {
+            return _bind.bsearch(value, before);
+        } else {
+            // not const before v4.5
+            return (cast() _bind).bsearch(value, before);
+        }
+    }
+
+    PackedArray slice(size_t begin, size_t end = 0x7FFFFFFF) const {
+        return _bind.slice(begin, end);
+    }
+
+    /// returns number of occurences of value
+    long count(in T value) const {
+        return _bind.count(value);
+    }
+
+    ///
+    void sort() {
+        _bind.sort();
+    }
+
     ///
     template opOpAssign(string op) if (op == "~" || op == "+") {
         alias opOpAssign = pushBack;
@@ -285,6 +405,7 @@ struct PackedArray(T) if (!is(T == Vector4) || isGodot43orNewer) {
         return *cast(const(T)*) fn(&_godot_array, cast(int) idx);
     }
 }
+
 
 struct PackedArray(T) if (is(T == Vector4) && !isGodot43orNewer) {
     // doesn't exist in Godot 4.2 but needed to make it compile

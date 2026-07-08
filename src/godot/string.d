@@ -220,6 +220,10 @@ struct String {
         //return less?(-1):1;
     }
 
+    bool opEquals(in string other) const {
+        return opEquals(String(other));
+    }
+
     bool opEquals(in String other) const {
         if (_godot_string == other._godot_string)
             return true;
