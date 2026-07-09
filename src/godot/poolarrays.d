@@ -18,6 +18,7 @@ import godot.array;
 import godot.api.types;
 import godot.string;
 import godot.color;
+import godot.variant;
 import godot.vector2;
 import godot.vector3;
 import godot.vector4;
@@ -30,6 +31,7 @@ import std.meta, std.traits;
 enum isGodot43orNewer = extVersion.VERSION_MINOR > 2;
 enum isGodot44orNewer = extVersion.VERSION_MINOR > 3;
 enum isGodot45orNewer = extVersion.VERSION_MINOR > 4;
+enum isGodot46orNewer = extVersion.VERSION_MINOR > 5;
 
 private alias PackedArrayTypes = AliasSeq!(
     ubyte,
@@ -150,6 +152,12 @@ struct PackedArray(T) if (!is(T == Vector4) || isGodot43orNewer) {
         const(Array)*[1] ptr = [ &arr ];
         auto n = gdextension_interface_variant_get_ptr_constructor(VARIANT_TYPE, 2);
         n(&_godot_array, cast(void**)ptr.ptr);
+    }
+
+    // a helper for D native arrays
+    static if(is(T == ubyte))
+    this(in int[] arr) {
+        this(Array.from(arr));
     }
 
     ///
@@ -313,10 +321,10 @@ struct PackedArray(T) if (!is(T == Vector4) || isGodot43orNewer) {
 
     /// Creates a copy of the array, as the Packed Array internally is a reference type this makes it possible to mutate a copy without affecting other references.
     typeof(this) duplicate() const {
-        static if (isGodot45orNewer) {
+        static if (isGodot46orNewer) {
             return _bind.duplicate();
         } else {
-            // before v4.5 duplicate is not const!
+            // before v4.6 duplicate is not const!
             return (cast() _bind).duplicate();
         }
     }
@@ -352,10 +360,10 @@ struct PackedArray(T) if (!is(T == Vector4) || isGodot43orNewer) {
 
     /// Performs binary search looking for the value, expected array to be sorted
     size_t bsearch(in T value, bool before = true) const {
-        static if (isGodot45orNewer) {
+        static if (isGodot46orNewer) {
             return _bind.bsearch(value, before);
         } else {
-            // not const before v4.5
+            // not const before v4.6
             return (cast() _bind).bsearch(value, before);
         }
     }
@@ -372,6 +380,164 @@ struct PackedArray(T) if (!is(T == Vector4) || isGodot43orNewer) {
     ///
     void sort() {
         _bind.sort();
+    }
+
+
+    // PackedByteArray specific methods
+    static if(is(T == ubyte))
+    {
+        // for available values see FileAccess.CompressionMode
+        PackedByteArray compress(int compressionMode = 0) const {
+            return _bind.compress(compressionMode);
+        }
+        double decodeDouble(int byteOffset) const {
+            return _bind.decodeDouble(byteOffset);
+        }
+        double decodeFloat(int byteOffset) const {
+            return _bind.decodeFloat(byteOffset);
+        }
+        double decodeHalf(int byteOffset) const {
+            return _bind.decodeHalf(byteOffset);
+        }
+        long decodeS8(int byteOffset) const {
+            return _bind.decodeS8(byteOffset);
+        }
+        long decodeS16(int byteOffset) const {
+            return _bind.decodeS16(byteOffset);
+        }
+        long decodeS32(int byteOffset) const {
+            return _bind.decodeS32(byteOffset);
+        }
+        long decodeS64(int byteOffset) const {
+            return _bind.decodeS64(byteOffset);
+        }
+        long decodeU8(int byteOffset) const {
+            return _bind.decodeU8(byteOffset);
+        }
+        long decodeU16(int byteOffset) const {
+            return _bind.decodeU16(byteOffset);
+        }
+        long decodeU32(int byteOffset) const {
+            return _bind.decodeU32(byteOffset);
+        }
+        long decodeU64(int byteOffset) const {
+            return _bind.decodeU64(byteOffset);
+        }
+        void encodeDouble(int byteOffset, double value) {
+            return _bind.encodeDouble(byteOffset, value);
+        }
+        void encodeFloat(int byteOffset, double value) {
+            return _bind.encodeFloat(byteOffset, value);
+        }
+        void encodeHalf(int byteOffset, double value) {
+            return _bind.encodeHalf(byteOffset, value);
+        }
+        void encodeS8(int byteOffset, long value) {
+            return _bind.encodeS8(byteOffset, value);
+        }
+        void encodeS16(int byteOffset, long value) {
+            return _bind.encodeS16(byteOffset, value);
+        }
+        void encodeS32(int byteOffset, long value) {
+            return _bind.encodeS32(byteOffset, value);
+        }
+        void encodeS64(int byteOffset, long value) {
+            return _bind.encodeS64(byteOffset, value);
+        }
+        void encodeU8(int byteOffset, long value) {
+            return _bind.encodeU8(byteOffset, value);
+        }
+        void encodeU16(int byteOffset, long value) {
+            return _bind.encodeU16(byteOffset, value);
+        }
+        void encodeU32(int byteOffset, long value) {
+            return _bind.encodeU32(byteOffset, value);
+        }
+        void encodeU64(int byteOffset, long value) {
+            return _bind.encodeU64(byteOffset, value);
+        }
+        Variant decodeVar(int byteOffset, bool allowObjects = false) const {
+            return _bind.decodeVar(byteOffset, allowObjects);
+        }
+        long decodeVarSize(int byteOffset, bool allowObjects = false) const {
+            return _bind.decodeVarSize(byteOffset, allowObjects);
+        }
+        // for available values see FileAccess.CompressionMode
+        PackedByteArray decompress(int bufferSize, int compressionMode = 0) const {
+            return _bind.decompress(bufferSize, compressionMode);
+        }
+        // for available values see FileAccess.CompressionMode
+        PackedByteArray decompressDynamic(int maxOutputSize, int compressionMode = 0) const {
+            return _bind.decompressDynamic(maxOutputSize, compressionMode);
+        }
+        long encodeVar(int byteOffset, Variant value, bool allowObjects = false) {
+            return _bind.encodeVar(byteOffset, value, allowObjects);
+        }
+        // Returns true if a valid Variant value can be decoded at the byte_offset. Returns false otherwise or when the value is Object-derived and allow_objects is false.
+        bool hasEncodedVar(int byteOffset, bool allowObjects = false) const {
+            return _bind.hasEncodedVar(byteOffset, allowObjects);
+        }
+        String hexEncode() const {
+            return _bind.hexEncode();
+        }
+        // see also String.toAsciiBuffer, naively tranlates bytes into ASCII characters, for real input use fromUtf8 variant
+        String getStringFromAscii() const {
+            return _bind.getStringFromAscii();
+        }
+        String getStringFromUtf8() const {
+            return _bind.getStringFromUtf8();
+        }
+        String getStringFromUtf16() const {
+            return _bind.getStringFromUtf16();
+        }
+        String getStringFromUtf32() const {
+            return _bind.getStringFromUtf32();
+        }
+        String getStringFromWchar() const {
+            return _bind.getStringFromWchar();
+        }
+        PackedFloat32Array toFloat32Array() const {
+            return _bind.toFloat32Array();
+        }
+        PackedFloat64Array toFloat64Array() const {
+            return _bind.toFloat64Array();
+        }
+        PackedInt32Array toInt32Array() const {
+            return _bind.toInt32Array();
+        }
+        PackedInt64Array toInt64Array() const {
+            return _bind.toInt64Array();
+        }
+      static if (isGodot45orNewer) {
+        void bswap16(size_t offset, size_t count = -1) {
+            _bind.bswap16(offset, count);
+        }
+        void bswap32(size_t offset, size_t count = -1) {
+            _bind.bswap32(offset, count);
+        }
+        void bswap64(size_t offset, size_t count = -1) {
+            _bind.bswap64(offset, count);
+        }
+        String getStringFromMultibyteChar(String encoding) const {
+            return _bind.getStringFromMultibyteChar(encoding);
+        }
+        String getStringFromMultibyteChar(string encoding = "") const {
+            return getStringFromMultibyteChar(String(encoding));
+        }
+        PackedColorArray toColorArray() const {
+            return _bind.toColorArray();
+        }
+        PackedVector2Array toVector2Array() const {
+            return _bind.toVector2Array();
+        }
+        PackedVector3Array toVector3Array() const {
+            return _bind.toVector3Array();
+        }
+        static if (isGodot43orNewer) 
+        PackedVector4Array toVector4Array() const {
+            return _bind.toVector4Array();
+        }
+      }
     }
 
     ///

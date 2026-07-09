@@ -617,6 +617,22 @@ version(USE_CLASSES) {
             assert(ps2[1] == "ooo");
         }
 
+        // some packed byte array checks 
+        {
+            PackedByteArray pb = PackedByteArray([11, 46, 255]);
+            assert(pb.hexEncode() == "0b2eff");
+            pb.append(0); // int32 array require multiple of 4 bytes
+            auto pint = pb.toInt32Array();
+            assert(pint[0] == 0x00FF2E0B);
+
+
+            PackedByteArray p1;
+            p1.resize(10);
+            foreach(i, a; "hello")
+                p1.encodeU8(cast(int) i, a);
+            assert(p1.getStringFromAscii() == "hello");
+        }
+
         // test issue 229
         {
             auto node = instancePrototype.instantiate(PackedScene.GenEditState.genEditStateDisabled).as!Node;
