@@ -98,9 +98,6 @@ struct PackedArray(T) if (!is(T == Vector4) || isGodot43orNewer) {
     static assert(staticIndexOf!(T, PackedArrayTypes) != -1,
         "Cannot make a Godot PackedArray for a non-Godot type");
 
-    // TODO: this is now gone, replace with real array
-    //mixin("package(godot) "~(typeName!T)~" _godot_array;");
-
     package(godot) union _PackedArray {
         OPAQUE_TYPE _godot_array;
         mixin("Packed" ~ bindNameOverride!T ~ "Array_Bind _bind;");
@@ -163,8 +160,6 @@ struct PackedArray(T) if (!is(T == Vector4) || isGodot43orNewer) {
     ///
     void appendArray(PackedArray arr) {
         _bind.appendArray(arr);
-        //mixin("auto a = gdextension_interface_"~(typeName!T)~"_append_array;");
-        //a(&_godot_array, &arr._godot_array);
     }
 
     ///
@@ -173,8 +168,6 @@ struct PackedArray(T) if (!is(T == Vector4) || isGodot43orNewer) {
     ///
     void reverse() {
         _bind.reverse();
-        //mixin("auto i = gdextension_interface_"~(typeName!T)~"_invert;");
-        //i(&_godot_array);
     }
 
     bool erase(in T value) {
@@ -196,20 +189,14 @@ struct PackedArray(T) if (!is(T == Vector4) || isGodot43orNewer) {
 
     void removeAt(size_t idx) {
         _bind.removeAt(idx);
-        //mixin("auto r = gdextension_interface_"~(typeName!T)~"_remove;");
-        //r(&_godot_array, cast(int)idx);
     }
 
     size_t resize(size_t size) {
         return _bind.resize(size);
-        //mixin("auto r = gdextension_interface_"~(typeName!T)~"_resize;");
-        //r(&_godot_array, cast(int)size);
     }
 
     size_t size() const {
         return cast(size_t) _bind.size();
-        //mixin("auto s = gdextension_interface_"~(typeName!T)~"_size;");
-        //return s(&_godot_array);
     }
 
     alias length = size; // D-style name for size
@@ -224,6 +211,7 @@ struct PackedArray(T) if (!is(T == Vector4) || isGodot43orNewer) {
     }
 
     ~this() {
+        // this is what it expands to
         //auto d = gdextension_interface_variant_get_ptr_destructor(GDEXTENSION_VARIANT_TYPE_PACKED_BYTE_ARRAY)
         auto d = gdextension_interface_variant_get_ptr_destructor(VARIANT_TYPE);
         d(&_godot_array);
@@ -276,26 +264,14 @@ struct PackedArray(T) if (!is(T == Vector4) || isGodot43orNewer) {
 
     bool pushBack(in T data) {
         return _bind.pushBack(data);
-        //mixin("auto p = gdextension_interface_"~(typeName!T)~"_push_back;");
-        //static if(is(T==Vector2) || is(T==Vector3) || is(T==Color))
-        //	p(&_godot_array, cast(InternalType*)&data);
-        //else p(&_godot_array, data);
     }
 
     size_t insert(size_t idx, in T data) {
         return _bind.insert(idx, data);
-        //mixin("auto i = gdextension_interface_"~(typeName!T)~"_insert;");
-        //static if(is(T==Vector2) || is(T==Vector3) || is(T==Color))
-        //	i(&_godot_array, cast(int)idx, cast(InternalType*)&data);
-        //else i(&_godot_array, cast(int)idx, data);
     }
 
     void set(size_t idx, in T data) {
         _bind.set(idx, data);
-        //mixin("auto s = gdextension_interface_"~(typeName!T)~"_set;");
-        //static if(is(T==Vector2) || is(T==Vector3) || is(T==Color))
-        //	s(&_godot_array, cast(int)idx, cast(InternalType*)&data);
-        //else s(&_godot_array, cast(int)idx, data);
     }
 
     T get(size_t idx) const {
