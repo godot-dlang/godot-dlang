@@ -342,8 +342,24 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
 
     StringName snClass = StringName(name);
     StringName snBase = StringName(baseName);
-
-    if (gdextension_interface_classdb_register_extension_class5 !is null) {
+    if (gdextension_interface_classdb_register_extension_class6 !is null) {
+        GDExtensionClassCreationInfo6 class_info;
+        // v4.7+
+        class_info.create_instance_func = &createFunc3!T;
+        // v4.4+
+        class_info.get_virtual_func = &getVirtualFn2;
+        // v4.3+
+        class_info.is_runtime = IS_RUNTIME_ONLY;
+        // v4.2+
+        class_info.recreate_instance_func = &recreateFunc!T;
+        class_info.is_exposed = true; // TODO: add some control over what class should be exposed
+        class_info.is_abstract = __traits(isAbstractClass, T);
+        // common
+        class_info.free_instance_func = &destroyFunc!T;
+        class_info.class_userdata = cast(void*) name.ptr;
+        gdextension_interface_classdb_register_extension_class6(lib, cast(GDExtensionStringNamePtr) snClass, cast(GDExtensionStringNamePtr) snBase, &class_info);
+    }
+    else if (gdextension_interface_classdb_register_extension_class5 !is null) {
         GDExtensionClassCreationInfo5 class_info;
         // v4.4+
         class_info.create_instance_func = &createFunc2!T;

@@ -204,7 +204,14 @@ RefOrT!T memnew(T)() if (extendsGodotBaseClass!T) {
 
     //GodotClass!T o = GodotClass!T._new();
     auto snName = StringName(name);
-    auto obj = gdextension_interface_classdb_construct_object(cast(GDExtensionStringNamePtr) snName);
+
+    GDExtensionObjectPtr obj;
+    if (gdextension_interface_classdb_construct_object3) // we now have to notify post initialize AND increment ref count
+        obj = gdextension_interface_classdb_construct_object3(cast(GDExtensionStringNamePtr) snName);
+    else if (gdextension_interface_classdb_construct_object2) // we now have to notify post initialize
+        obj = gdextension_interface_classdb_construct_object2(cast(GDExtensionStringNamePtr) snName);
+    else 
+        obj = gdextension_interface_classdb_construct_object(cast(GDExtensionStringNamePtr) snName);
     assert(obj !is null);
 
     // if this is a D object it was already created using `createFunc` 
@@ -339,6 +346,7 @@ extern (C) package(godot) void* createFunc(T)(void* data) //nothrow @nogc
 extern (C) package(godot) void* createFunc2(T)(void* data, GDExtensionBool p_notify_postinitialize) //nothrow @nogc
 {
     import std.conv;
+    import godot.refcounted;
 
     static assert(is(T == class));
 
@@ -405,14 +413,30 @@ extern (C) package(godot) void* createFunc2(T)(void* data, GDExtensionBool p_not
     // instance bindings allows to get associated object for Godot object
     gdextension_interface_object_set_instance_binding(cast(void*) t._gdextension_handle.ptr, _GODOT_library, cast(void*) t, &_instanceCallbacks);
     
+    // v4.7 says it expects ref count starts at 1, RefCounted::deinit_ref() has some confusing comment and code making me wonder what it really expects...
+    // additionally class create v3 does not even bothers with any checks, so???
+    // it seems for now we're still ok with Ref ctor calling init_ref() and dtor for clean up
+    // TODO: if we are really needed to do THAT maybe put inside initialize above then? but for now it is symmetrical between create/destroy
+    version(none)
+    static if (extends!(T, RefCounted)) {
+        if (isGodotWantsRefcountInitialized())
+            t.reference(); // v4.7 now wants ref count = 1 at creation
+    }
+
+    if (p_notify_postinitialize)
+        t.notification(GodotObject.Constants.notificationPostinitialize);
 
     // return back the godot object
     return cast(void*) t._gdextension_handle.ptr;
 }
 
+// just an alias, for now
+alias createFunc3 = createFunc2;
+
 extern (C) package(godot) void destroyFunc(T)(void* userData, void* instance) //nothrow @nogc
 {
     static import godot;
+    import godot.refcounted;
 
     version(GODOT_USE_GC_RANGE) {
         static if (!hasUDA!(T, GCSkipScan)) {
@@ -423,6 +447,15 @@ extern (C) package(godot) void destroyFunc(T)(void* userData, void* instance) //
 
     T t = cast(T) instance;
     godot.finalize(t);
+
+    // v4.7 says it expects ref count starts at 1, i guess we also need to unref otherwise it will leak
+    // but... automatic Ref ctor/dtor seems to be enough
+    version(none)
+    static if (extends!(T, RefCounted)) {
+        if (isGodotWantsRefcountInitialized())
+            t.unreference();
+    }
+
     gdextension_interface_mem_free(cast(void*) t);
 }
 
@@ -490,4 +523,9 @@ RefOrT!T getObjectInstance(T)(void* godotObj)
         T o = memnew!T(godot_object(godotObj));
         return refOrT(o);
     }
+}
+
+// indicated that starting since godot 4.7 the expected ref count is now 1, we now have to deal with it
+bool isGodotWantsRefcountInitialized() {
+    return gdextension_interface_classdb_construct_object3 !is null;
 }
