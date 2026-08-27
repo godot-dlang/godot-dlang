@@ -520,7 +520,7 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
         MethodWrapper!(T, mf).funName = cast(GDExtensionStringNamePtr) snFunName;
     }
 
-    void registerMemberAccessor(alias mf, alias propType, string funcName)() {
+    void registerMemberAccessor(alias mf, alias pcall, alias propType, string funcName)() {
         static assert(Parameters!propType.length == 0 || Parameters!propType.length == 1,
             "only getter or setter is allowed with exactly zero or one arguments");
 
@@ -538,7 +538,7 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
             cast(GDExtensionStringNamePtr) snName, //const char *name;
             &mf, //void *method_userdata;
             &mf, //GDExtensionClassMethodCall call_func;
-            null, //GDExtensionClassMethodPtrCall ptrcall_func;
+            &pcall, //GDExtensionClassMethodPtrCall ptrcall_func;
             flags, //uint32_t method_flags; /* GDExtensionClassMethodFlags */
 
             cast(GDExtensionBool) !is(ReturnType!propType == void), //GDExtensionBool has_return_value;
@@ -668,13 +668,13 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
 
             // register acessor methods for that property
             static if (getterMatches.length) {
-                enum get_prop = "get_" ~ pName ~ '\0';
+                enum get_prop = "get_" ~ pName;
                 registerMethod!(getterMatches[0], cast(string) get_prop);
             } else
                 enum get_prop = string.init;
 
             static if (setterMatches.length) {
-                enum set_prop = "set_" ~ pName ~ '\0';
+                enum set_prop = "set_" ~ pName;
                 registerMethod!(setterMatches[0], cast(string) set_prop);
             } else
                 enum set_prop = string.init;
@@ -716,14 +716,14 @@ void register(T)(GDExtensionClassLibraryPtr lib) if (is(T == class)) {
             //pragma(msg, pName , "(", godotName!Prop,")", " -> ", P);
 
             // register acessor methods for that property
-            enum get_prop = "get_" ~ godotName!Prop ~ '\0';
+            enum get_prop = "get_" ~ godotName!Prop;
             alias fnWrapper = VariableWrapper!(T, Prop);
             static fnWrapper.getterType getterTmp; // dummy func for now because current registration code requires actual function, and there isn't one
-            registerMemberAccessor!(fnWrapper.callPropertyGet, getterTmp, cast(string) get_prop);
+            registerMemberAccessor!(fnWrapper.callPropertyGet, fnWrapper.ptrcallGet,  getterTmp, get_prop);
 
-            enum set_prop = "set_" ~ godotName!Prop ~ '\0';
+            enum set_prop = "set_" ~ godotName!Prop;
             static fnWrapper.setterType setterTmp; // dummy func for now because current registration code requires actual function, and there isn't one
-            registerMemberAccessor!(fnWrapper.callPropertySet, setterTmp, cast(string) set_prop);
+            registerMemberAccessor!(fnWrapper.callPropertySet, fnWrapper.ptrcallSet, setterTmp, set_prop);
 
             StringName snSetProp = StringName(set_prop);
             StringName snGetProp = StringName(get_prop);

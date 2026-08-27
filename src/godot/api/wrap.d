@@ -748,6 +748,38 @@ package(godot) struct VariableWrapper(T, alias var) {
     alias getterType = P function();
     alias setterType = void function(P v); // ldc doesn't likes 'val' name here
 
+
+    // gdscript will use this when it know method types
+    static extern(C) void ptrcallSet (void* method_userdata, GDExtensionClassInstancePtr p_instance, const(GDExtensionConstTypePtr)* p_args, GDExtensionTypePtr r_ret) {
+        T obj = cast(T) p_instance;
+        if (!obj) return;
+
+        // check float argument, skip other checks as ptrcall supposed to be typechecked
+        P value;
+        static if (isFloatingPoint!P) {
+            value = cast(P) (*cast(godot_float*)p_args[0]);
+        } else {
+            value = *cast(P*)p_args[0];
+        }
+
+        __traits(getMember, obj, __traits(identifier, var)) = value;
+    }
+
+    static extern(C) void ptrcallGet (void* method_userdata, GDExtensionClassInstancePtr p_instance, const(GDExtensionConstTypePtr)* p_args, GDExtensionTypePtr r_ret) {
+        T obj = cast(T) p_instance;
+        if (!obj || !r_ret) return;
+
+        P value = __traits(getMember, obj, __traits(identifier, var));
+
+        static if (isFloatingPoint!P) {
+            *cast(double*)r_ret = value;
+        } else static if (isIntegral!P) {
+            *cast(long*)r_ret = value;
+        } else {
+            *cast(P*)r_ret = value;
+        }
+    }
+
     extern (C) // for calling convention
     static void callPropertyGet(void* methodData, void* instance,
         const(void*)* args, long numArgs, void* r_return, GDExtensionCallError* r_error) {
