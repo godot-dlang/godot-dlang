@@ -41,6 +41,10 @@ struct Ref(T) {
 
     alias refPayload this;
 
+    long getReferenceCount() const {
+        return _self.getReferenceCount();
+    }
+
     ref Ref opAssign(T other) {
         if (_self.getGodotObject == other.getGodotObject)
             return this;

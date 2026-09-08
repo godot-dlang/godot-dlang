@@ -558,6 +558,7 @@ struct Variant {
                 // however because a class has other fields and we can't return by value we are forced to allocate...
                 // ideally this should be resolved by returning some kind of sumtype that holds either a typed godot_object wrapper
                 // AND a normal object reference, will stick for now to a most horrible solution - allocate a tiny yet leaking object.
+                // (despite it leaks the handle here godot should still free it upon object destruction as godot objects tracks binding handles list)
                 static if (is(NonRef!R : GodotObject)) {
                     if (Ref!RefCounted rc = getObjectInstance!(RefCounted)(cast(void*) ret)) { // note: doesn't holds Ref, be careful
                         rc.reference(); // FIXME: hack that makes it hold ref

@@ -417,16 +417,19 @@ version(USE_CLASSES) {
             assert(t.isValid);
             RefTest v = t;
             assert(t == v);
+            assert(t.getReferenceCount() == 1); // v does not holds a reference to t, so refcount is 1
 
             Ref!RefTest other1 = t;
             Ref!RefTest other2;
             assert(other2.isNull);
             other2 = t;
+            assert(t.getReferenceCount() == 3);
 
             RefTest n = null;
             t = n;
             assert(t.isNull);
             assert(t == n);
+            assert(other1.getReferenceCount() == 2); // t is now gone but other1 and other2 still holds a reference
         }
         print("Exited RefTest scope");
 
@@ -641,6 +644,7 @@ version(USE_CLASSES) {
             // test some values
             auto test = node.get("test").as!int;
             assert(test == 42);
+            assert(instancePrototype.getReferenceCount() == 1); // ensure there is only one live reference
         }
 
     }
