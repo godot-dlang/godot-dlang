@@ -408,8 +408,9 @@ package(godot) struct MethodWrapperMeta(alias mf) {
     // Unlike arguments info this is strictly variant type index
     VariantType[A.length+1] _argVariantTypes = [staticMap!(Variant.variantTypeOf, A)];
     VariantType[2] _retVariantTypes = [Variant.variantTypeOf!R, VariantType.nil ];
-    // Godot Arguments Metadata, not yet implemented
-    GDExtensionClassMethodArgumentMetadata[A.length] _argInfo = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE;
+    // Type metadata
+    GDExtensionClassMethodArgumentMetadata[A.length] _argMeta = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE;
+    GDExtensionClassMethodArgumentMetadata _retMeta = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE;
     // Default values for arguments
     Variant[ParameterDefaults!mf.length + 1] _defaults;
     Variant*[ParameterDefaults!mf.length + 1] _defaultsPtrs;
@@ -418,8 +419,12 @@ package(godot) struct MethodWrapperMeta(alias mf) {
         _returnInfo = initReturnInfo();
         _argumentsInfo = initArgumentsInfo();
         _defaults = initDefaultArgs();
+        _retMeta = typeMetadata!R;
         for(int i = 0; i < _defaults.length; i++) {
             _defaultsPtrs[i] = &_defaults[i];
+        }
+        static foreach(i; 0..A.length) {
+            _argMeta[i] = typeMetadata!(A[i]);
         }
     }
 
@@ -479,13 +484,12 @@ package(godot) struct MethodWrapperMeta(alias mf) {
 
     // metadata array for argument types
     GDExtensionClassMethodArgumentMetadata* argumentsMetadata() {
-        __gshared static GDExtensionClassMethodArgumentMetadata[A.length] argInfo = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE;
-        return argInfo.ptr;
+        return _argMeta.ptr;
     }
 
     // metadata for return type
     GDExtensionClassMethodArgumentMetadata returnMetadata() {
-        return GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE;
+        return _retMeta;
     }
 
     // this function expected to return Variant pointers array containing default values
@@ -634,6 +638,32 @@ struct PropertyInfo {
     int usageFlags;
 }
 
+// usually just a bit width info
+package(godot) int typeMetadata(alias T)() {
+    static if (isIntegral!T) {
+        static assert (T.sizeof <=8, "too big");
+        // flags starts from 1 to 8 inclusively, first 4 is signed, last 4 is unsigned; 8,16,32,64 bit width
+        enum base = GDEXTENSION_METHOD_ARGUMENT_METADATA_INT_IS_INT8;
+          static if (T.sizeof == 2) enum shift = 1;
+          else static if (T.sizeof == 4) enum shift = 2;
+          else static if (T.sizeof == 8) enum shift = 3;
+          else enum shift = 0;
+        enum metaFlags = base + shift + (isUnsigned!T * 4);
+        //pragma(msg,  T.stringof, " flags ", cast(GDExtensionClassMethodArgumentMetadata) metaFlags);
+    } else static if (isFloatingPoint!T) {
+        static assert (T.sizeof <=8, "too big");
+        static if (is(T == float)) 
+            enum metaFlags = GDEXTENSION_METHOD_ARGUMENT_METADATA_REAL_IS_FLOAT;
+        else static if (is(T == double)) 
+            enum metaFlags = GDEXTENSION_METHOD_ARGUMENT_METADATA_REAL_IS_DOUBLE;
+        else // just in case half/float16 will make it into base D
+            enum metaFlags = 0;
+    } 
+    else 
+        enum metaFlags = 0;
+    return metaFlags;
+}
+
 package(godot) PropertyInfo makePropertyInfo(alias T, string Name)() {
     static if (is(T == Variant)) {
         import godot.globalenums : PropertyUsageFlags;
@@ -684,6 +714,8 @@ package(godot) PropertyInfo makePropertyInfo(alias T, string Name)() {
             StringName snClassName = stringName();
         else static if (is(T == PackedArray!U, U))
             StringName snClassName = StringName(T.InternalName);
+        else static if (Variant.variantTypeOf!T != VariantType.object || Variant.variantTypeOf!T == VariantType.nil)
+            StringName snClassName = stringName(); // variant types name must be empty
         else
             StringName snClassName = StringName(T.stringof);
     }
