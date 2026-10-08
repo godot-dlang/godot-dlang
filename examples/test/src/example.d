@@ -653,6 +653,21 @@ version(USE_CLASSES) {
             assert(callable.getObject());
         }
 
+        // same as above but typed
+        {
+            auto _root = getTree().getRoot();
+            auto callable = makeCallable!(_root.grabFocus)(_root); // unfortunatelly there is no way to say _root.grabFocus without repeating anything
+            assert(callable.getObject());
+
+            // the most interesting thing about it is typed bind/unbind that tracks types
+            // GodotCallableT!(void, float, int) c1; // dummy callable
+            //pragma(msg, typeof(c1)                 ); // GodotCallableT!(void, float, int)
+            //pragma(msg, typeof(c1.bindT(42))       ); // GodotCallableT!(void, float)
+            //pragma(msg, typeof(c1.bindT(1.0, 42))  ); // GodotCallableT!(void)
+            //pragma(msg, typeof(c1.bindT("test"))   ); // this should not work
+            //c1.unbindT!1.call(1.0, 42, "foo"); // unfortunately there is no implicit conversion to Variant so this is not allowed
+        }
+
     }
 }
 
