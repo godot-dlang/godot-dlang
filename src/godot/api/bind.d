@@ -105,7 +105,7 @@ Return callBuiltinMethod(Return, Args...)(in GDExtensionPtrBuiltInMethod method,
         _args[i] = &a;
     }
 
-    method(obj, _args.ptr, &ret, _args.length);
+    method(obj, _args.ptr, &ret, args.length);
 
     // this is similar to PtrToArg.decode for godot object
     static if (!is(Return == void)) {
@@ -152,7 +152,7 @@ Return callBuiltinFunction(Return, Args...)(in GDExtensionPtrUtilityFunction fun
         _args[i] = cast(void*) cast() &a;
     }
 
-    func(&ret, _args.ptr, _args.length);
+    func(&ret, _args.ptr, args.length);
 
     // this is similar to PtrToArg.decode for godot object
     static if (!is(Return == void)) {
