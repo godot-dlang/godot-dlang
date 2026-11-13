@@ -357,45 +357,52 @@ class GodotMethod {
             // static array must have at least 1 element
             import std.algorithm : max;
 
-            int argsLength = max(1, (cast(int) arguments.length));
-            // choose between varargs and regular function for arguments
-            if (has_varargs) {
-                ret ~= "\t\tVariant[varArgs.length+" ~ text(argsLength) ~ "] _GODOT_args;\n";
-                ret ~= "\t\tVariant*[varArgs.length+" ~ text(argsLength) ~ "] _args;\n";
-            } else {
-                ret ~= "\t\tVariant[" ~ text(argsLength) ~ "] _GODOT_args;\n";
-                ret ~= "\t\tVariant*[" ~ text(argsLength) ~ "] _args;\n";
+            // skip large chunk of prepping for builtin varargs which is handled by callBuiltinMethodVarArgs itself
+            if (!parent.isBuiltinClass) {
+                int argsLength = max(1, (cast(int) arguments.length));
+                // choose between varargs and regular function for arguments
+                if (has_varargs) {
+                    ret ~= "\t\tVariant[varArgs.length+" ~ text(argsLength) ~ "] _GODOT_args;\n";
+                    ret ~= "\t\tVariant*[varArgs.length+" ~ text(argsLength) ~ "] _args;\n";
+                } else {
+                    ret ~= "\t\tVariant[" ~ text(argsLength) ~ "] _GODOT_args;\n";
+                    ret ~= "\t\tVariant*[" ~ text(argsLength) ~ "] _args;\n";
+                }
+                foreach (i, const arg; arguments) {
+                    // gathers normal parameters in variant array to be later used as pointers
+                    ret ~= "\t\t_GODOT_args[" ~ text(cast(int) i) ~ "] = " ~ escapeDType(arg.name) ~ ";\n";
+                }
 
-            }
-            foreach (i, const arg; arguments) {
-                // gathers normal parameters in variant array to be later used as pointers
-                ret ~= "\t\t_GODOT_args[" ~ text(cast(int) i) ~ "] = " ~ escapeDType(arg.name) ~ ";\n";
-            }
+                if (has_varargs) {
+                    // copy varargs after regular args
+                    ret ~= "\t\tforeach(vai, VA; VarArgs) {\n";
+                    ret ~= "\t\t\t_GODOT_args[vai+" ~ text(
+                        cast(int) arguments.length) ~ "] = Variant(varArgs[vai]);\n";
+                    ret ~= "\t\t}\n";
+                }
 
-            if (has_varargs) {
-                // copy varargs after regular args
-                ret ~= "\t\tforeach(vai, VA; VarArgs) {\n";
-                ret ~= "\t\t\t_GODOT_args[vai+" ~ text(
-                    cast(int) arguments.length) ~ "] = Variant(varArgs[vai]);\n";
+                // make pointer array
+                ret ~= "\t\tforeach(i; 0.._GODOT_args.length) {\n";
+                ret ~= "\t\t\t_args[i] = &_GODOT_args[i];\n";
                 ret ~= "\t\t}\n";
+
+                //ret ~= "\t\tStringName _GODOT_method_name = StringName(\""~name~"\");\n";
+
+                ret ~= "\t\tVariant ret;\n";
+                ret ~= "\t\tGDExtensionCallError err;\n";
             }
-
-            // make pointer array
-            ret ~= "\t\tforeach(i; 0.._GODOT_args.length) {\n";
-            ret ~= "\t\t\t_args[i] = &_GODOT_args[i];\n";
-            ret ~= "\t\t}\n";
-
-            //ret ~= "\t\tStringName _GODOT_method_name = StringName(\""~name~"\");\n";
-
-            ret ~= "\t\tVariant ret;\n";
-            ret ~= "\t\tGDExtensionCallError err;\n";
 
             // there is subtle difference, we pass &godot_object for builtins and .ptr for any other object
             // but normally they should work just with &godot_object, we had issues with that in the past though
             // so here we now use real ptr value instead
-            if (parent.isBuiltinClass)
-                ret ~= "\t\tgdextension_interface_object_method_bind_call(GDExtensionClassBinding." ~ wrapperIdentifier ~ ".mb, cast(void*) &_godot_object, cast(void**) _args.ptr, _GODOT_args.length, cast(void*) &ret, &err);\n";
-            else
+            if (parent.isBuiltinClass && !is_virtual) {
+                if (return_type.dType != "void")
+                    ret ~= "\t\treturn ";
+                else
+                    ret ~= "\t\t";
+                ret ~= "callBuiltinMethodVarArgs!("~ return_type.dType ~")(cast(GDExtensionPtrBuiltInMethod)GDExtensionClassBinding." ~ wrapperIdentifier ~ ".mb, cast(GDExtensionTypePtr) &_godot_object, varArgs);\n";
+                return ret; // skip early
+            } else
                 ret ~= "\t\tgdextension_interface_object_method_bind_call(GDExtensionClassBinding." ~ wrapperIdentifier ~ ".mb, cast(void*) _godot_object.ptr, cast(void**) _args.ptr, _GODOT_args.length, cast(void*) &ret, &err);\n";
             // ret ~= "\t\t";
             // DMD 2.101 complains about Type* pointers escaping function scope

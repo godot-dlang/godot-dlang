@@ -94,6 +94,8 @@ class Test : GodotScript!Label {
         double dreal = 0.25;
     }
 
+    @Property GodotCallable testCallable;
+
     // issue 229, 
     @Property Ref!PackedScene instancePrototype;
 
@@ -160,6 +162,14 @@ class Test : GodotScript!Label {
         auto res = format("real r = %f\n int i = %d\n", r, i);
         String ret = String(res);
         return ret;
+    }
+
+    // this method is used to test being called using callable
+    @Method void callableTest(double foo, int bar, String baz) {
+        assert(foo == 0.5);
+        assert(bar == 42);
+        assert(baz.toDString() == "test");
+        print("callable ok");
     }
 
     @Method
@@ -645,6 +655,31 @@ version(USE_CLASSES) {
             auto test = node.get("test").as!int;
             assert(test == 42);
             assert(instancePrototype.getReferenceCount() == 1); // ensure there is only one live reference
+        }
+
+        // test issue 236
+        {
+            GodotCallable callable = GodotCallable(getTree().getRoot(), "grab_focus");
+            assert(callable.getObject());
+
+            GodotCallable test = GodotCallable(this, "callable_test");
+            assert(test.getObject());
+            test.call(0.5, 42, String("test"));
+        }
+
+        // same as above but typed
+        {
+            auto _root = getTree().getRoot();
+            auto callable = makeCallable!(_root.grabFocus)(_root); // unfortunatelly there is no way to say _root.grabFocus without repeating anything
+            assert(callable.getObject());
+
+            // the most interesting thing about it is typed bind/unbind that tracks types
+            // GodotCallableT!(void, float, int) c1; // dummy callable
+            //pragma(msg, typeof(c1)                 ); // GodotCallableT!(void, float, int)
+            //pragma(msg, typeof(c1.bindT(42))       ); // GodotCallableT!(void, float)
+            //pragma(msg, typeof(c1.bindT(1.0, 42))  ); // GodotCallableT!(void)
+            //pragma(msg, typeof(c1.bindT("test"))   ); // this should not work
+            //c1.unbindT!1.call(1.0, 42, "foo"); // unfortunately there is no implicit conversion to Variant so this is not allowed
         }
 
     }
