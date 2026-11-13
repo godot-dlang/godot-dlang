@@ -120,6 +120,45 @@ Return callBuiltinMethod(Return, Args...)(in GDExtensionPtrBuiltInMethod method,
     }
 }
 
+
+/++
+Raw Method call helper for a method with variadic arguments,
+mostly same as callBuiltinMethod, however it does wraps the arguments in a Variant (otherwise it will see wrong values).
+
+(Probably should be suffixed Variant instead of VarArgs?)
++/
+Return callBuiltinMethodVarArgs(Return, VarArgs...)(in GDExtensionPtrBuiltInMethod method, GDExtensionTypePtr obj, VarArgs varArgs) {
+    static if (!is(Return == void)) {
+        Variant ret;
+    }
+    else
+        typeof(null) ret = null;
+
+    Variant[varArgs.length+1] _GODOT_args;
+    Variant*[varArgs.length+1] _args;
+    foreach(vai, VA; VarArgs) {
+        _GODOT_args[vai+0] = Variant(varArgs[vai]);
+    }
+    foreach(i; 0.._GODOT_args.length) {
+        _args[i] = &_GODOT_args[i];
+    }
+
+    method(obj, cast(void**)_args.ptr, &ret, cast(int) varArgs.length);
+
+    // this is similar to PtrToArg.decode for godot object
+    static if (!is(Return == void)) {
+        version(USE_CLASSES) {
+            // make new D object if necessary, unlike structs there is a layer of indirection that has to be taken care of
+            static if (is(Return : GodotObject))
+              return memnew!Return(*cast(godot_object*) &ret);
+            else
+              return ret.as!Return();
+        } else
+        return ret.as!Return();
+    }
+}
+
+
 /++
 Utility function call helper, the ones not belonging to any class
 +/

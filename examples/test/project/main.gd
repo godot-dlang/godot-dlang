@@ -46,6 +46,9 @@ func _ready():
 		virt.test()
 		virt.free()
 
+	test_class.test_callable = test_class.callable_test
+	assert(test_class.test_callable)
+	test_class.test_callable.call(0.5, 42, "test") # the args this function expects, otherwise fails
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):

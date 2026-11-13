@@ -94,6 +94,8 @@ class Test : GodotScript!Label {
         double dreal = 0.25;
     }
 
+    @Property GodotCallable testCallable;
+
     // issue 229, 
     @Property Ref!PackedScene instancePrototype;
 
@@ -160,6 +162,14 @@ class Test : GodotScript!Label {
         auto res = format("real r = %f\n int i = %d\n", r, i);
         String ret = String(res);
         return ret;
+    }
+
+    // this method is used to test being called using callable
+    @Method void callableTest(double foo, int bar, String baz) {
+        assert(foo == 0.5);
+        assert(bar == 42);
+        assert(baz.toDString() == "test");
+        print("callable ok");
     }
 
     @Method
@@ -651,6 +661,10 @@ version(USE_CLASSES) {
         {
             GodotCallable callable = GodotCallable(getTree().getRoot(), "grab_focus");
             assert(callable.getObject());
+
+            GodotCallable test = GodotCallable(this, "callable_test");
+            assert(test.getObject());
+            test.call(0.5, 42, String("test"));
         }
 
         // same as above but typed
